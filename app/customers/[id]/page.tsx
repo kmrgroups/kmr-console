@@ -8,7 +8,7 @@ import { CustomerFields } from "@/components/CustomerFields";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { env } from "@/lib/env";
 import { CUSTOMER_TONE, LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
-import { enableHrm, enableTool, saveCustomer, saveLicence } from "@/app/actions";
+import { enableHrm, enableTool, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 
 export const metadata = { title: "Customer" };
@@ -51,6 +51,28 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     <AppShell staff={staff} active="/customers">
       <div className="pagehead">
         <div><h1>{c.name}</h1><p><span className="mono">{c.code}</span> · {c.country} · {c.currency} · <span className={`badge ${CUSTOMER_TONE[c.status]}`}>{c.status}</span></p></div>
+      </div>
+
+      <div className="card">
+        <h2>Customer portal</h2>
+        <div className="grid two">
+          <div>
+            <p className="muted" style={{ marginTop: 0 }}>One link for everything this customer has bought. After signing in they see their apps; the rest can be tried with sample data.</p>
+            <p style={{ margin: "6px 0 12px" }}><a className="mono" href={`${env.platformUrl}/it/app/${c.slug}`} target="_blank" rel="noopener">{env.platformUrl}/it/app/{c.slug}</a></p>
+            <ActionForm action={saveCustomerSlug} submitLabel="Change link name" variant="secondary" hidden={{ id: c.id }} className="row">
+              <input name="slug" defaultValue={c.slug ?? ""} style={{ maxWidth: 260 }} />
+            </ActionForm>
+          </div>
+          <div className="row" style={{ alignItems: "flex-start", gap: 16 }}>
+            <div style={{ width: 96, height: 96, borderRadius: 16, border: "1px solid var(--border)", display: "grid", placeItems: "center", background: "#fff", overflow: "hidden", flex: "none" }}>
+              {c.logo_url ? <img src={c.logo_url} alt="" style={{ maxWidth: 84, maxHeight: 84, objectFit: "contain" }} /> : <small className="muted">No logo</small>}
+            </div>
+            <ActionForm action={uploadCustomerLogo} submitLabel={c.logo_url ? "Replace logo" : "Upload logo"} variant="secondary" hidden={{ id: c.id }}>
+              <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" required />
+              <small className="muted">PNG, JPG, WebP or SVG, under 1 MB. Square logos look best.</small>
+            </ActionForm>
+          </div>
+        </div>
       </div>
 
       <div className="card">

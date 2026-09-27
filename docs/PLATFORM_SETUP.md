@@ -92,3 +92,18 @@ Workspaces created inside the tools (Admin → Companies) appear in the Console 
   India / Germany / USA / UAE, 2 support tickets and 2 pilot requests.
 - **Remove:** `supabase/demo/DEMO_FLUSH.sql` — deletes only what the demo added (tagged `demo.kmr.test` /
   `KMR demo data`). Real companies, employees and customers are untouched. Load again any time.
+
+## 7. Customer portal — one link per customer
+
+*Already ran the platform setup?* Run **`supabase/migrations/0004_portal.sql`** once.
+
+- Console → customer → **Customer portal**: the customer's personal link `www.kmr-groups.com/it/app/<name>`
+  (change the name if you like) and **Upload logo** (shown on their sign-in and header).
+- The customer signs in there with their KMR login (the same email and password as in their apps) and sees:
+  **Your apps** (from their Console licences) with *Open*; **More KMR apps** — clicking one shows
+  *Not in your plan* with **Try with sample data** and **Buy subscription**; upcoming modules marked *Soon*.
+- Opening the HRM from the portal signs them in automatically (no second sign-in).
+- **HRM sample data for non-customers (optional):** create a customer "KMR Demo" in the Console, *Switch on HRM*
+  with an administrator such as `demo@kmr-groups.com`, load `supabase/demo/DEMO_DATA.sql` for its short name,
+  then in Vercel → kmr-hrm → Environment Variables add `HRM_DEMO_EMAIL=demo@kmr-groups.com` and redeploy.
+  Without it, *Try with sample data* for the HRM is simply switched off.

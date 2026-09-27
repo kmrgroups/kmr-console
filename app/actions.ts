@@ -253,3 +253,40 @@ export async function convertLead(form: FormData) {
   }
   redirect(`/customers/${customerId}`);
 }
+
+// ---------------------------------------------------------------- customer portal: logo and link
+export async function uploadCustomerLogo(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertStaff();
+    const id = String(form.get("id") ?? "");
+    const file = form.get("logo");
+    if (!(file instanceof File) || !file.size) return { error: "Choose a logo image (PNG, JPG, WebP or SVG)." };
+    if (file.size > 1024 * 1024) return { error: "The logo must be under 1 MB." };
+    const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg" } as Record<string, string>)[file.type];
+    if (!ext) return { error: "Use a PNG, JPG, WebP or SVG image." };
+    const db = createAdminClient();
+    const path = `customers/${id}/logo-${Date.now()}.${ext}`;
+    const { error } = await db.storage.from("kmr-public").upload(path, file, { contentType: file.type, upsert: true });
+    if (error) return { error: `Upload failed: ${error.message}` };
+    const url = db.storage.from("kmr-public").getPublicUrl(path).data.publicUrl;
+    const supabase = await createClient();
+    const { error: uErr } = await supabase.from("customers").update({ logo_url: url }).eq("id", id);
+    if (uErr) return { error: uErr.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: "Logo saved. It appears on the customer's portal sign-in and header." };
+  } catch (e) { return fail(e); }
+}
+
+export async function saveCustomerSlug(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertStaff();
+    const id = String(form.get("id") ?? "");
+    const slug = String(form.get("slug") ?? "").trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9-]{1,60}$/.test(slug)) return { error: "Link name: lowercase letters, digits and dashes (2–60)." };
+    const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ slug }).eq("id", id);
+    if (error) return { error: /unique|duplicate/.test(error.message) ? "That link name is already used by another customer." : error.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: "Portal link updated. Send the new link to the customer." };
+  } catch (e) { return fail(e); }
+}
