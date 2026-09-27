@@ -1,8 +1,10 @@
-# KMR platform — Milestone 1 setup (pilot, free plans)
+# KMR platform — setup (pilot, free plans) · Milestones 1 + 2
 
 What you get: **KMR Console** at `www.kmr-groups.com/it/console` (customers, licences, products, staff) and
 **HRM Suite** at `www.kmr-groups.com/it/hrm` for every customer company, controlled by Console licences.
-Balloon Inspector and Process Documents keep working exactly as today (`/it/balloon.html`, `/it/pd.html`).
+Balloon Inspector and Process Documents (`/it/balloon.html`, `/it/pd.html`) are also controlled by Console licences.
+Every workspace that exists today is adopted automatically as a **pilot** licence, so nobody is locked out.
+`www.kmr-groups.com/it/` is the **KMR Apps** home listing all three apps. One KMR login (email + password) works in every app.
 
 ## 1. Supabase (project dehlcusptkzfhqvpfyjh) — 5 minutes
 
@@ -10,6 +12,7 @@ Balloon Inspector and Process Documents keep working exactly as today (`/it/ball
 2. Open `supabase/KMR_PLATFORM_SETUP.sql`. At the top, set **owner_email** to your existing login
    (the one you use for the website admin) and **owner_name**.
 3. SQL Editor → New query → paste the whole file → **Run**. It ends with **KMR PLATFORM READY**.
+   *Already ran the Milestone 1 version of this file?* Then run only `supabase/migrations/0002_quality_suite.sql`.
    It only *adds* the `console` and `hrm` sections; website and tool tables are not touched.
 4. **Project Settings → Data API → Exposed schemas**: add `hrm` and `console` → Save.
 5. **Project Settings → API Keys**: note the *publishable / anon* key and the *secret / service_role* key.
@@ -57,3 +60,15 @@ address, set `HRM_ORIGIN` / `CONSOLE_ORIGIN` on the **kmr-group-website** projec
    password → add employees, set up attendance and leave.
 5. Back in the Console: **Change licence → suspended** → within a minute the customer sees *Access paused*.
    Set it back to *trial* and access returns, with all data intact.
+
+## 4. Demo — Balloon Inspector / Process Documents (Milestone 2)
+
+1. Console → **Customers** — your existing tool workspaces are listed as pilot customers.
+2. Open a customer → **Switch on Balloon Inspector** (or Process Documents) → administrator email → create.
+   The message shows the sign-in address and, for a new login, a temporary password.
+3. Sign in at `/it/balloon.html` — the workspace is there; the administrator adds colleagues under Admin → Users
+   (up to the licence's user limit).
+4. Console → **Change licence → suspended** → the tool shows *Access paused* and the database refuses its data.
+   Back to *pilot* → everything returns.
+
+Workspaces created inside the tools (Admin → Companies) appear in the Console automatically with a 30-day trial.

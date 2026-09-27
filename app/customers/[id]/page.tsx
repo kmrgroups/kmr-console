@@ -8,7 +8,8 @@ import { CustomerFields } from "@/components/CustomerFields";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { env } from "@/lib/env";
 import { CUSTOMER_TONE, LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
-import { enableHrm, saveCustomer, saveLicence } from "@/app/actions";
+import { enableHrm, enableTool, saveCustomer, saveLicence } from "@/app/actions";
+import { isTool, toolUsage } from "@/lib/provision";
 
 export const metadata = { title: "Customer" };
 
@@ -41,6 +42,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     ]);
     hrmUsage = { employees: employees ?? 0, users: users ?? 0 };
   }
+  const toolUse: Record<string, { users: number; items: number }> = {};
+  for (const l of (licences ?? []) as Licence[]) if (isTool(l.product_code) && l.product_ref) toolUse[l.product_code] = await toolUsage(l.product_code, l.product_ref);
   const suggestedSlug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "company";
   const suggestedPrefix = c.name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "EMP";
 
@@ -64,12 +67,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                     {l.valid_until ? <>Until <b>{fmtDate(l.valid_until)}</b></> : "No end date"}<br />
                     {l.seats ? <>Limit {l.seats} {pr.seat_label}</> : `Unlimited ${pr.seat_label}`}
                     {pr.code === "hrm" && hrmUsage && <><br />Using {hrmUsage.employees} employees · {hrmUsage.users} logins</>}
+                    {toolUse[pr.code] && <><br />Using {toolUse[pr.code].users} users · {toolUse[pr.code].items} {pr.code === "balloon" ? "reports" : "projects"}</>}
                   </div>}
                 </div>
 
                 {l && (
                   <>
-                    {l.product_slug && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Sign-in: <a href={`${env.platformUrl}${pr.app_path}${pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}{pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}</a></p>}
+                    {l.product_slug && pr.code !== "hrm" && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Workspace <b>{l.product_slug}</b> · sign-in <a href={`${env.platformUrl}${pr.app_path}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}</a></p>}
+                    {l.product_slug && pr.code === "hrm" && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Sign-in: <a href={`${env.platformUrl}${pr.app_path}${pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}{pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}</a></p>}
                     {manager && (
                       <details style={{ marginTop: 10 }}>
                         <summary className="btn secondary small">Change licence</summary>
@@ -104,7 +109,22 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                     </div>
                   </details>
                 )}
-                {!l && pr.code !== "hrm" && <p className="muted" style={{ fontSize: 13, marginTop: 8 }}>Switching on {pr.name} from the Console arrives in Milestone 2.</p>}
+                {!l && pr.code !== "hrm" && manager && (
+                  <details style={{ marginTop: 10 }}>
+                    <summary className="btn small">Switch on {pr.name}</summary>
+                    <div style={{ marginTop: 10 }}>
+                      <p className="muted" style={{ fontSize: 13 }}>Creates the company&apos;s workspace and its first administrator. The same email and password work in every KMR app.</p>
+                      <ActionForm action={enableTool} submitLabel={`Create ${pr.name} workspace`} pendingLabel="Setting up…" className="formgrid" hidden={{ customer_id: c.id, product_code: pr.code }}>
+                        <label className="field">Workspace name<input name="workspace" defaultValue={c.name} required /></label>
+                        <label className="field">Administrator name<input name="admin_name" defaultValue={c.contact_name ?? ""} required /></label>
+                        <label className="field">Administrator email<input name="admin_email" type="email" defaultValue={c.contact_email ?? ""} required /></label>
+                        <label className="field">Licence<select name="status" defaultValue="trial"><option value="trial">Trial</option><option value="pilot">Pilot</option><option value="active">Active</option></select></label>
+                        <label className="field">Valid until<input type="date" name="valid_until" defaultValue={addDays(today(), 30)} /></label>
+                        <label className="field">User limit<input type="number" name="seats" min={1} placeholder="Unlimited" defaultValue={5} /></label>
+                      </ActionForm>
+                    </div>
+                  </details>
+                )}
               </div>
             );
           })}

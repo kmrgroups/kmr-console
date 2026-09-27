@@ -5,7 +5,8 @@ import { z } from "zod";
 import { assertManager, assertStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ensureLogin, provisionHrm } from "@/lib/provision";
+import { ensureLogin, isTool, provisionHrm, provisionWorkspace } from "@/lib/provision";
+import { randomUUID } from "node:crypto";
 import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
 
@@ -155,4 +156,46 @@ export async function setStaffActive(form: FormData) {
   const supabase = await createClient();
   await supabase.from("staff").update({ active: form.get("active") === "1" }).eq("user_id", id);
   revalidatePath("/staff");
+}
+
+const toolSchema = z.object({
+  customer_id: z.string().uuid(),
+  product_code: z.string(),
+  workspace: z.string().trim().min(2, "Workspace name is required").max(80),
+  admin_name: z.string().trim().min(2, "Administrator's name is required").max(80),
+  admin_email: z.string().trim().toLowerCase().email("Enter the administrator's email"),
+  status: z.enum(["trial", "pilot", "active"]),
+  valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).transform((v) => v || null),
+  seats: z.string().trim().optional().transform((v) => (v ? Number(v) : null)),
+});
+
+/** Switch on Balloon Inspector or Process Documents: licence first, then the workspace and its administrator. */
+export async function enableTool(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const parsed = toolSchema.safeParse(Object.fromEntries(form));
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const d = parsed.data;
+    if (!isTool(d.product_code)) return { error: "Unknown product." };
+    const supabase = await createClient();
+    const { data: c } = await supabase.from("customers").select("id,status").eq("id", d.customer_id).single();
+    if (!c) return { error: "Customer not found." };
+    const workspaceId = randomUUID();
+    const { error } = await supabase.from("licences").insert({
+      customer_id: c.id, product_code: d.product_code, status: d.status, valid_until: d.valid_until, seats: d.seats,
+      product_ref: workspaceId, product_slug: d.workspace,
+    });
+    if (error) return { error: /duplicate|unique/.test(error.message) ? "This customer already has this product." : error.message };
+    let r: { password: string | null };
+    try { r = await provisionWorkspace(d.product_code, workspaceId, d.workspace, d.admin_name, d.admin_email); }
+    catch (e) { await supabase.from("licences").delete().eq("customer_id", c.id).eq("product_code", d.product_code); throw e; }
+    if (c.status === "lead") await supabase.from("customers").update({ status: d.status === "active" ? "active" : "pilot" }).eq("id", c.id);
+    revalidatePath(`/customers/${c.id}`);
+    const url = `${env.platformUrl}/it/${d.product_code === "balloon" ? "balloon" : "pd"}.html`;
+    return {
+      ok: r.password
+        ? `Switched on. Send the administrator: sign-in ${url} · email ${d.admin_email} · temporary password ${r.password} (shown only now). They add their colleagues under Admin → Users.`
+        : `Switched on. ${d.admin_email} already has a KMR login and signs in at ${url} with their existing password.`,
+    };
+  } catch (e) { return fail(e); }
 }
