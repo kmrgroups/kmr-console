@@ -337,3 +337,87 @@ input.invalid, select.invalid { border-color: var(--danger); background: #fffafa
   .signin-panel { padding: 22px 16px 36px; align-items: flex-start; }
   .signin-card { padding: 26px 20px; box-shadow: none; }
 }
+
+/* =====================================================================
+   KMR brand — navy & gold corporate theme for the Console
+   ===================================================================== */
+:root {
+  --kmr-navy: #0b2a6f; --kmr-navy-2: #081d4d; --kmr-deep: #04102b;
+  --kmr-gold: #c9962b; --kmr-gold-2: #f3c55a;
+  --brand: var(--kmr-navy); --accent: var(--kmr-gold);
+}
+body { font-feature-settings: "tnum" 1; }
+.sidebar { background: linear-gradient(180deg, var(--kmr-navy-2) 0%, var(--kmr-deep) 100%) !important; border-right: 0 !important; }
+.sidebar .brand { padding: 20px 18px 16px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.sidebar .nav { color: rgba(255,255,255,.72) !important; border-radius: 8px; position: relative; }
+.sidebar .nav:hover { background: rgba(255,255,255,.06) !important; color: #fff !important; }
+.sidebar .nav.active { background: linear-gradient(90deg, rgba(243,197,90,.18), rgba(243,197,90,.04)) !important; color: #fff !important; }
+.sidebar .nav.active::before { content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--kmr-gold-2); }
+.sidebar .who { border-top: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
+.sidebar .who button { color: var(--kmr-gold-2); }
+.topbar { background: var(--kmr-navy-2) !important; color: #fff; }
+.main .pagehead h1 { letter-spacing: -.01em; }
+.main .pagehead h1::after { content: ""; display: block; width: 44px; height: 3px; margin-top: 8px; border-radius: 3px; background: linear-gradient(90deg, var(--kmr-gold-2), var(--kmr-gold)); }
+.card { border-radius: 14px !important; box-shadow: 0 1px 2px rgba(10,30,80,.04), 0 8px 28px rgba(10,30,80,.06); }
+.card.stat .value { color: var(--kmr-navy); }
+.btn:not(.secondary):not(.ghost):not(.danger) { background: linear-gradient(180deg, #16408f, var(--kmr-navy)); border-color: var(--kmr-navy); box-shadow: 0 2px 10px rgba(11,42,111,.25); }
+.btn:not(.secondary):not(.ghost):not(.danger):hover { filter: brightness(1.08); }
+table thead th { background: #f4f6fb; color: #3b4a6b; text-transform: uppercase; font-size: 11.5px; letter-spacing: .05em; }
+.kmr-minimark { font: 900 22px/1 "Montserrat", "Segoe UI", Arial, sans-serif; letter-spacing: .02em; color: #9cc2ff; }
+.kmr-minimark b { color: var(--kmr-gold-2); }
+.kmr-minimark small { display: block; margin-top: 4px; font: 600 10.5px/1.2 "Segoe UI", Arial, sans-serif; letter-spacing: .22em; color: rgba(255,255,255,.55); }
+
+/* ---------- animated brand scene ---------- */
+.kmr-scene { position: relative; overflow: hidden; background: #020816; --mx: 0; --my: 0; }
+.kmr-scene canvas { position: absolute; inset: 0; display: block; }
+.kmr-lockup { position: absolute; left: 50%; top: 58%; width: min(520px, 86%); transform: translate(calc(-50% + var(--mx) * -14px), calc(-50% + var(--my) * -10px)); text-align: center; pointer-events: none; }
+.kmr-scene.compact .kmr-lockup { top: 60%; }
+.kmr-mark { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)); }
+.kmr-letters { font: 900 190px/1 "Montserrat", "Arial Black", "Segoe UI", Arial, sans-serif; letter-spacing: -6px; }
+.kmr-name { margin-top: -6px; font: 800 clamp(26px, 3.4vw, 40px)/1 "Montserrat", "Segoe UI", Arial, sans-serif; letter-spacing: .06em;
+  background: linear-gradient(180deg, #e9f1ff, #8fb4ff 60%, #4d7fe0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.kmr-sub { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 8px; font: 700 clamp(12px, 1.3vw, 15px)/1 "Segoe UI", Arial, sans-serif; letter-spacing: .38em; color: var(--kmr-gold-2); }
+.kmr-sub span { flex: 0 1 70px; height: 1px; background: linear-gradient(90deg, transparent, var(--kmr-gold-2), transparent); }
+.kmr-tag { margin-top: 12px; font: 600 clamp(10px, 1vw, 12.5px)/1 "Segoe UI", Arial, sans-serif; letter-spacing: .3em; color: rgba(220,232,255,.85); }
+.kmr-tag i { color: var(--kmr-gold-2); font-style: normal; }
+.kmr-mark, .kmr-name, .kmr-sub, .kmr-tag { opacity: 0; }
+.kmr-scene.play .kmr-mark { animation: kmrRise 1.2s cubic-bezier(.2,.8,.2,1) 2.6s forwards; }
+.kmr-scene.play .kmr-name { animation: kmrRise 1s cubic-bezier(.2,.8,.2,1) 3.4s forwards; }
+.kmr-scene.play .kmr-sub { animation: kmrRise 1s cubic-bezier(.2,.8,.2,1) 3.8s forwards; }
+.kmr-scene.play .kmr-tag { animation: kmrRise 1s cubic-bezier(.2,.8,.2,1) 4.2s forwards; }
+.kmr-swoosh { stroke-dasharray: 700; stroke-dashoffset: 700; }
+.kmr-scene.play .kmr-swoosh { animation: kmrDraw 1.4s ease-out 3.1s forwards; }
+.kmr-scene.play .kmr-shine { animation: kmrShine 5s ease-in-out 3.6s infinite; }
+@keyframes kmrRise { from { opacity: 0; transform: translateY(26px) scale(.96); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes kmrDraw { to { stroke-dashoffset: 0; } }
+@keyframes kmrShine { 0% { transform: translateX(0) skewX(-18deg); } 35%, 100% { transform: translateX(1000px) skewX(-18deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .kmr-mark, .kmr-name, .kmr-sub, .kmr-tag, .kmr-swoosh { opacity: 1 !important; animation: none !important; stroke-dashoffset: 0 !important; }
+}
+
+/* ---------- Console sign-in ---------- */
+.kmr-login { position: relative; min-height: calc(100vh - var(--footer-h)); display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, .9fr); background: #020816; }
+.kmr-login .kmr-scene { min-height: 100%; }
+.kmr-login-panel { position: relative; display: flex; align-items: center; justify-content: center; padding: 40px 28px;
+  background: radial-gradient(120% 80% at 100% 0%, rgba(243,197,90,.08), transparent 60%), linear-gradient(180deg, #06142f, #030a1c); }
+.kmr-login-card { width: 100%; max-width: 400px; padding: 34px 30px; border-radius: 18px; color: #e8eefc;
+  background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); backdrop-filter: blur(14px);
+  box-shadow: 0 30px 80px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08); }
+.kmr-login-card .eyebrow { color: var(--kmr-gold-2); font: 700 12px/1 "Segoe UI", Arial, sans-serif; letter-spacing: .28em; text-transform: uppercase; }
+.kmr-login-card h1 { color: #fff; font-size: 1.9rem; margin: 10px 0 6px; }
+.kmr-login-card .sub { color: rgba(220,232,255,.72); margin: 0 0 24px; font-size: 14.5px; }
+.kmr-login-card .field { color: rgba(220,232,255,.85); }
+.kmr-login-card input { background: rgba(3,12,32,.6) !important; border: 1px solid rgba(255,255,255,.16) !important; color: #fff !important; }
+.kmr-login-card input:focus { border-color: var(--kmr-gold-2) !important; box-shadow: 0 0 0 3px rgba(243,197,90,.18) !important; outline: none; }
+.kmr-login-card .pwfield .eye { color: rgba(220,232,255,.7); }
+.kmr-login-card .pwfield .eye:hover { background: rgba(255,255,255,.08); color: #fff; }
+.kmr-login-card .btn.block { min-height: 48px; font-size: 15px; letter-spacing: .02em; color: #1a1305; border: 0;
+  background: linear-gradient(180deg, #ffe08a, #f3c55a 45%, #c9962b) !important; box-shadow: 0 10px 30px rgba(201,150,43,.35); }
+.kmr-login-card .note { margin-top: 18px; font-size: 12.5px; color: rgba(220,232,255,.55); text-align: center; }
+@media (max-width: 900px) {
+  .kmr-login { grid-template-columns: 1fr; }
+  .kmr-login .kmr-scene { min-height: 58vh; }
+  .kmr-login-panel { padding: 0 14px 34px; margin-top: -40px; background: transparent; }
+}
+.kmr-login ~ .powered-by, body:has(.kmr-login) .powered-by { background: #020816; border-top-color: rgba(255,255,255,.08); color: rgba(220,232,255,.6); }
+body:has(.kmr-login) .powered-by a { color: var(--kmr-gold-2); }

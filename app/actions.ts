@@ -199,3 +199,57 @@ export async function enableTool(_: ActionState, form: FormData): Promise<Action
     };
   } catch (e) { return fail(e); }
 }
+
+// ---------------------------------------------------------------- Milestone 3: tickets and leads
+export async function replyTicket(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    const staff = await assertStaff();
+    const id = String(form.get("id") ?? "");
+    const body = String(form.get("body") ?? "").trim();
+    const status = String(form.get("status") ?? "");
+    const supabase = await createClient();
+    if (body) {
+      const { error } = await supabase.from("ticket_messages").insert({ ticket_id: id, author_kind: "kmr", author_name: staff.full_name, body: body.slice(0, 5000) });
+      if (error) return { error: error.message };
+    }
+    if (["open", "in_progress", "waiting_on_customer", "resolved", "closed"].includes(status)) {
+      await supabase.from("tickets").update({ status, updated_at: new Date().toISOString(), resolved_at: ["resolved", "closed"].includes(status) ? new Date().toISOString() : null }).eq("id", id);
+    }
+    const priority = String(form.get("priority") ?? "");
+    if (["low", "normal", "high", "urgent"].includes(priority)) await supabase.from("tickets").update({ priority }).eq("id", id);
+    const assignee = String(form.get("assigned_to") ?? "");
+    if (assignee) await supabase.from("tickets").update({ assigned_to: assignee === "none" ? null : assignee }).eq("id", id);
+    revalidatePath(`/tickets/${id}`);
+    return { ok: body ? "Reply sent — the customer sees it under Help & support." : "Ticket updated." };
+  } catch (e) { return fail(e); }
+}
+
+export async function setLeadStatus(form: FormData) {
+  await assertStaff();
+  const status = String(form.get("status") ?? "");
+  if (!["new", "contacted", "converted", "dropped"].includes(status)) return;
+  const supabase = await createClient();
+  await supabase.from("leads").update({ status }).eq("id", String(form.get("id") ?? ""));
+  revalidatePath("/leads");
+}
+
+/** Turn a pilot request into a Console customer (status lead) and open it */
+export async function convertLead(form: FormData) {
+  const staff = await assertStaff();
+  const supabase = await createClient();
+  const { data: l } = await supabase.from("leads").select("*").eq("id", String(form.get("id") ?? "")).single();
+  if (!l) return;
+  let customerId = l.customer_id as string | null;
+  if (!customerId) {
+    const country = /^[A-Z]{2}$/.test(String(l.country ?? "").toUpperCase()) ? String(l.country).toUpperCase() : "IN";
+    const { data: c, error } = await supabase.from("customers").insert({
+      name: l.company, country, currency: country === "IN" ? "INR" : "USD", contact_name: l.name, contact_email: l.email,
+      contact_phone: l.phone, status: "lead", source: "Website pilot request",
+      notes: [l.products?.length ? `Interested in: ${l.products.join(", ")}` : "", l.message ?? ""].filter(Boolean).join("\n"), created_by: staff.user_id,
+    }).select("id").single();
+    if (error || !c) return;
+    customerId = c.id;
+    await supabase.from("leads").update({ status: "converted", customer_id: customerId }).eq("id", l.id);
+  }
+  redirect(`/customers/${customerId}`);
+}

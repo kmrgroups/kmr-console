@@ -10,6 +10,10 @@ export const metadata = { title: "Dashboard" };
 export default async function Dashboard() {
   const staff = await requireStaff();
   const supabase = await createClient();
+  const [{ count: openTickets }, { count: newLeads }] = await Promise.all([
+    supabase.from("tickets").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
+    supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
+  ]);
   const [{ data: customers }, { data: licences }, { data: products }] = await Promise.all([
     supabase.from("customers").select("id,status"),
     supabase.from("licences").select("id,status,valid_until,seats,product_code,customer:customers(id,name,code)"),
@@ -28,6 +32,10 @@ export default async function Dashboard() {
         <div className="card stat"><div className="label">In pilot</div><div className="value">{count("pilot")}</div></div>
         <div className="card stat"><div className="label">Leads</div><div className="value">{count("lead")}</div></div>
         <div className="card stat"><div className="label">Ending in 30 days</div><div className="value" style={{ color: soon.length ? "var(--warn)" : undefined }}>{soon.length}</div></div>
+      </div>
+      <div className="grid two" style={{ marginTop: 16 }}>
+        <a className="card stat" href={p("/tickets")}><div className="label">Open support tickets</div><div className="value" style={{ color: openTickets ? "var(--warn)" : undefined }}>{openTickets ?? 0}</div><div className="hint">Open or in progress</div></a>
+        <a className="card stat" href={p("/leads")}><div className="label">New pilot requests</div><div className="value">{newLeads ?? 0}</div><div className="hint">From www.kmr-groups.com/it</div></a>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>

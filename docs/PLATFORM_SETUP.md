@@ -72,3 +72,23 @@ address, set `HRM_ORIGIN` / `CONSOLE_ORIGIN` on the **kmr-group-website** projec
    Back to *pilot* → everything returns.
 
 Workspaces created inside the tools (Admin → Companies) appear in the Console automatically with a 30-day trial.
+
+## 5. Milestone 3 — service layer (tickets, release notes, pilot requests)
+
+*Already ran the platform setup?* Run **`supabase/migrations/0003_service.sql`** once in the SQL Editor
+(the full `KMR_PLATFORM_SETUP.sql` already includes it for new projects).
+
+- **HRM → Help & support** (left menu, for everyone): raise a ticket, follow KMR's replies, see *What's new*.
+- **Console → Support tickets**: reply, set status / priority, assign to a colleague. The customer sees replies in the HRM.
+- **Console → Pilot requests**: requests from the form at the bottom of `www.kmr-groups.com/it/`.
+  *Convert to customer* opens it as a Console customer, ready for *Switch on HRM / Balloon / PD*.
+
+## 6. Demo data (for sales demos and testing)
+
+- **Load:** `supabase/demo/DEMO_DATA.sql` — set `demo_company` at the top to the short name of an HRM company you
+  created in the Console (e.g. `demo-engineering`), run it, then in the HRM: *Attendance → Recalculate attendance*
+  (from 30 days ago to today). You get 24 employees in two plants, a month of biometric punches (late arrivals,
+  a missed punch, night shifts), leave balances, pending leave and correction requests, 6 demo customers across
+  India / Germany / USA / UAE, 2 support tickets and 2 pilot requests.
+- **Remove:** `supabase/demo/DEMO_FLUSH.sql` — deletes only what the demo added (tagged `demo.kmr.test` /
+  `KMR demo data`). Real companies, employees and customers are untouched. Load again any time.
