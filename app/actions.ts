@@ -207,7 +207,7 @@ export async function enableTool(_: ActionState, form: FormData): Promise<Action
     catch (e) { await supabase.from("licences").delete().eq("customer_id", c.id).eq("product_code", d.product_code); throw e; }
     if (c.status === "lead") await supabase.from("customers").update({ status: d.status === "active" ? "active" : "pilot" }).eq("id", c.id);
     revalidatePath(`/customers/${c.id}`);
-    const url = `${env.platformUrl}/it/${d.product_code === "balloon" ? "balloon" : "pd"}.html`;
+    const url = `${env.platformUrl}/it/${({ balloon: "balloon", pd: "pd", capacity: "capacity" } as Record<string, string>)[d.product_code]}.html`;
     return {
       ok: r.password
         ? `Switched on. Send the administrator: sign-in ${url} · email ${d.admin_email} · temporary password ${r.password} (shown only now). They add their colleagues under Admin → Users.`

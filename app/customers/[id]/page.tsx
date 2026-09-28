@@ -98,7 +98,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                     {l.valid_until ? <>Until <b>{fmtDate(l.valid_until)}</b></> : "No end date"}<br />
                     {l.seats ? <>Limit {l.seats} {pr.seat_label}</> : `Unlimited ${pr.seat_label}`}
                     {pr.code === "hrm" && hrmUsage && <><br />Using {hrmUsage.employees} employees · {hrmUsage.users} logins</>}
-                    {toolUse[pr.code] && <><br />Using {toolUse[pr.code].users} users · {toolUse[pr.code].items} {pr.code === "balloon" ? "reports" : "projects"}</>}
+                    {toolUse[pr.code] && <><br />Using {toolUse[pr.code].users} users · {toolUse[pr.code].items} {pr.code === "balloon" ? "reports" : pr.code === "pd" ? "projects" : "saved versions"}</>}
                   </div>}
                 </div>
 
