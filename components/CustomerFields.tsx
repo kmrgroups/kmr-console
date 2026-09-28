@@ -18,7 +18,7 @@ export function CustomerFields({ c }: { c?: C }) {
         <select name="status" defaultValue={v("status", "lead")}>{["lead", "pilot", "active", "inactive"].map((s) => <option key={s}>{s}</option>)}</select>
       </label>
       <label className="field">Contact person<input name="contact_name" defaultValue={v("contact_name")} /></label>
-      <label className="field">Contact email<input name="contact_email" type="email" defaultValue={v("contact_email")} /></label>
+      <label className="field">Contact email<input name="contact_email" type="email" defaultValue={v("contact_email")} /><span className="help">Becomes the customer&apos;s KMR Apps login — a temporary password is shown after saving</span></label>
       <label className="field">Contact phone<input name="contact_phone" defaultValue={v("contact_phone")} /></label>
       <label className="field">Source<input name="source" defaultValue={v("source")} placeholder="Website, referral, exhibition…" /></label>
       <label className="field full">Notes<textarea name="notes" defaultValue={v("notes")} rows={3} /></label>

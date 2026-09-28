@@ -9,6 +9,7 @@ import { ensureLogin, isTool, provisionHrm, provisionWorkspace, tempPassword } f
 import { randomUUID } from "node:crypto";
 import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
+import { setFlash } from "@/lib/flash";
 
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
 const opt = z.string().trim().max(300).optional().transform((v) => v || null);
@@ -37,9 +38,24 @@ export async function saveCustomer(_: ActionState, form: FormData): Promise<Acti
       revalidatePath(`/customers/${id}`);
       return { ok: "Customer saved." };
     }
-    const { data, error } = await supabase.from("customers").insert({ ...parsed.data, created_by: staff.user_id }).select("id").single();
+    const { data, error } = await supabase.from("customers").insert({ ...parsed.data, created_by: staff.user_id }).select("id,slug").single();
     if (error) return { error: error.message };
     id = data.id;
+    // First-time portal login for the contact person, created straight away and shown once on the next screen
+    const email = parsed.data.contact_email;
+    const url = `${env.platformUrl}/it/app/${data.slug ?? ""}`;
+    if (email) {
+      try {
+        const login = await ensureLogin(email, parsed.data.contact_name || parsed.data.name);
+        await setFlash(login.password
+          ? { ok: `Customer created. Send these to ${parsed.data.contact_name || email} — Link: ${url} · Email: ${email} · Temporary password: ${login.password} (shown only now; they can change it in the portal under "Change password").` }
+          : { ok: `Customer created. ${email} already has a KMR login — they sign in at ${url} with their existing password (use "Reset password" below if they don't know it).` });
+      } catch (e) {
+        await setFlash({ error: `Customer created, but the portal login could not be made: ${(e as Error).message}. Use "Create portal login" below.` });
+      }
+    } else {
+      await setFlash({ ok: `Customer created. Add a contact email under Company details, then click "Create portal login" to give them their password.` });
+    }
   } catch (e) { return fail(e); }
   redirect(`/customers/${id}`);
 }
