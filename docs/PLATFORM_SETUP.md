@@ -131,3 +131,13 @@ Run **`supabase/migrations/0006_portal_dashboards.sql`** once.
 - Every tool shows **"← KMR Apps"** to return to the customer's own screen.
 - Each tool's card on the portal shows its live figures (HRM: employees, in today, awaiting approval;
   Balloon Inspector: reports, users; Process Documents: projects, users). Every new tool adds its figures.
+
+## 10. Customer Administration (M6) — one user list, one company profile
+
+Run **`supabase/migrations/0011_customer_admin.sql`** once. It imports everyone who already has access to a tool.
+- Customer portal → **Administration** (company administrators only; the main contact always is one):
+  **Company details & logo** — saved once, pushed to every tool of that customer (also when KMR staff change them in the Console);
+  **Users & access** — add a person once and choose their role in each tool; access inside every tool follows automatically.
+- Tools no longer manage users or company branding: Balloon Inspector's Admin opens KMR Apps › Administration,
+  Process Documents' Admin keeps only document settings, the Capacity Planner and the HRM show the company from
+  Administration. HRM employees' own self-service logins are still created by HR onboarding.
