@@ -5,7 +5,7 @@ import { z } from "zod";
 import { assertManager, assertStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ensureLogin, isTool, provisionHrm, provisionWorkspace } from "@/lib/provision";
+import { ensureLogin, isTool, provisionHrm, provisionWorkspace, tempPassword } from "@/lib/provision";
 import { randomUUID } from "node:crypto";
 import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
@@ -261,7 +261,7 @@ export async function uploadCustomerLogo(_: ActionState, form: FormData): Promis
     const id = String(form.get("id") ?? "");
     const file = form.get("logo");
     if (!(file instanceof File) || !file.size) return { error: "Choose a logo image (PNG, JPG, WebP or SVG)." };
-    if (file.size > 1024 * 1024) return { error: "The logo must be under 1 MB." };
+    if (file.size > 5 * 1024 * 1024) return { error: "The logo must be under 5 MB. Save it smaller (e.g. 600×600 px) and try again." };
     const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg" } as Record<string, string>)[file.type];
     if (!ext) return { error: "Use a PNG, JPG, WebP or SVG image." };
     const db = createAdminClient();
@@ -308,5 +308,29 @@ export async function flushConsoleSample(_: ActionState): Promise<ActionState> {
     if (error) return { error: error.message };
     revalidatePath("/", "layout");
     return { ok: `Sample data removed (${data} sample customers with their licences, tickets and requests). Real customers are untouched.` };
+  } catch (e) { return fail(e); }
+}
+
+/** Portal login for the customer's contact person: creates it (or resets its password) and shows a temporary password once. */
+export async function portalLogin(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const reset = form.get("reset") === "1";
+    const supabase = await createClient();
+    const { data: c } = await supabase.from("customers").select("name,slug,contact_name,contact_email").eq("id", id).single();
+    if (!c?.contact_email) return { error: "Add the customer's contact email in Company details first — that becomes their login." };
+    const email = String(c.contact_email).toLowerCase();
+    const login = await ensureLogin(email, c.contact_name || c.name);
+    let password = login.password;
+    if (!password && reset) {
+      password = tempPassword();
+      const { error } = await createAdminClient().auth.admin.updateUserById(login.id, { password });
+      if (error) return { error: `Could not reset the password: ${error.message}` };
+    }
+    const url = `${env.platformUrl}/it/app/${c.slug}`;
+    return password
+      ? { ok: `Send to ${c.contact_name || email}: link ${url} · email ${email} · temporary password ${password} (shown only now — they can change it under "Change password" in the portal).` }
+      : { ok: `${email} already has a KMR login; they sign in at ${url} with their existing password. Use "Reset password" if they don't know it.` };
   } catch (e) { return fail(e); }
 }

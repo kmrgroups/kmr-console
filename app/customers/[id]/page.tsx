@@ -8,7 +8,7 @@ import { CustomerFields } from "@/components/CustomerFields";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { env } from "@/lib/env";
 import { CUSTOMER_TONE, LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
-import { enableHrm, enableTool, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { enableHrm, enableTool, portalLogin, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 
 export const metadata = { title: "Customer" };
@@ -63,6 +63,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             <ActionForm action={saveCustomerSlug} submitLabel="Change link name" variant="secondary" hidden={{ id: c.id }} className="row">
               <input name="slug" defaultValue={c.slug ?? ""} style={{ maxWidth: 260 }} />
             </ActionForm>
+            <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+              <b style={{ fontSize: 14 }}>Portal login</b>
+              <p className="muted" style={{ margin: "4px 0 8px", fontSize: 13 }}>For the contact person ({c.contact_email || "add a contact email in Company details"}). The same login opens every app they bought.</p>
+              {manager && <div className="row" style={{ gap: 8 }}>
+                <ActionForm action={portalLogin} submitLabel="Create portal login" hidden={{ id: c.id }} />
+                <ActionForm action={portalLogin} submitLabel="Reset password" variant="secondary" hidden={{ id: c.id, reset: "1" }} confirm="Give the contact person a new temporary password?" />
+              </div>}
+            </div>
           </div>
           <div className="row" style={{ alignItems: "flex-start", gap: 16 }}>
             <div style={{ width: 96, height: 96, borderRadius: 16, border: "1px solid var(--border)", display: "grid", placeItems: "center", background: "#fff", overflow: "hidden", flex: "none" }}>

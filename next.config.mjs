@@ -5,7 +5,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "www.kmr-groups.com").spl
 export default {
   basePath,
   poweredByHeader: false,
-  experimental: { serverActions: { allowedOrigins } },
+  experimental: { serverActions: { allowedOrigins, bodySizeLimit: "6mb" } },
   async headers() {
     return [{ source: "/(.*)", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },
