@@ -43,9 +43,11 @@ $$;
 revoke all on function public.kmr_portal_brand(text) from public;
 grant execute on function public.kmr_portal_brand(text) to anon, authenticated;
 
--- After sign-in: which products this person's company has, and whether each is usable now.
--- The person must belong to the customer: a login in one of its licensed product workspaces, or its contact email.
-create or replace function public.kmr_portal(p_slug text)
+-- After sign-in: which products this person's company has (the full version is in 0007_portal_access.sql).
+-- Created here only when no version exists yet, so this file is safe to re-run after 0006 / 0007.
+do $guard$ begin
+  if to_regprocedure('public.kmr_portal(text)') is null then
+    execute $fn$create or replace function public.kmr_portal(p_slug text)
 returns table (product_code text, product_name text, app_path text, purchased boolean, ok boolean, status text,
                valid_until date, message text, customer_name text, logo_url text)
 language plpgsql stable security definer set search_path = console, public as $$
@@ -72,6 +74,8 @@ begin
       left join lateral console.access_state(p.code, l.product_ref) a on l.id is not null
      where p.active
      order by p.sort_order;
-end $$;
-revoke all on function public.kmr_portal(text) from public, anon;
-grant execute on function public.kmr_portal(text) to authenticated;
+end $$;$fn$;
+    revoke all on function public.kmr_portal(text) from public, anon;
+    grant execute on function public.kmr_portal(text) to authenticated;
+  end if;
+end $guard$;
