@@ -8,7 +8,7 @@ import { CustomerFields } from "@/components/CustomerFields";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { env } from "@/lib/env";
 import { CUSTOMER_TONE, LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
-import { enableHrm, enableTool, portalLogin, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { enableHrm, enableTool, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 
 export const metadata = { title: "Customer" };
@@ -44,6 +44,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   }
   const toolUse: Record<string, { users: number; items: number }> = {};
   for (const l of (licences ?? []) as Licence[]) if (isTool(l.product_code) && l.product_ref) toolUse[l.product_code] = await toolUsage(l.product_code, l.product_ref);
+  const { data: members } = await supabase.from("customer_members").select("email,full_name,is_admin,roles").eq("customer_id", c.id).order("is_admin", { ascending: false }).order("email");
+  const prodName: Record<string, string> = Object.fromEntries(((products ?? []) as { code: string; name: string }[]).map((x) => [x.code, x.name]));
   const suggestedSlug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "company";
   const suggestedPrefix = c.name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "EMP";
 
@@ -82,6 +84,20 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             </ActionForm>
           </div>
         </div>}
+      </div>
+
+      <div className="card">
+        <div className="spread"><h2>Users &amp; access</h2>
+          <ActionForm action={repairAccess} submitLabel="Repair access" variant="secondary" hidden={{ id: c.id }} /></div>
+        <p className="muted" style={{ marginTop: 0 }}>The customer manages this list in KMR Apps › Administration › Users &amp; access. <b>Repair access</b> gives the main contact and company administrators access in every tool.</p>
+        {members?.length ? (
+          <div className="tablewrap"><table>
+            <thead><tr><th>Person</th>{(licences ?? []).filter((l: Licence) => l.product_ref).map((l: Licence) => <th key={l.product_code}>{prodName[l.product_code] ?? l.product_code}</th>)}</tr></thead>
+            <tbody>{members.map((m) => (
+              <tr key={m.email}><td><b>{m.full_name || m.email}</b>{m.is_admin && <span className="badge ok" style={{ marginLeft: 6 }}>admin</span>}<br /><small className="muted">{m.email}</small></td>
+                {(licences ?? []).filter((l: Licence) => l.product_ref).map((l: Licence) => <td key={l.product_code}>{(m.roles as Record<string, string>)?.[l.product_code] ? <span className="badge info">{(m.roles as Record<string, string>)[l.product_code]}</span> : <small className="muted">—</small>}</td>)}</tr>))}
+            </tbody></table></div>
+        ) : <p className="muted">Nobody yet — the list fills when tools are switched on or the customer adds people.</p>}
       </div>
 
       <div className="card">

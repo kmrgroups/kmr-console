@@ -371,3 +371,16 @@ export async function saveKmrLogo(_: ActionState, form: FormData): Promise<Actio
     return { ok: "KMR logo saved. It now shows on the Console sign-in, the main screen and the browser tab." };
   } catch (e) { return fail(e); }
 }
+
+/** Console: give the main contact and company administrators access in every tool of this customer */
+export async function repairAccess(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertStaff();
+    const id = String(form.get("id") ?? "");
+    const supabase = await createClient();
+    const { error } = await supabase.schema("public").rpc("kmr_console_repair_access", { p_customer: id });
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: "Access repaired: the main contact and company administrators now have access in every tool." };
+  } catch (e) { return fail(e); }
+}
