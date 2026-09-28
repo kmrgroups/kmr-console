@@ -121,3 +121,13 @@ Workspaces created inside the tools (Admin → Companies) appear in the Console 
   The first time an administrator opens the app after that, the latest backup downloads to their computer
   (can be switched off per computer on the Data & backups page).
 - Console: add `CRON_SECRET` (any long random text) to the kmr-console project in Vercel to protect its backup job.
+
+## 9. Portal behaviour and dashboards
+
+Run **`supabase/migrations/0006_portal_dashboards.sql`** once.
+- Tools not bought (or paused) open straight away with **sample data**, with a banner; *Use my company's data*
+  shows the subscription screen with *Buy subscription*.
+- Opening a bought tool from the portal needs **no second sign-in**; the HRM only admits that customer's people.
+- Every tool shows **"← KMR Apps"** to return to the customer's own screen.
+- Each tool's card on the portal shows its live figures (HRM: employees, in today, awaiting approval;
+  Balloon Inspector: reports, users; Process Documents: projects, users). Every new tool adds its figures.
