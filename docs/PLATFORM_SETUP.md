@@ -141,3 +141,13 @@ Run **`supabase/migrations/0011_customer_admin.sql`** once. It imports everyone 
 - Tools no longer manage users or company branding: Balloon Inspector's Admin opens KMR Apps › Administration,
   Process Documents' Admin keeps only document settings, the Capacity Planner and the HRM show the company from
   Administration. HRM employees' own self-service logins are still created by HR onboarding.
+
+## 11. Operations Master (M7)
+
+Run **`supabase/migrations/0015_operations_master.sql`** once (needs 0011).
+- KMR Apps › **Masters › Operations Master**: parts, customers, suppliers, machines, gauges, tools, consumables, raw material,
+  rate contracts, cycle times, CFT team & key contacts, documents & records (with the file). Search, add, edit, delete,
+  CSV export / import (import updates existing codes, adds new ones).
+- Access in **Administration › Users & access → Operations Master**: admin / editor / viewer. Company administrators always
+  have full access; people without a role do not see it.
+- Next step (M7b): the tools read these masters instead of keeping their own copies.
