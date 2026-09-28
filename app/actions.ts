@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertManager, assertStaff } from "@/lib/auth";
@@ -348,5 +348,26 @@ export async function portalLogin(_: ActionState, form: FormData): Promise<Actio
     return password
       ? { ok: `Send to ${c.contact_name || email}: link ${url} · email ${email} · temporary password ${password} (shown only now — they can change it under "Change password" in the portal).` }
       : { ok: `${email} already has a KMR login; they sign in at ${url} with their existing password. Use "Reset password" if they don't know it.` };
+  } catch (e) { return fail(e); }
+}
+
+// ---------------------------------------------------------------- KMR branding (KMR's own logo)
+export async function saveKmrLogo(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const file = form.get("logo");
+    if (!(file instanceof File) || !file.size) return { error: "Choose a logo image." };
+    if (file.size > 5 * 1024 * 1024) return { error: "The logo must be under 5 MB." };
+    const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp", "image/svg+xml": "svg" } as Record<string, string>)[file.type];
+    if (!ext) return { error: "Use a PNG, JPG, WebP or SVG image." };
+    const db = createAdminClient();
+    const path = `kmr/logo-${Date.now()}.${ext}`;
+    const { error } = await db.storage.from("kmr-public").upload(path, file, { contentType: file.type, upsert: true });
+    if (error) return { error: `Upload failed: ${error.message}` };
+    const logo_url = db.storage.from("kmr-public").getPublicUrl(path).data.publicUrl;
+    const { error: e2 } = await db.from("platform_settings").upsert({ key: "brand", value: { logo_url }, updated_at: new Date().toISOString() });
+    if (e2) return { error: e2.message };
+    revalidateTag("brand"); revalidatePath("/", "layout");
+    return { ok: "KMR logo saved. It now shows on the Console sign-in, the main screen and the browser tab." };
   } catch (e) { return fail(e); }
 }

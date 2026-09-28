@@ -4,10 +4,17 @@ import { Suspense } from "react";
 import { PoweredBy } from "@/components/PoweredBy";
 import { NavProgress } from "@/components/NavProgress";
 
-export const metadata: Metadata = {
-  title: { default: "KMR Console", template: "%s · KMR Console" },
-  robots: { index: false, follow: false },
-};
+import { platformBrand } from "@/lib/brand";
+
+// KMR's logo (Console → KMR branding) is also the browser-tab icon
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await platformBrand();
+  return {
+    title: { default: "KMR Console", template: "%s · KMR Console" },
+    robots: { index: false, follow: false },
+    ...(b.logo_url ? { icons: { icon: b.logo_url, apple: b.logo_url } } : {}),
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
