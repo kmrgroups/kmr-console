@@ -55,7 +55,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
       <div className="card">
         <h2>Customer portal</h2>
-        <div className="grid two">
+        {!("slug" in c) && <div className="alert warn">The customer portal is not set up in the database yet. In Supabase → SQL Editor run <b>supabase/migrations/0004_portal.sql</b> (and 0005_data_tools.sql), then refresh this page.</div>}
+        {("slug" in c) && <div className="grid two">
           <div>
             <p className="muted" style={{ marginTop: 0 }}>One link for everything this customer has bought. After signing in they see their apps; the rest can be tried with sample data.</p>
             <p style={{ margin: "6px 0 12px" }}><a className="mono" href={`${env.platformUrl}/it/app/${c.slug}`} target="_blank" rel="noopener">{env.platformUrl}/it/app/{c.slug}</a></p>
@@ -72,7 +73,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               <small className="muted">PNG, JPG, WebP or SVG, under 1 MB. Square logos look best.</small>
             </ActionForm>
           </div>
-        </div>
+        </div>}
       </div>
 
       <div className="card">

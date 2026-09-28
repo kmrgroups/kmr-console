@@ -12,6 +12,7 @@ const NAV: { href: string; label: string; icon: IconName; owner?: boolean }[] = 
   { href: "/leads", label: "Pilot requests", icon: "mail" },
   { href: "/products", label: "Products & versions", icon: "layers" },
   { href: "/staff", label: "KMR staff", icon: "shield" },
+  { href: "/data", label: "Data & backups", icon: "download" },
 ];
 
 export async function AppShell({ staff, active, children }: { staff: Staff; active: string; children: React.ReactNode }) {

@@ -107,3 +107,17 @@ Workspaces created inside the tools (Admin → Companies) appear in the Console 
   with an administrator such as `demo@kmr-groups.com`, load `supabase/demo/DEMO_DATA.sql` for its short name,
   then in Vercel → kmr-hrm → Environment Variables add `HRM_DEMO_EMAIL=demo@kmr-groups.com` and redeploy.
   Without it, *Try with sample data* for the HRM is simply switched off.
+
+## 8. Data tools — sample data, JSON, nightly backups (every product)
+
+*Already ran the platform setup?* In the SQL Editor run, once each:
+**`kmr-hrm/supabase/migrations/0003_data_tools.sql`** and **`kmr-console/supabase/migrations/0005_data_tools.sql`**
+(and `0004_portal.sql` if not yet done).
+
+- **HRM → Settings → Data & backups** (company administrators): *Load sample data* / *Flush sample data*,
+  *Download JSON now*, *Restore from a JSON file* (same company; a safety copy is saved first), nightly backups list.
+- **Console → Data & backups** (owners / administrators): the same for the Console.
+- **Nightly at 12 AM India time** each company's HRM data and the Console data are backed up automatically (kept 7 days).
+  The first time an administrator opens the app after that, the latest backup downloads to their computer
+  (can be switched off per computer on the Data & backups page).
+- Console: add `CRON_SECRET` (any long random text) to the kmr-console project in Vercel to protect its backup job.

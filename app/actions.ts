@@ -290,3 +290,23 @@ export async function saveCustomerSlug(_: ActionState, form: FormData): Promise<
     return { ok: "Portal link updated. Send the new link to the customer." };
   } catch (e) { return fail(e); }
 }
+
+// ---------------------------------------------------------------- data tools (sample data)
+export async function loadConsoleSample(_: ActionState): Promise<ActionState> {
+  try {
+    await assertManager();
+    const { data, error } = await createAdminClient().rpc("demo_load");
+    if (error) return { error: error.message };
+    revalidatePath("/", "layout");
+    return { ok: `Sample data loaded: ${data} customers in 4 countries with licences, 2 support tickets and 2 pilot requests.` };
+  } catch (e) { return fail(e); }
+}
+export async function flushConsoleSample(_: ActionState): Promise<ActionState> {
+  try {
+    await assertManager();
+    const { data, error } = await createAdminClient().rpc("demo_flush");
+    if (error) return { error: error.message };
+    revalidatePath("/", "layout");
+    return { ok: `Sample data removed (${data} sample customers with their licences, tickets and requests). Real customers are untouched.` };
+  } catch (e) { return fail(e); }
+}

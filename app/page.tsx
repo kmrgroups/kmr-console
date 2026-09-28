@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
 import { Empty, fmtDate, one } from "@/components/ui";
 import { p } from "@/lib/base-path";
+import { AutoBackup } from "@/components/AutoBackup";
+import { isManager } from "@/lib/auth";
 import { LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
 
 export const metadata = { title: "Dashboard" };
@@ -25,6 +27,7 @@ export default async function Dashboard() {
 
   return (
     <AppShell staff={staff} active="/">
+      {isManager(staff) && <AutoBackup company="console" />}
       <div className="pagehead"><div><h1>Dashboard</h1><p>Customers and licences across all KMR products.</p></div>
         <a className="btn" href={p("/customers/new")}>+ New customer</a></div>
       <div className="grid four">
