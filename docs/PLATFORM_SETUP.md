@@ -151,3 +151,11 @@ Run **`supabase/migrations/0015_operations_master.sql`** once (needs 0011).
 - Access in **Administration › Users & access → Operations Master**: admin / editor / viewer. Company administrators always
   have full access; people without a role do not see it.
 - Next step (M7b): the tools read these masters instead of keeping their own copies.
+
+## 12. Capacity Planner uses the Operations Master (M7b)
+
+Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
+- The planner reads **Machines**, **Parts**, **Cycle times** and the new **Plant standards** from KMR Apps › Operations Master,
+  and **holidays** from the customer's HRM holiday calendar (weekly off from Plant standards). Its Masters page is read-only.
+- A planner that already had its own masters shows **Move to Operations Master** (administrators, once; never overwrites).
+- The planner keeps only its monthly plans.
