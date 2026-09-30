@@ -16,6 +16,7 @@ const NAV: { href: string; label: string; icon: IconName; owner?: boolean }[] = 
   { href: "/products", label: "Products & versions", icon: "layers" },
   { href: "/staff", label: "KMR staff", icon: "shield" },
   { href: "/data", label: "Data & backups", icon: "download" },
+  { href: "/test-data", label: "Test data", icon: "checklist", owner: true },
   { href: "/health", label: "System health", icon: "bell" },
   { href: "/activity", label: "Activity log", icon: "clock" },
   { href: "/branding", label: "KMR branding", icon: "building" },
@@ -32,7 +33,7 @@ export async function AppShell({ staff, active, children }: { staff: Staff; acti
           ? <div style={{ display: "flex", alignItems: "center", gap: 10 }}><img src={brand.logo_url} alt="KMR" style={{ height: 40, maxWidth: 110, objectFit: "contain", background: "#fff", borderRadius: 8, padding: 3 }} /><div className="kmr-minimark" style={{ fontSize: 15 }}><small style={{ marginTop: 0 }}>CONSOLE</small></div></div>
           : <div className="kmr-minimark">K<b>M</b>R <small>CONSOLE</small></div>}</div>
         <nav>
-          {NAV.map((i) => (
+          {NAV.filter((i) => !i.owner || staff.role === "owner").map((i) => (
             <a key={i.href} href={p(i.href)} className={`nav${active === i.href ? " active" : ""}`}><Icon name={i.icon} /> {i.label}</a>
           ))}
         </nav>

@@ -244,3 +244,17 @@ What happens automatically:
 - **Console › System health** — traffic lights for errors, emails, backups; **Console › Activity log** — who changed what.
 - **Website** — security headers, `sitemap.xml`, `robots.txt`, company details for Google, Vercel Analytics
   (switch on under Vercel › the website project › Analytics).
+
+## 13. Test data (Console › Test data — owner only)
+
+Run `supabase/migrations/0023_test_data.sql` once (after 0022), and the website's `supabase/fix-order-link.sql`.
+
+1. **Download settings (.json)** — KMR products, prices, seller details, platform settings and all website content.
+   **Upload** the same file to put them back (staff logins are never changed).
+2. **Load demo data everywhere** — Console sample customers, website sample content, and the demo customer
+   *KMR Demo Manufacturing* with a live HRM company (24 employees, a month of attendance), Balloon Inspector,
+   Process Documents and Capacity Planner workspaces and Operations Master sample data — one login for all of them
+   (password shown once). **Remove demo data** takes out exactly that.
+3. **Clean out** (type FLUSH) — removes customers, invoices, payments, tickets, enquiries, orders, applications,
+   app workspaces, HRM companies (KMR's own HRM company keeps its settings and administrators; set `KMR_HRM_SLUG` if its
+   short name is not `kmr`), logs and unused logins. A full backup of every app is saved first and listed on the page.

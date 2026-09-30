@@ -74,7 +74,7 @@ create table if not exists console.invoices (
   seller           jsonb not null default '{}',
   buyer            jsonb not null default '{}',
   notes            text check (length(notes) <= 2000),
-  pay_token        text not null unique default encode(gen_random_bytes(18), 'hex'),
+  pay_token        text not null unique default replace(gen_random_uuid()::text, '-', '') || substr(md5(random()::text), 1, 4),
   paid_at          timestamptz,
   cancelled_reason text,
   created_by       uuid,
