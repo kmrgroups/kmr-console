@@ -197,13 +197,14 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 ## 11. Website CMS (www.kmr-groups.com has no admin panel)
 
 *Already ran the platform setup?* Run **`supabase/migrations/0021_website.sql`** once, then the website's
-**`supabase/add-multi-business.sql`**, **`supabase/add-premium-site.sql`** and **`supabase/add-cms-update.sql`** (in that order). The website's
+**`supabase/add-multi-business.sql`**, **`supabase/add-premium-site.sql`**, **`supabase/add-cms-update.sql`** and **`supabase/add-home-content.sql`** (in that order). The website's
 **`supabase/drop-operations.sql`** permanently removes the old website Operations tables that nothing else uses (it keeps `employees`, which the HR module uses) — export them first if needed.
 
 **Website CMS** (sidebar) manages every part of the website — add, edit, hide / show, delete:
 - **Brand & company** — company profile (logo, GSTIN, Udyam, story, vision, mission, values), contact & social links
   (address, phones, email, WhatsApp, hours, map, LinkedIn / Facebook / Instagram / YouTube / X), founder photo & message.
-- **Home page** — hero slides, highlight numbers, header button and announcement bar.
+- **Home page** — hero slides (the banner at the very top), highlight numbers, who we serve, why choose KMR, product
+  benefits (productivity · quality · cost · delivery), how it works, header button and announcement bar.
 - **Business verticals**, **Shop products**, **Software solutions**, **Training programmes**, **Trade items**.
 - **Careers** — job openings and applications (résumés in the private `kmr-careers` bucket, opened with expiring links).
 - **About us** — leadership team, gallery. **Policies & records** — any number of policies (footer link on / off) and

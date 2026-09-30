@@ -20,11 +20,12 @@ export interface Section {
   defaults?: Record<string, string | number | boolean>;
   preview?: (row: Record<string, unknown>) => string | null;   // path on the website
   titleOf?: string[];                   // columns used as the record title
+  sitePath?: string;                    // where this section appears on the website (list page "View on website")
 }
 export type GroupKey = "brand" | "home" | "businesses" | "shop" | "software" | "training" | "trade" | "careers" | "about" | "policies";
 export const GROUPS: { key: GroupKey; label: string; hint: string }[] = [
   { key: "brand", label: "Brand & company", hint: "Logo, GST, address, contacts, social links, founder" },
-  { key: "home", label: "Home page", hint: "Hero slides, highlight numbers, header and announcement" },
+  { key: "home", label: "Home page", hint: "Banner, numbers, who we serve, why KMR, product benefits, how it works" },
   { key: "businesses", label: "Business verticals", hint: "The businesses of the group" },
   { key: "shop", label: "Online shop", hint: "Products, orders and payments" },
   { key: "software", label: "Software solutions", hint: "Solutions and services (KMR Apps come from Products & versions)" },
@@ -38,6 +39,7 @@ export const GROUPS: { key: GroupKey; label: string; hint: string }[] = [
 const ALL: Role[] = ["owner", "admin"];
 const SALES: Role[] = ["owner", "admin", "sales"];
 const on = { is_active: true };
+const POINT_ICONS: [string, string][] = [["bag", "Shopping bag"], ["code", "Software"], ["cap", "Training"], ["globe", "Globe / export"], ["truck", "Delivery"], ["shield", "Shield / quality"], ["lock", "Lock / secure"], ["users", "People"], ["clock", "Clock / speed"], ["chart", "Chart / cost"], ["briefcase", "Briefcase"], ["file", "Document"], ["check", "Tick"]];
 
 const productFields = (kinds: [string, string][], extra: Field[] = []): Field[] => [
   { k: "name", label: "Name", required: true, wide: true },
@@ -50,6 +52,12 @@ const productFields = (kinds: [string, string][], extra: Field[] = []): Field[] 
   { k: "sort_order", label: "Order in lists", type: "number" },
   { k: "image_url", label: "Photo", type: "image" },
   { k: "description", label: "Description", type: "longtext", wide: true },
+];
+const POINT_FIELDS: Field[] = [
+  { k: "title", label: "Title", required: true, wide: true }, { k: "text", label: "Text", type: "textarea", wide: true },
+  { k: "icon", label: "Icon", type: "select", opts: POINT_ICONS },
+  { k: "link", label: "Link (optional)", help: "/shop, /software, /contact …" }, { k: "link_label", label: "Link text" },
+  { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show", type: "bool" },
 ];
 const productList = ["image_url", "name", "category", "price", "is_active"];
 const productPreview = (r: Record<string, unknown>) => `/products/${r.id}`;
@@ -96,7 +104,8 @@ export const SECTIONS: Section[] = [
     ] },
   // ---------------- Home page ----------------
   { key: "slides", table: "hero_slides", group: "home", label: "Hero slides", singular: "slide", roles: ALL, visible: "is_active",
-    intro: "The large rotating banner at the top of the home page. Use wide photos (at least 1920 × 1000).",
+    sitePath: "/", titleOf: ["title"],
+    intro: "The large rotating banner at the very top of the home page — the first thing a visitor sees. The background photo sits behind the title and buttons (shown whole, never cropped). Use wide photos, ideally 1920 × 1000. Speak to the customer: what you offer them, not about us.",
     list: ["image_url", "title", "eyebrow", "cta_link", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10 },
     fields: [
       { k: "eyebrow", label: "Small line above the title" }, { k: "title", label: "Title", required: true, wide: true },
@@ -107,8 +116,31 @@ export const SECTIONS: Section[] = [
       { k: "image_url", label: "Background photo", type: "image" },
     ] },
   { key: "stats", table: "site_stats", group: "home", label: "Highlight numbers", singular: "number", roles: ALL, visible: "is_active",
-    intro: "The row of numbers under the banner, e.g. “18+ — Years of experience”.", list: ["value", "label", "sort_order", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10 },
+    sitePath: "/", intro: "The row of numbers just under the banner, e.g. “18+ — Years of experience”. Use only numbers you can prove.", list: ["value", "label", "sort_order", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10 },
     fields: [{ k: "value", label: "Number", required: true }, { k: "label", label: "Label", required: true, wide: true }, { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show", type: "bool" }] },
+  { key: "audience", table: "home_points", group: "home", label: "Who we serve", singular: "customer group", roles: ALL, visible: "is_active", scope: { section: "audience" }, sitePath: "/#who",
+    intro: "Home page: “Who can use our products & services” — one card per kind of customer, each with a link to what fits them.",
+    list: ["title", "link", "sort_order", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10, icon: "briefcase" },
+    fields: POINT_FIELDS },
+  { key: "why", table: "home_points", group: "home", label: "Why choose KMR", singular: "reason", roles: ALL, visible: "is_active", scope: { section: "why" }, sitePath: "/#why",
+    intro: "Home page: the reasons a customer should trust and buy from KMR.",
+    list: ["title", "text", "sort_order", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10, icon: "shield" },
+    fields: POINT_FIELDS },
+  { key: "benefits", table: "product_benefits", group: "home", label: "Product benefits (P·Q·C·D)", singular: "product", roles: ALL, visible: "is_active", sitePath: "/#benefits",
+    intro: "Home page: what each product does for the customer’s Productivity, Quality, Cost and Delivery. Keep each line short and true — avoid numbers you cannot prove.",
+    list: ["product", "tagline", "sort_order", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10 },
+    fields: [
+      { k: "product", label: "Product / service", required: true }, { k: "tagline", label: "One-line description" },
+      { k: "link", label: "Link", help: "/software, /shop, /training …" }, { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show", type: "bool" },
+      { k: "productivity", label: "Productivity — how it saves time or effort", type: "textarea", wide: true },
+      { k: "quality", label: "Quality — how it improves quality or compliance", type: "textarea", wide: true },
+      { k: "cost", label: "Cost — how it saves money", type: "textarea", wide: true },
+      { k: "delivery", label: "Delivery — how it helps deliver on time", type: "textarea", wide: true },
+    ] },
+  { key: "process", table: "home_points", group: "home", label: "How it works", singular: "step", roles: ALL, visible: "is_active", scope: { section: "process" }, sitePath: "/#how",
+    intro: "Home page: the simple steps from enquiry to delivery (3–5 steps read best).",
+    list: ["sort_order", "title", "text", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10, icon: "check" },
+    fields: POINT_FIELDS },
   { key: "settings", table: "site_settings", group: "home", label: "Header & announcement", singular: "settings", roles: ALL, single: true, noDelete: true,
     intro: "The button in the header and an optional announcement bar above it (leave empty to hide).", list: [], order: ["updated_at", false],
     fields: [

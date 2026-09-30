@@ -44,6 +44,7 @@ export default async function SectionList({ params, searchParams }: { params: Pr
       <div className="pagehead">
         <div><h1>{s.label}</h1><p>{s.intro}</p></div>
         <div className="row">
+          {s.sitePath && <a className="btn secondary" href={env.platformUrl + s.sitePath} target="_blank" rel="noopener">View on website ↗</a>}
           {edit && !s.noCreate && <a className="btn" href={p(`/cms/${s.key}/new`)}>+ Add {s.singular}</a>}
         </div>
       </div>
