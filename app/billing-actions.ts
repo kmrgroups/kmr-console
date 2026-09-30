@@ -51,7 +51,12 @@ const settingsSchema = z.object({
   invoice_prefix: z.string().trim().toUpperCase().regex(/^[A-Z0-9-]{1,10}$/, "Invoice prefix: up to 10 letters, digits or dashes"),
   sac_code: z.string().trim().regex(/^\d{4,8}$/, "SAC: 4–8 digits"),
   gst_rate: z.string().trim().transform(Number).refine((v) => v >= 0 && v <= 40, "GST rate between 0 and 40"),
-  lut_no: opt(60), bank_details: opt(600), upi_id: opt(80), terms: opt(1000),
+  lut_no: opt(60), bank_details: opt(600), terms: opt(1000),
+  upi_id: z.string().trim().toLowerCase().regex(/^[a-z0-9._-]{2,256}@[a-z][a-z0-9.-]{1,64}$/, "UPI ID looks like kmrgroups@fbl").or(z.literal("")).transform((v) => v || null),
+  bank_account_name: opt(120), bank_name: opt(80), bank_branch: opt(120), bank_account_type: opt(40),
+  bank_account_no: z.string().trim().regex(/^\d{6,20}$/, "Account number: digits only").or(z.literal("")).transform((v) => v || null),
+  bank_ifsc: z.string().trim().toUpperCase().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "IFSC: 11 characters, e.g. FDRL0002514").or(z.literal("")).transform((v) => v || null),
+  bank_swift: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{8}([A-Z0-9]{3})?$/, "SWIFT: 8 or 11 characters").or(z.literal("")).transform((v) => v || null),
   payment_days: z.string().trim().transform(Number).refine((v) => Number.isInteger(v) && v >= 0 && v <= 120, "Payment days: 0 to 120"),
 });
 
@@ -143,8 +148,28 @@ export async function markInvoicePaid(_: ActionState, form: FormData): Promise<A
   const id = String(form.get("invoice_id"));
   try {
     await assertManager();
-    await rpc("mark_invoice_paid", { p_invoice: id, p_reference: form.get("reference"), p_date: form.get("paid_on") || null });
+    await rpc("mark_invoice_paid", { p_invoice: id, p_reference: form.get("reference"), p_date: form.get("paid_on") || null, p_method: form.get("pay_method") || "neft" });
     await setFlash({ ok: "Payment recorded. The invoice is paid and the customer's licences are renewed for the paid period." });
+  } catch (e) { return fail(e); }
+  redirect(`/invoices/${id}`);
+}
+
+export async function confirmPayment(_: ActionState, form: FormData): Promise<ActionState> {
+  const id = String(form.get("invoice_id"));
+  try {
+    await assertManager();
+    await rpc("confirm_payment", { p_payment: form.get("payment_id") });
+    await setFlash({ ok: "Payment confirmed. The invoice is paid and the customer's licences are renewed for the paid period." });
+  } catch (e) { return fail(e); }
+  redirect(`/invoices/${id}`);
+}
+
+export async function rejectPayment(_: ActionState, form: FormData): Promise<ActionState> {
+  const id = String(form.get("invoice_id"));
+  try {
+    await assertManager();
+    await rpc("reject_payment", { p_payment: form.get("payment_id"), p_reason: form.get("reason") });
+    await setFlash({ ok: "Payment report rejected. The customer sees the reason on the pay link." });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);
 }

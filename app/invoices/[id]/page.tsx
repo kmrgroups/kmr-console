@@ -7,12 +7,13 @@ import { InvoiceDoc, type InvoiceData, type LineData, type Party } from "@/compo
 import { PrintButton } from "@/components/PrintButton";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
-import { razorpay } from "@/lib/razorpay";
 import { env } from "@/lib/env";
 import { BASE_PATH, p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
 import { platformBrand } from "@/lib/brand";
-import { addInvoiceLine, cancelInvoice, discardInvoice, issueInvoice, markInvoicePaid, removeInvoiceLine } from "@/app/billing-actions";
+import { addInvoiceLine, cancelInvoice, confirmPayment, discardInvoice, issueInvoice, markInvoicePaid, rejectPayment, removeInvoiceLine } from "@/app/billing-actions";
+
+const METHOD: Record<string, string> = { neft: "NEFT", rtgs: "RTGS", imps: "IMPS", upi: "UPI", cheque: "Cheque", other: "Other" };
 
 export const metadata = { title: "Invoice" };
 
@@ -80,12 +81,38 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             </div>
           )}
 
+          {inv.status === "issued" && (payments ?? []).filter((x) => x.status === "reported").map((x) => {
+            const diff = Number(x.amount) - Number(inv.total);
+            return (
+              <div key={x.id} className="card" style={{ borderColor: "var(--warn)", background: "var(--warn-bg)" }}>
+                <h2>Payment reported — check your bank</h2>
+                <dl className="kv" style={{ fontSize: 13.5, margin: "0 0 8px", gridTemplateColumns: "80px 1fr", gap: "4px 12px" }}>
+                  <dt>Paid by</dt><dd>{METHOD[x.method] ?? x.method}{x.payer_name ? ` · ${x.payer_name}` : ""}</dd>
+                  <dt>Reference</dt><dd className="mono"><b>{x.reference}</b></dd>
+                  <dt>Date</dt><dd>{fmtDate(x.paid_on)}</dd>
+                  <dt>Amount</dt><dd><b>{fmtMoney(x.amount, x.currency)}</b>{diff !== 0 && <><br /><small style={{ color: "var(--warn)" }}>{diff < 0 ? `${fmtMoney(-diff, x.currency)} less than the invoice (TDS deducted?)` : `${fmtMoney(diff, x.currency)} more than the invoice`}</small></>}</dd>
+                </dl>
+                <p className="muted" style={{ fontSize: 12.5 }}>Find this UTR / amount in your Federal Bank statement or FedNet before confirming.</p>
+                {manager && <>
+                  <ActionForm action={confirmPayment} submitLabel="Confirm — money received" hidden={{ invoice_id: inv.id, payment_id: x.id }} confirm="Confirm this payment is in your bank account? The invoice becomes paid and the licences renew." />
+                  <details style={{ marginTop: 10 }}>
+                    <summary className="btn secondary small">Reject</summary>
+                    <div style={{ marginTop: 10 }}>
+                      <ActionForm action={rejectPayment} submitLabel="Reject report" variant="danger" hidden={{ invoice_id: inv.id, payment_id: x.id }}>
+                        <label className="field">Reason (the customer sees it)<input name="reason" required placeholder="Not received in our bank yet" /></label>
+                      </ActionForm>
+                    </div>
+                  </details>
+                </>}
+              </div>);
+          })}
+
           {inv.status === "issued" && (
             <div className="card">
               <h2>Get paid</h2>
               <p className="muted" style={{ fontSize: 13, marginTop: -4 }}>Due {fmtDate(inv.due_date)}{late ? " — overdue" : ""}.</p>
               <b style={{ fontSize: 14 }}>Pay link</b>
-              <p className="muted" style={{ fontSize: 13, margin: "2px 0 6px" }}>The customer sees this invoice and {razorpay.configured ? <>pays with card, UPI or net banking through Razorpay{razorpay.mode === "test" ? <> — <b>test mode</b>: use Razorpay test cards, no real money moves</> : null}.</> : "your bank / UPI details. Add Razorpay keys to take online payments."} Their company administrators also find it in their KMR portal.</p>
+              <p className="muted" style={{ fontSize: 13, margin: "2px 0 6px" }}>The customer sees this invoice with your bank account{s?.upi_id ? " and a UPI QR for the exact amount" : ""}, pays from their bank, and taps <b>I&apos;ve paid</b> with the UTR. You then confirm it here. Their company administrators also find it in their KMR portal.</p>
               <div className="copybox"><input readOnly value={payLink} /><a className="btn secondary small" href={payLink} target="_blank" rel="noopener">Open</a></div>
               {manager && (
                 <>
@@ -93,10 +120,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
                     <summary className="btn small">Mark as paid</summary>
                     <div style={{ marginTop: 10 }}>
                       <ActionForm action={markInvoicePaid} submitLabel="Record payment" hidden={{ invoice_id: inv.id }}>
+                        <label className="field">Paid by<select name="pay_method" defaultValue="neft">{Object.entries(METHOD).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
                         <label className="field">Reference<input name="reference" placeholder="UTR / cheque no. / UPI ref" required /></label>
                         <label className="field">Received on<input type="date" name="paid_on" defaultValue={today} max={today} /></label>
                       </ActionForm>
-                      <p className="muted" style={{ fontSize: 12.5 }}>For bank transfers, cheques or UPI to your account. The licences renew for the paid period.</p>
+                      <p className="muted" style={{ fontSize: 12.5 }}>When the money is in your bank statement. The licences renew for the paid period.</p>
                     </div>
                   </details>
                   <details style={{ marginTop: 10 }}>
@@ -119,8 +147,8 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <h2>Payments</h2>
             {payments?.length ? (
               <ul className="timeline">{payments.map((x) => (
-                <li key={x.id}><span><b>{x.provider === "manual" ? "Recorded by hand" : "Razorpay"}</b>{x.provider === "razorpay" && <span className={`badge ${x.mode === "live" ? "ok" : "warn"}`} style={{ marginLeft: 6 }}>{x.mode}</span>} · {fmtMoney(x.amount, x.currency)} · {x.status}
-                  <br /><small className="mono">{x.reference ?? x.payment_id ?? x.order_id}</small></span><small>{fmtDateTime(x.paid_at ?? x.created_at)}</small></li>))}</ul>
+                <li key={x.id}><span><b>{METHOD[x.method] ?? (x.provider === "razorpay" ? "Razorpay" : "Payment")}</b> · {fmtMoney(x.amount, x.currency)} · <span className={`badge ${x.status === "paid" ? "ok" : x.status === "reported" ? "warn" : x.status === "rejected" ? "danger" : ""}`}>{x.status}</span>
+                  <br /><small className="mono">{x.reference ?? x.payment_id ?? x.order_id}</small>{x.reject_reason && <><br /><small>{x.reject_reason}</small></>}{!x.recorded_by && x.status !== "created" && <><br /><small className="muted">reported by the customer</small></>}</span><small>{fmtDateTime(x.created_at)}</small></li>))}</ul>
             ) : <p className="muted" style={{ margin: 0 }}>None yet.</p>}
           </div>
         </aside>

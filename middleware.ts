@@ -12,8 +12,8 @@ function publicUrl(request: NextRequest, path: string): URL {
   return new URL(`${request.nextUrl.basePath}${path}`, `${proto.split(",")[0]}://${host.split(",")[0]}`);
 }
 
-// Public: each invoice's pay link and the Razorpay endpoints (customers are not Console users)
-const PUBLIC = /^\/(pay\/[a-f0-9]+|api\/pay\/(order|verify|webhook))\/?$/;
+// Public: each invoice's pay link and the "I've paid" report (customers are not Console users)
+const PUBLIC = /^\/(pay\/[a-f0-9]+|api\/pay\/report)\/?$/;
 
 export async function middleware(request: NextRequest) {
   if (PUBLIC.test(request.nextUrl.pathname)) return NextResponse.next();

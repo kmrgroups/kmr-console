@@ -4,7 +4,6 @@ import { AppShell } from "@/components/AppShell";
 import { ActionForm } from "@/components/ActionForm";
 import { Empty, fmtDate, one } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
-import { razorpay } from "@/lib/razorpay";
 import { p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
 import { deletePrice, saveBillingSettings, savePrice } from "@/app/billing-actions";
@@ -23,6 +22,8 @@ export default async function Billing() {
     supabase.from("billing_settings").select("*").eq("id", true).maybeSingle(),
     supabase.from("invoices").select("id,number,status,currency,total,issue_date,due_date,created_at,customer:customers(id,name,code)").order("created_at", { ascending: false }).limit(200),
   ]);
+  const { data: reported } = await supabase.from("payments").select("invoice_id").eq("status", "reported");
+  const toVerify = new Set((reported ?? []).map((r) => r.invoice_id));
   if (!s) {
     return <AppShell staff={staff} active="/billing"><div className="alert warn">Billing is not set up in the database yet. In Supabase → SQL Editor run <b>supabase/migrations/0018_billing.sql</b>, then refresh this page.</div></AppShell>;
   }
@@ -44,8 +45,8 @@ export default async function Billing() {
         <div className="card stat"><div className="label">Waiting for payment</div><div className="value" style={{ fontSize: 20 }}>{sum(due)}</div><div className="hint">{due.length} issued invoice{due.length === 1 ? "" : "s"}</div></div>
         <div className="card stat"><div className="label">Overdue</div><div className="value" style={{ fontSize: 20, color: overdue.length ? "var(--danger)" : undefined }}>{overdue.length ? sum(overdue) : "None"}</div><div className="hint">Past the due date</div></div>
         <div className="card stat"><div className="label">Paid this month</div><div className="value" style={{ fontSize: 20, color: "var(--ok)" }}>{sum(inv.filter((i) => i.status === "paid" && (i.issue_date ?? "").slice(0, 7) === month))}</div><div className="hint">Invoices dated this month</div></div>
-        <div className="card stat"><div className="label">Online payments</div><div className="value" style={{ fontSize: 20 }}>{razorpay.configured ? <span className={`badge ${razorpay.mode === "live" ? "ok" : "warn"}`}>Razorpay · {razorpay.mode === "live" ? "live" : "test mode"}</span> : <span className="badge">Not connected</span>}</div>
-          <div className="hint">{razorpay.configured ? (razorpay.mode === "test" ? "Test cards and UPI only — no real money" : "Real payments") : "Add Razorpay keys in Vercel to enable pay links"}</div></div>
+        <div className="card stat"><div className="label">Payments to verify</div><div className="value" style={{ fontSize: 20, color: toVerify.size ? "var(--warn)" : undefined }}>{toVerify.size || "None"}</div>
+          <div className="hint">{toVerify.size ? "Customers reported a payment — check your bank statement" : s.bank_account_no ? `Paid into ${s.bank_name ?? "bank"} a/c …${String(s.bank_account_no).slice(-4)}` : "Add your bank account below"}</div></div>
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
@@ -63,7 +64,7 @@ export default async function Billing() {
                   <td>{fmtDate(i.issue_date ?? i.created_at)}</td>
                   <td>{i.status === "issued" ? <span style={{ color: late ? "var(--danger)" : undefined }}>{fmtDate(i.due_date)}</span> : "—"}</td>
                   <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{fmtMoney(i.total, i.currency)}</td>
-                  <td><span className={`badge ${late ? "danger" : INVOICE_TONE[i.status]}`}>{late ? "overdue" : i.status}</span></td>
+                  <td><span className={`badge ${late ? "danger" : INVOICE_TONE[i.status]}`}>{late ? "overdue" : i.status}</span>{i.status === "issued" && toVerify.has(i.id) && <span className="badge warn" style={{ marginLeft: 6 }}>payment to verify</span>}</td>
                 </tr>);
             })}</tbody>
           </table></div>
@@ -110,7 +111,7 @@ export default async function Billing() {
       <div className="card">
         <h2>Seller details</h2>
         <p className="muted" style={{ marginTop: -4 }}>Printed on every invoice and frozen on it when issued. With a GSTIN, invoices are <b>Tax Invoices</b>: CGST + SGST for customers in your state, IGST for other states, and zero-rated export under LUT for customers abroad. Without a GSTIN, no GST is charged.</p>
-        {!s.address && <div className="alert warn">Fill in at least your address before issuing the first invoice.</div>}
+        {(!s.address || (!s.bank_account_no && !s.upi_id)) && <div className="alert warn">Fill in your address and bank account (or UPI ID) before issuing the first invoice.</div>}
         {manager ? (
           <ActionForm action={saveBillingSettings} submitLabel="Save seller details" className="formgrid">
             <label className="field">Legal name<input name="legal_name" defaultValue={s.legal_name} required /></label>
@@ -128,8 +129,16 @@ export default async function Billing() {
             <label className="field">GST rate (%)<input name="gst_rate" inputMode="decimal" defaultValue={String(s.gst_rate)} required /></label>
             <label className="field">Payment due (days)<input name="payment_days" type="number" min={0} max={120} defaultValue={s.payment_days} required /></label>
             <label className="field">LUT number (exports)<input name="lut_no" defaultValue={s.lut_no ?? ""} placeholder="AD290326000123X" /></label>
-            <label className="field">UPI ID<input name="upi_id" defaultValue={s.upi_id ?? ""} placeholder="kmr@okaxis" /></label>
-            <label className="field full">Bank details<textarea name="bank_details" rows={3} defaultValue={s.bank_details ?? ""} placeholder={"Bank · Branch\nA/c no. · IFSC"} /></label>
+            <div className="field full" style={{ marginTop: 6 }}><b>Bank account for payments</b><span className="help">Customers pay into this account by NEFT / RTGS / IMPS; it is printed on every invoice and pay link.</span></div>
+            <label className="field">Account name<input name="bank_account_name" defaultValue={s.bank_account_name ?? ""} placeholder="As in the bank's records" /></label>
+            <label className="field">Account number<input name="bank_account_no" defaultValue={s.bank_account_no ?? ""} inputMode="numeric" /></label>
+            <label className="field">IFSC<input name="bank_ifsc" defaultValue={s.bank_ifsc ?? ""} maxLength={11} placeholder="FDRL0002514" /></label>
+            <label className="field">Bank<input name="bank_name" defaultValue={s.bank_name ?? ""} placeholder="Federal Bank" /></label>
+            <label className="field">Branch<input name="bank_branch" defaultValue={s.bank_branch ?? ""} /></label>
+            <label className="field">Account type<input name="bank_account_type" defaultValue={s.bank_account_type ?? ""} placeholder="Current account" /></label>
+            <label className="field">SWIFT (customers abroad)<input name="bank_swift" defaultValue={s.bank_swift ?? ""} maxLength={11} /></label>
+            <label className="field">UPI ID<input name="upi_id" defaultValue={s.upi_id ?? ""} placeholder="kmrgroups@fbl" /><span className="help">The pay link shows a UPI QR with the amount filled in</span></label>
+            <label className="field full">Other payment notes<textarea name="bank_details" rows={2} defaultValue={s.bank_details ?? ""} placeholder="e.g. Cheques payable to KMR GROUP OF COMPANIES." /></label>
             <label className="field full">Terms<textarea name="terms" rows={2} defaultValue={s.terms ?? ""} placeholder="Subscription renews on payment. Prices exclude GST unless stated." /></label>
           </ActionForm>
         ) : <p className="muted">Only an owner or administrator can change these.</p>}

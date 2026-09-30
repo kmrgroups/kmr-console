@@ -17,6 +17,7 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl }: { inv: Invoic
   const taxed = inv.tax_type === "cgst_sgst" || inv.tax_type === "igst";
   const title = seller.gstin ? "Tax Invoice" : "Invoice";
   const half = num(inv.gst_rate) / 2;
+  const hasBank = Boolean(seller.bank_account_no || seller.bank_ifsc);
   const stamp = inv.status === "draft" ? "Draft" : inv.status === "cancelled" ? "Cancelled" : inv.status === "paid" ? "Paid" : null;
   return (
     <article className="invoice">
@@ -91,11 +92,20 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl }: { inv: Invoic
       </section>
 
       {inv.status === "cancelled" && inv.cancelled_reason && <p className="invoice-note">Cancelled: {inv.cancelled_reason}</p>}
-      {(seller.bank_details || seller.upi_id || seller.terms) && (
+      {(hasBank || seller.bank_details || seller.upi_id || seller.terms) && (
         <section className="invoice-pay">
-          {(seller.bank_details || seller.upi_id) && <div><div className="invoice-label">Payment details</div>
+          {(hasBank || seller.bank_details || seller.upi_id) && <div><div className="invoice-label">Pay to</div>
+            {hasBank && <table className="invoice-bank"><tbody>
+              {seller.bank_account_name && <tr><th>Account name</th><td>{seller.bank_account_name}</td></tr>}
+              {seller.bank_account_no && <tr><th>Account no.</th><td className="mono">{seller.bank_account_no}</td></tr>}
+              {seller.bank_ifsc && <tr><th>IFSC</th><td className="mono">{seller.bank_ifsc}</td></tr>}
+              {(seller.bank_name || seller.bank_branch) && <tr><th>Bank</th><td>{[seller.bank_name, seller.bank_branch].filter(Boolean).join(", ")}</td></tr>}
+              {seller.bank_account_type && <tr><th>Type</th><td>{seller.bank_account_type}</td></tr>}
+              {seller.bank_swift && inv.tax_type === "export" && <tr><th>SWIFT</th><td className="mono">{seller.bank_swift}</td></tr>}
+            </tbody></table>}
+            {seller.upi_id && <div>UPI <span className="mono">{seller.upi_id}</span></div>}
             {seller.bank_details && <div style={{ whiteSpace: "pre-line" }}>{seller.bank_details}</div>}
-            {seller.upi_id && <div>UPI <span className="mono">{seller.upi_id}</span></div>}</div>}
+            <div className="muted" style={{ marginTop: 4 }}>Please quote invoice {inv.number ?? "number"} in the remarks.</div></div>}
           {seller.terms && <div><div className="invoice-label">Terms</div><div style={{ whiteSpace: "pre-line" }}>{seller.terms}</div></div>}
         </section>
       )}

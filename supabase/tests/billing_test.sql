@@ -1,4 +1,4 @@
--- Tests for 0018 (prices, invoices, payments). Run as postgres inside a transaction that is rolled back.
+-- Tests for 0018 + 0019 (prices, invoices, bank payments). Run as postgres inside a transaction that is rolled back.
 \set ON_ERROR_STOP 1
 set client_min_messages = warning;
 create or replace function pg_temp.as_user(uid uuid, em text) returns void language plpgsql as $$
@@ -32,6 +32,8 @@ select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1', 'owner@kmr.test')
 update console.billing_settings set gstin = '29AAACK1234K1Z5', state = 'Karnataka', state_code = '29', address = 'Shanthipura, Electronic City', city = 'Bengaluru' where id;
 insert into console.prices (product_code, period, currency, unit_amount, min_seats) values
   ('hrm', 'month', 'INR', 60, 25), ('hrm', 'year', 'INR', 600, 25), ('balloon', 'month', 'INR', 999, 1), ('hrm', 'month', 'USD', 1.5, 25);
+select pg_temp.fails($$select console.issue_invoice(console.create_invoice('00000000-0000-0000-0000-00000000b002', 'month', current_date, '[{"product_code":"hrm","seats":1}]'))$$, 'cannot issue without a bank account or UPI ID');
+update console.billing_settings set bank_account_name = 'KMR GROUP OF COMPANIES', bank_account_no = '12345678901234', bank_ifsc = 'FDRL0001234', bank_name = 'Federal Bank', bank_branch = 'Test branch', bank_swift = 'FDRLINBBIBD' where id;
 select pg_temp.fails($$select console.create_invoice('00000000-0000-0000-0000-00000000b001', 'year', current_date, '[{"product_code":"balloon","seats":2}]')$$, 'no yearly Balloon price → clear error');
 
 -- same state: CGST + SGST; minimum seats applied
@@ -80,16 +82,36 @@ select pg_temp.fails($$select console.mark_invoice_paid((select id from t_inv wh
 -- the pay-link functions are for the server only
 select pg_temp.fails($$select console.invoice_for_token((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')))$$, 'staff cannot call the pay-link functions directly');
 
--- Razorpay flow as the server (service role)
+-- bank payment reported by the customer on the pay link (the Console server, service role)
 reset role; set role service_role;
-select pg_temp.ok((console.invoice_for_token((select pay_token from console.invoices where id = (select id from t_inv where k = 'us'))) -> 'invoice' ->> 'status') = 'issued', 'pay link finds the issued invoice');
+select pg_temp.ok((console.invoice_for_token((select pay_token from console.invoices where id = (select id from t_inv where k = 'us'))) -> 'invoice' -> 'seller' ->> 'bank_account_no') = '12345678901234', 'bank account frozen on the issued invoice');
 select pg_temp.ok(console.invoice_for_token('not-a-real-token-at-all-000000') is null, 'unknown token finds nothing');
-select pg_temp.fails($$select console.razorpay_order_started((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'order_X', 'test', 1, 'USD')$$, 'order with a wrong amount is refused');
-select console.razorpay_order_started((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'order_TEST1', 'test', 45, 'USD');
-select pg_temp.ok((console.razorpay_payment_verified('order_TEST1', 'pay_TEST1', '{"x":1}') ->> 'status') = 'paid', 'verified Razorpay payment marks the invoice paid');
-select pg_temp.ok((console.razorpay_payment_verified('order_TEST1', 'pay_TEST1') ->> 'status') = 'paid', 'webhook repeat is harmless');
-select pg_temp.ok((select count(*) = 1 from console.payments where order_id = 'order_TEST1' and status = 'paid' and mode = 'test'), 'one test-mode payment recorded');
-select pg_temp.fails($$select console.razorpay_order_started((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'order_T2', 'test', 45, 'USD')$$, 'a paid invoice cannot start another payment');
+select pg_temp.fails($$select console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'neft', 'X', current_date, 45)$$, 'too-short reference refused');
+select pg_temp.fails($$select console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'neft', 'FDRLN26273001', current_date + 30, 45)$$, 'future date refused');
+select pg_temp.fails($$select console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'tn')), 'neft', 'FDRLN26273001', current_date, 45)$$, 'cannot report on a cancelled invoice');
+select pg_temp.ok(console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'neft', 'fdrln 26273001', current_date, 45, 'Mike') = 'ok', 'customer reports an NEFT payment');
+select pg_temp.fails($$select console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'imps', 'FDRLN 26273001', current_date, 45)$$, 'same reference cannot be reported twice');
+select console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'upi', '627312345678', current_date, 45);
+select pg_temp.ok((select count(*) = 2 and bool_and(status = 'reported') from console.payments where invoice_id = (select id from t_inv where k = 'us')), 'two reports waiting; invoice still issued');
+select pg_temp.ok((select status = 'issued' from console.invoices where id = (select id from t_inv where k = 'us')), 'a report alone does not mark it paid');
+select pg_temp.ok(jsonb_array_length(console.invoice_for_token((select pay_token from console.invoices where id = (select id from t_inv where k = 'us'))) -> 'reported') = 2, 'pay link shows the reports');
+reset role;
+
+-- KMR checks the bank: reject one, confirm the other
+set role authenticated;
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a2', 'sales@kmr.test');
+select pg_temp.fails($$select console.confirm_payment((select id from console.payments where reference = 'FDRLN 26273001'))$$, 'sales cannot confirm payments');
+select pg_temp.fails($$select console.report_payment('x', 'neft', 'ABCDEF', current_date, 1)$$, 'staff cannot call report_payment directly');
+select pg_temp.as_user('00000000-0000-0000-0000-0000000000a1', 'owner@kmr.test');
+select pg_temp.fails($$select console.reject_payment((select id from console.payments where reference = '627312345678'), '')$$, 'rejecting needs a reason');
+select console.reject_payment((select id from console.payments where reference = '627312345678'), 'Not received in the bank');
+select console.confirm_payment((select id from console.payments where reference = 'FDRLN 26273001'));
+select pg_temp.ok((select status = 'paid' and paid_at::date = current_date from console.invoices where id = (select id from t_inv where k = 'us')), 'confirmed → invoice paid');
+select pg_temp.ok((select status = 'active' and seats = 30 from console.licences where customer_id = '00000000-0000-0000-0000-00000000b003' and product_code = 'hrm') is not false, 'licence renewed (when the customer has one)');
+select pg_temp.fails($$select console.confirm_payment((select id from console.payments where reference = 'FDRLN 26273001'))$$, 'cannot confirm twice');
+select pg_temp.ok((select reject_reason = 'Not received in the bank' from console.payments where reference = '627312345678'), 'rejected report keeps its reason');
+reset role; set role service_role;
+select pg_temp.fails($$select console.report_payment((select pay_token from console.invoices where id = (select id from t_inv where k = 'us')), 'neft', 'NEWREF1234', current_date, 45)$$, 'nothing can be reported on a paid invoice');
 reset role;
 
 -- customer portal: administrators of the company only

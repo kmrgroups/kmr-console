@@ -160,29 +160,25 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 - A planner that already had its own masters shows **Move to Operations Master** (administrators, once; never overwrites).
 - The planner keeps only its monthly plans.
 
-## 9. Milestone 4 — prices, invoices and (test) payments
+## 9. Milestone 4 — prices, invoices and payments to KMR's bank account
 
-*Already ran the platform setup?* Run **`supabase/migrations/0018_billing.sql`** once in the SQL Editor.
+*Already ran the platform setup?* Run **`supabase/migrations/0018_billing.sql`** and then
+**`supabase/migrations/0019_bank_payments.sql`** once each in the SQL Editor.
 
-1. **Console → Prices & invoices → Seller details**: legal name, GSTIN, address, state + state code, PAN, bank / UPI,
-   invoice prefix (numbers look like `KMR/26-27/0001`, restarting every April). Without a GSTIN no GST is charged.
+1. **Console → Prices & invoices → Seller details**: legal name, GSTIN, GST-registered address, state + state code, PAN,
+   invoice prefix (numbers look like `KMR/26-27/0001`, restarting every April), and the **bank account** customers pay
+   into (account name, number, IFSC, bank, branch, SWIFT for customers abroad) plus a **UPI ID** if the account has one.
+   Without a GSTIN no GST is charged. An invoice can't be issued until an address and a bank account or UPI ID are set.
 2. **Price list**: for each product a price per user (per employee for the HRM), monthly and/or yearly, in every
    currency you sell in (customers are billed in their own currency), with a minimum billed.
 3. **Customer → Billing → Create invoice**: tick the products, users / employees and period → a draft with GST worked
    out (CGST + SGST in your state, IGST for other states, zero-rated export under LUT abroad). Add a line (training,
    set-up), then **Issue**. Issued invoices can't be edited — cancel and re-issue instead; the number stays in the series.
-4. **Getting paid**: every issued invoice has a **pay link** (`/it/console/pay/…`) showing the invoice with a **Pay**
-   button. The customer's administrators also see their invoices in their KMR portal under *Invoices & payments*.
-   Bank transfer / cheque? **Mark as paid** with the reference. Either way the invoice becomes *paid* and the
-   customer's licences for those products become **active until the end of the paid period, with the paid limit**.
-5. **Razorpay (test mode)** — Vercel → project **kmr-console** → Environment Variables, then redeploy:
-   ```
-   RAZORPAY_KEY_ID=rzp_test_...        # Razorpay Dashboard (Test mode) → Account & Settings → API keys
-   RAZORPAY_KEY_SECRET=...
-   RAZORPAY_WEBHOOK_SECRET=...         # optional, see below
-   ```
-   With `rzp_test_` keys no real money moves: pay with card `4111 1111 1111 1111` (any future date, any CVV, OTP any)
-   or UPI `success@razorpay`. Switch to `rzp_live_` keys to take real payments. *Prices & invoices* shows which mode is on.
-   **Webhook (recommended)**: Razorpay → Webhooks → Add → URL `https://www.kmr-groups.com/it/console/api/pay/webhook`,
-   events `payment.captured` and `order.paid`, a secret of your choice = `RAZORPAY_WEBHOOK_SECRET`. It confirms payments
-   even if the customer closes the browser before returning. Website shop orders sent to the same webhook are ignored.
+4. **Getting paid**: every issued invoice has a **pay link** (`/it/console/pay/…`) showing the invoice, your bank account
+   with copy buttons, and — with a UPI ID — a **UPI QR with the amount and invoice number filled in**. The customer
+   pays from their bank or UPI app and taps **I've paid** with the UTR / reference. The customer's administrators also
+   see their invoices in their KMR portal under *Invoices & payments*.
+5. **Confirming**: the Console shows **Payment reported — check your bank** on the invoice (and *payment to verify* in the
+   list). Find the UTR / amount in your bank statement, then **Confirm** (invoice paid, licences active until the end of
+   the paid period with the paid limit) or **Reject** with a reason the customer sees. Money that arrives without a report
+   (cheque, direct transfer): **Mark as paid** with the reference.
