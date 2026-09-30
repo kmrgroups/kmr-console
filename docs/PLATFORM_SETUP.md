@@ -224,7 +224,8 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 
 ## 12. Milestone 5 — safety, emails, health (run `supabase/migrations/0022_hardening.sql` once)
 
-**Add these in Vercel to BOTH projects (kmr-console and the website), then Redeploy:**
+**Add these in Vercel to the kmr-console and website projects (not the HRM — each HRM customer sends from its own
+mailbox, set up in HRM › Settings › Company email), then Redeploy:**
 
 ```
 RESEND_API_KEY=re_…                 # same key the HRM uses (resend.com › API keys)
