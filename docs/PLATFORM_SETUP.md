@@ -194,19 +194,27 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
   bucket and shown only on invoices through links that expire. Issued invoices keep the seal / signature they were
   issued with; a new upload applies to invoices issued afterwards.
 
-## 11. Website management (www.kmr-groups.com has no admin panel any more)
+## 11. Website CMS (www.kmr-groups.com has no admin panel)
 
-*Already ran the platform setup?* Run **`supabase/migrations/0021_website.sql`** once, and the website's
-**`supabase/add-multi-business.sql`** once (either order).
+*Already ran the platform setup?* Run **`supabase/migrations/0021_website.sql`** once, then the website's
+**`supabase/add-multi-business.sql`** and **`supabase/add-premium-site.sql`** (in that order). The website's
+**`supabase/drop-operations.sql`** permanently removes the old website Operations tables — export them first if needed.
 
-- **Website** (sidebar) — Products, Banner, Businesses, Leadership, Gallery, Legal pages, Company info, Compliance
-  (documents go to the private `kmr-records` bucket) and **Shop orders** (confirm or reject bank / UPI payments).
-  Owner, admin and sales can edit; support can only view.
-- **Publish from Operations Master** (Website → Products) — pick a company's Operations Master (KMR's own by default),
-  tick parts and choose the business (Online shop, Training, Import & Export, Trading, Distribution). They arrive
-  hidden, priced from the customer rate contract; add a photo, check price and stock, then tick *Show on the website*.
-  Trade businesses are enquiry-only (quote requests, no online payment).
-- **Enquiries** — every website form (software trial, training, shop questions, quotes) arrives here, tagged with
-  its business. Convert one to open it as a customer.
-- **Operations** — the website's old Customers, Vendors, Items, Warehouses, Stock ledger and Employees.
-- The Software page lists the apps and prices from **Products & versions** automatically.
+**Website CMS** (sidebar) manages every part of the website — add, edit, hide / show, delete:
+- **Brand & company** — company profile (logo, GSTIN, Udyam, story, vision, mission, values), contact & social links
+  (address, phones, email, WhatsApp, hours, map, LinkedIn / Facebook / Instagram / YouTube / X), founder photo & message.
+- **Home page** — hero slides, highlight numbers, header button and announcement bar.
+- **Business verticals**, **Shop products**, **Software solutions**, **Training programmes**, **Trade items**.
+- **Careers** — job openings and applications (résumés in the private `kmr-careers` bucket, opened with expiring links).
+- **About us** — leadership team, gallery. **Policies & records** — any number of policies (footer link on / off) and
+  private registrations & licences.
+- **Orders & payments**, **Payment settings**, **Import from Operations Master** (Online shop group).
+- Owner / admin edit everything; sales edit products, programmes, solutions, trade items and orders; support can view.
+
+**Payments** (Website CMS › Payment settings):
+- *Bank transfer / UPI* — the account and UPI ID in **Prices & invoices › Seller details** (Federal Bank). The page shows
+  a ₹1 test QR so you can check the payee name before going live.
+- *Online (Razorpay)* — set `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET` and `RAZORPAY_WEBHOOK_SECRET` in the **website's**
+  Vercel project, add the webhook `https://www.kmr-groups.com/api/pay/razorpay/webhook` (events *payment.captured*,
+  *order.paid*), and make sure Razorpay's settlement bank account is the same Federal Bank account. Then tick
+  *Online payment*. Every online payment is checked with Razorpay (signature, order, amount) before the order is paid.
