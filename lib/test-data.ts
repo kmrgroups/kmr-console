@@ -110,9 +110,10 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
     await hrm.from("app_users").update({ must_change_password: false }).eq("id", login.id);
     const { data: n, error } = await hrm.rpc("demo_load", { p_tenant: r.tenantId });
     if (error) throw new Error(error.message);
+    const pay = await hrm.rpc("demo_payroll", { p_tenant: r.tenantId });           // salaries + two loans (HRM 0005)
     let att = " with a month of attendance";
     try { await hrmAttendance(r.tenantId); } catch { att = " (attendance is filled in by the HRM's nightly job, or HRM › Attendance › Recalculate)"; }
-    return `${n} employees in two plants, leave and pending requests${att}`;
+    return `${n} employees in two plants, leave and pending requests${att}${pay.error ? "" : ", salaries and two loans for payroll"}`;
   });
   for (const [code, label, ws] of [["balloon", "Balloon Inspector", "KMR Demo – Quality"], ["pd", "Process Documents", "KMR Demo – APQP"], ["capacity", "Capacity Planner", "KMR Demo – Planning"]] as [ToolCode, string, string][]) {
     await step(label, async () => {

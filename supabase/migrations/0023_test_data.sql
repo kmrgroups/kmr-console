@@ -161,6 +161,8 @@ begin
     delete from hrm.regularisation_requests where tenant_id = any(keep);
     delete from hrm.leave_ledger where tenant_id = any(keep);
     delete from hrm.leave_requests where tenant_id = any(keep);
+    if to_regclass('hrm.payroll_runs') is not null then delete from hrm.payroll_runs where tenant_id = any(keep); end if;
+    if to_regclass('hrm.loans') is not null then delete from hrm.loans where tenant_id = any(keep); end if;
     delete from hrm.employees where tenant_id = any(keep); get diagnostics n = row_count; out := out || jsonb_build_object('hrm_employees_of_kmr', n);
     delete from hrm.notifications where tenant_id = any(keep);
     delete from hrm.audit_log where tenant_id = any(keep);
