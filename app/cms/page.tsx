@@ -1,10 +1,6 @@
 import { requireStaff } from "@/lib/auth";
 import { GROUPS, SECTIONS, EXTRA, type Section } from "@/lib/cms";
 import { gatewayStatus, web } from "@/lib/cms-server";
-import { ActionForm } from "@/components/ActionForm";
-import { isManager } from "@/lib/auth";
-import { SAMPLE_TABLES } from "@/lib/cms-sample";
-import { loadSampleContent, removeSampleContent } from "@/app/cms-actions";
 import { createClient } from "@/lib/supabase/server";
 import { p } from "@/lib/base-path";
 import { env } from "@/lib/env";
@@ -37,9 +33,6 @@ export default async function CmsHome() {
     supabase.from("billing_settings").select("bank_account_no,upi_id").maybeSingle(),
   ]);
   const c = Object.fromEntries(all);
-  const sampleCounts = await Promise.all(SAMPLE_TABLES.map((t) => web().from(t).select("id", { count: "exact", head: true }).eq("sample", true)));
-  const samples = sampleCounts.reduce((a, r) => a + (r.count ?? 0), 0);
-  const sampleReady = !sampleCounts.some((r) => r.error);
   const keyConfigured = (await gatewayStatus(env.platformUrl)).configured;
   const payOk = Boolean(seller?.bank_account_no || seller?.upi_id);
 
@@ -58,19 +51,6 @@ export default async function CmsHome() {
           <div className="value" style={{ fontSize: "1.05rem", marginTop: 10 }}>{[settings?.online_payment && (keyConfigured ? "Online ✓" : "Online — keys missing"), settings?.bank_transfer && (payOk ? "Bank / UPI ✓" : "Bank / UPI — account missing")].filter(Boolean).join(" · ") || "Off"}</div>
           <div className="hint">Paid into the account in Seller details</div></a>
       </div>
-
-      {isManager(staff) && (
-        <div className="card spread" style={{ marginBottom: 18 }}>
-          <div><h2 style={{ margin: 0 }}>Sample content {samples > 0 && <span className="badge warn">{samples} sample items on the website</span>}</h2>
-            <p className="muted" style={{ margin: "4px 0 0" }}>{sampleReady
-              ? "Fill the website with example slides, products, programmes, jobs, people and photos to see how it looks — then remove them all in one click. Your own content is never changed."
-              : "Run the website's supabase/add-cms-update.sql once to use sample content."}</p></div>
-          {sampleReady && <div className="row">
-            {samples === 0 && <ActionForm action={loadSampleContent} submitLabel="Load sample content" pendingLabel="Loading…" variant="secondary" />}
-            {samples > 0 && <ActionForm action={removeSampleContent} submitLabel="Remove sample content" pendingLabel="Removing…" variant="danger" confirm="Remove all sample content from the website? Your own content stays." />}
-          </div>}
-        </div>
-      )}
 
       <div className="cmstiles">
         {GROUPS.map((g) => (
