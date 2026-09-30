@@ -278,3 +278,12 @@ Run `supabase/migrations/0023_test_data.sql` once (after 0022), and the website'
   is an empty list in the app (no built-in machines or consumables). Earlier lists typed into an app are kept aside
   and offered once through **Move to Operations Master**.
 - Consumables have **Used in processes** (e.g. TURN1, VMC, WASH) so Process Documents lists them per operation.
+
+## 16. Data Master (run `supabase/migrations/0026_data_master.sql`, after HRM 0005 and Console 0025)
+
+KMR Apps › Masters › **Data Master** (company administrators): one card per app — HRM, Balloon Inspector, Process
+Documents, Capacity Planner and the Operations Master — with the number of records, **Download JSON**, **Upload JSON**
+(replaces that app's data with the file; a file of another app or another company is refused) and **Flush all data**
+(type FLUSH; a JSON backup is downloaded first, then the data is removed). Logins, users and access are never removed.
+HRM flush can also reset the company setup (plants, departments, shifts, leave types, holidays, payroll rules) to the
+defaults. Balloon Inspector drawing files are kept so a restore brings reports back complete.
