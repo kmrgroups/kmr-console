@@ -149,7 +149,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             <h2>Payments</h2>
             {payments?.length ? (
               <ul className="timeline">{payments.map((x) => (
-                <li key={x.id}><span><b>{METHOD[x.method] ?? (x.provider === "razorpay" ? "Razorpay" : "Payment")}</b> · {fmtMoney(x.amount, x.currency)} · <span className={`badge ${x.status === "paid" ? "ok" : x.status === "reported" ? "warn" : x.status === "rejected" ? "danger" : ""}`}>{x.status}</span>
+                <li key={x.id}><span><b>{METHOD[x.method] ?? "Payment"}</b> · {fmtMoney(x.amount, x.currency)} · <span className={`badge ${x.status === "paid" ? "ok" : x.status === "reported" ? "warn" : x.status === "rejected" ? "danger" : ""}`}>{x.status}</span>
                   <br /><small className="mono">{x.reference ?? x.payment_id ?? x.order_id}</small>{x.reject_reason && <><br /><small>{x.reject_reason}</small></>}{!x.recorded_by && x.status !== "created" && <><br /><small className="muted">reported by the customer</small></>}</span><small>{fmtDateTime(x.created_at)}</small></li>))}</ul>
             ) : <p className="muted" style={{ margin: 0 }}>None yet.</p>}
           </div>
