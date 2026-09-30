@@ -416,7 +416,7 @@ body:has(.kmr-login) .powered-by a { color: var(--kmr-gold-2); }
 .invoice-note { font-size: 12.5px; color: var(--muted); margin: 10px 0 0; }
 .invoice-pay { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12.5px; }
 .invoice-foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 28px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }
-.invoice-foot span { font-weight: 600; color: var(--text); }
+.invoice-foot span:not(.invoice-foot-note) { font-weight: 600; color: var(--text); }
 .invoice-stamp { position: absolute; top: 34px; left: 50%; transform: translateX(-50%) rotate(-8deg); border: 3px solid currentColor; border-radius: 8px; padding: 2px 14px; font-weight: 800; font-size: 20px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.55; pointer-events: none; }
 .invoice-stamp.draft { color: var(--muted); } .invoice-stamp.paid { color: var(--ok); } .invoice-stamp.cancelled { color: var(--danger); }
 @media (max-width: 700px) {
@@ -448,3 +448,13 @@ body:has(.kmr-login) .powered-by a { color: var(--kmr-gold-2); }
 .payqr { width: 180px; height: 180px; margin: 6px auto; } .payqr svg { width: 100%; height: 100%; display: block; }
 .alert.full, .field.full { grid-column: 1 / -1; }
 @media (max-width: 700px) { .payhow { grid-template-columns: 1fr; } }
+.field.checkline { flex-direction: row; display: flex; gap: 8px; align-items: center; font-weight: 500; }
+.field.checkline input { width: auto; }
+.invoice-foot { align-items: flex-end; }
+.invoice-sign { text-align: right; min-width: 220px; color: var(--text); font-size: 12.5px; }
+.invoice-sign > div:first-child { font-weight: 600; }
+.invoice-sign-art { position: relative; height: 92px; margin: 4px 0 2px; }
+.invoice-seal { position: absolute; right: 70px; top: 0; height: 90px; width: auto; opacity: 0.9; }
+.invoice-signature { position: absolute; right: 0; bottom: 4px; height: 48px; max-width: 190px; object-fit: contain; }
+.invoice-sign-name { font-weight: 600; }
+@media (max-width: 700px) { .invoice-foot { flex-direction: column; align-items: stretch; } .invoice-sign { text-align: left; } .invoice-seal { right: auto; left: 0; } .invoice-signature { right: auto; left: 70px; } }

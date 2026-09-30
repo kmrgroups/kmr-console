@@ -11,6 +11,7 @@ import { env } from "@/lib/env";
 import { BASE_PATH, p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
 import { platformBrand } from "@/lib/brand";
+import { billingImageUrls } from "@/lib/billing-files";
 import { addInvoiceLine, cancelInvoice, confirmPayment, discardInvoice, issueInvoice, markInvoicePaid, rejectPayment, removeInvoiceLine } from "@/app/billing-actions";
 
 const METHOD: Record<string, string> = { neft: "NEFT", rtgs: "RTGS", imps: "IMPS", upi: "UPI", cheque: "Cheque", other: "Other" };
@@ -35,6 +36,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   // Drafts show today's seller and customer details; issued invoices show what was frozen on them
   const seller: Party = draft ? { ...(s ?? {}), state_code: s?.state_code ?? s?.gstin?.slice(0, 2) } : inv.seller;
   const buyer: Party = draft && c ? { code: c.code, name: c.legal_name || c.name, tax_id: c.tax_id, address: c.address, city: c.city, state: c.state, postal_code: c.postal_code, country: c.country, contact_name: c.contact_name, contact_email: c.contact_email } : inv.buyer;
+  const images = await billingImageUrls(seller);
   const payLink = `${env.platformUrl}${BASE_PATH}/pay/${inv.pay_token}`;
   const today = new Date().toISOString().slice(0, 10);
   const late = inv.status === "issued" && inv.due_date && inv.due_date < today;
@@ -48,7 +50,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="invoice-layout">
-        <InvoiceDoc inv={inv as InvoiceData} lines={(lines ?? []) as LineData[]} seller={seller} buyer={buyer} logoUrl={brand.logo_url} />
+        <InvoiceDoc inv={inv as InvoiceData} lines={(lines ?? []) as LineData[]} seller={seller} buyer={buyer} logoUrl={brand.logo_url} sealUrl={images.seal} signatureUrl={images.signature} />
 
         <aside className="stack noprint">
           {draft && manager && (

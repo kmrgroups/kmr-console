@@ -7,6 +7,7 @@ import { CopyValue, ReportPaymentForm } from "@/components/PayActions";
 import { fmtDate } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
 import { platformBrand } from "@/lib/brand";
+import { billingImageUrls } from "@/lib/billing-files";
 
 export const metadata = { title: "Invoice" };
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   if (!data) notFound();
   const { invoice: inv, lines, paid_by, reported = [] } = data as Found;
   const s = inv.seller;
-  const brand = await platformBrand();
+  const [brand, images] = await Promise.all([platformBrand(), billingImageUrls(s)]);
   const today = new Date().toISOString().slice(0, 10);
   const total = Number(inv.total).toFixed(2);
   const waiting = reported.filter((r) => r.status === "reported");
@@ -36,7 +37,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   // UPI QR with the payee, exact amount and the invoice number filled in (INR only)
   let qr: string | null = null;
   if (inv.status === "issued" && inv.currency === "INR" && s.upi_id) {
-    const upi = `upi://pay?pa=${encodeURIComponent(s.upi_id)}&pn=${encodeURIComponent(s.bank_account_name || s.legal_name || "KMR")}&am=${total}&cu=INR&tn=${encodeURIComponent(`Invoice ${inv.number}`)}`;
+    const upi = `upi://pay?pa=${encodeURIComponent(s.upi_id)}&pn=${encodeURIComponent(s.bank_account_name || s.trade_name || s.legal_name || "KMR")}&am=${total}&cu=INR&tn=${encodeURIComponent(`Invoice ${inv.number}`)}`;
     qr = await QRCode.toString(upi, { type: "svg", margin: 1, width: 180, errorCorrectionLevel: "M" });
   }
   const rows: [string, string | null | undefined, boolean?][] = [
@@ -50,7 +51,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
     <div className="paywrap">
       <div className="paybar">
         <div>
-          <div className="muted" style={{ fontSize: 13 }}>{s.legal_name} · Invoice <span className="mono">{inv.number}</span></div>
+          <div className="muted" style={{ fontSize: 13 }}>{s.trade_name || s.legal_name} · Invoice <span className="mono">{inv.number}</span></div>
           <div style={{ fontSize: 22, fontWeight: 700 }}>{fmtMoney(inv.total, inv.currency)}</div>
           <div style={{ fontSize: 13 }}>
             {inv.status === "paid" && <span className="badge ok">Paid {fmtDate(paid_by?.paid_at ?? inv.paid_at)}{paid_by?.reference ? ` · ${paid_by.reference}` : ""}</span>}
@@ -105,7 +106,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
         </div>
       )}
 
-      <InvoiceDoc inv={inv} lines={lines} seller={s} buyer={inv.buyer} logoUrl={brand.logo_url} />
+      <InvoiceDoc inv={inv} lines={lines} seller={s} buyer={inv.buyer} logoUrl={brand.logo_url} sealUrl={images.seal} signatureUrl={images.signature} />
     </div>
   );
 }

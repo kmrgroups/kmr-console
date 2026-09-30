@@ -182,3 +182,14 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
    list). Find the UTR / amount in your bank statement, then **Confirm** (invoice paid, licences active until the end of
    the paid period with the paid limit) or **Reject** with a reason the customer sees. Money that arrives without a report
    (cheque, direct transfer): **Mark as paid** with the reference.
+
+## 10. Company identity on invoices (seal, signature, Udyam)
+
+*Already ran the platform setup?* Run **`supabase/migrations/0020_seller_identity.sql`** once.
+
+- **Console → Prices & invoices → Seller details**: trade name (invoices lead with it) and legal name, constitution,
+  GSTIN, PAN, Udyam number and MSME category, website, authorised signatory (name, designation), and switches for the
+  seal / signature and the MSME note (MSMED Act, 2006 — payment within 45 days).
+- **Seal & signature**: upload PNGs (transparent background looks best). They are stored in the private `kmr-billing`
+  bucket and shown only on invoices through links that expire. Issued invoices keep the seal / signature they were
+  issued with; a new upload applies to invoices issued afterwards.

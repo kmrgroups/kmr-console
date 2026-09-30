@@ -13,8 +13,11 @@ const num = (v: number | string) => Number(v);
 const addr = (p: Party) => [p.address, [p.city, p.state, p.postal_code].filter(Boolean).join(", ")].filter(Boolean);
 
 /** A4 invoice, printable (Print / Save as PDF). Draft invoices show the live seller and buyer details. */
-export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl }: { inv: InvoiceData; lines: LineData[]; seller: Party; buyer: Party; logoUrl?: string | null }) {
-  const taxed = inv.tax_type === "cgst_sgst" || inv.tax_type === "igst";
+export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signatureUrl }: { inv: InvoiceData; lines: LineData[]; seller: Party; buyer: Party; logoUrl?: string | null; sealUrl?: string | null; signatureUrl?: string | null }) {
+  const sellerName = seller.trade_name || seller.legal_name;
+  const legalLine = seller.trade_name && seller.legal_name && seller.trade_name.toLowerCase() !== seller.legal_name.toLowerCase()
+    ? `${seller.constitution === "Proprietorship" ? "Prop." : "Legal name:"} ${seller.legal_name}${seller.constitution && seller.constitution !== "Proprietorship" ? ` (${seller.constitution})` : ""}` : null;
+  const msme = seller.udyam_no && (seller.show_msme_note as unknown) !== false;
   const title = seller.gstin ? "Tax Invoice" : "Invoice";
   const half = num(inv.gst_rate) / 2;
   const hasBank = Boolean(seller.bank_account_no || seller.bank_ifsc);
@@ -25,11 +28,13 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl }: { inv: Invoic
       <header className="invoice-head">
         <div>
           {logoUrl && <img src={logoUrl} alt="" className="invoice-logo" />}
-          <div className="invoice-seller">{seller.legal_name}</div>
+          <div className="invoice-seller">{sellerName}</div>
+          {legalLine && <div className="muted" style={{ fontSize: 12.5, marginTop: -2 }}>{legalLine}</div>}
           {addr(seller).map((l, i) => <div key={i}>{l}</div>)}
           {seller.gstin && <div>GSTIN <b className="mono">{seller.gstin}</b>{seller.state_code ? <> · State code {seller.state_code}</> : null}</div>}
           {seller.pan && <div>PAN <span className="mono">{seller.pan}</span></div>}
-          {(seller.email || seller.phone) && <div>{[seller.email, seller.phone].filter(Boolean).join(" · ")}</div>}
+          {seller.udyam_no && <div>Udyam <span className="mono">{seller.udyam_no}</span>{seller.msme_category ? ` · ${seller.msme_category} enterprise` : ""}</div>}
+          {(seller.email || seller.phone || seller.website) && <div>{[seller.email, seller.phone, seller.website].filter(Boolean).join(" · ")}</div>}
         </div>
         <div className="invoice-meta">
           <h2>{title}</h2>
@@ -80,6 +85,7 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl }: { inv: Invoic
           <div>{amountInWords(inv.total, inv.currency)}</div>
           {inv.tax_type === "export" && <p className="invoice-note">Supply meant for export of services under LUT{seller.lut_no ? ` (${seller.lut_no})` : ""} without payment of integrated tax (IGST).</p>}
           {!seller.gstin && <p className="invoice-note">GST not charged.</p>}
+          {msme && <p className="invoice-note">{seller.msme_category ? `${seller.msme_category} enterprise` : "Enterprise"} registered under the MSMED Act, 2006 (Udyam {seller.udyam_no}). Payment is due within the agreed period, not exceeding 45 days from acceptance (Section 15).</p>}
           {inv.notes && <p className="invoice-note">{inv.notes}</p>}
         </div>
         <table className="invoice-totals"><tbody>
@@ -110,8 +116,18 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl }: { inv: Invoic
         </section>
       )}
       <footer className="invoice-foot">
-        {taxed || seller.gstin ? "This is a computer-generated invoice and needs no signature." : "This is a computer-generated invoice."}
-        <span>For {seller.legal_name}</span>
+        <span className="invoice-foot-note">{sealUrl || signatureUrl ? "This is a computer-generated invoice." : "This is a computer-generated invoice and needs no signature."}</span>
+        <div className="invoice-sign">
+          <div>For {sellerName}</div>
+          {(sealUrl || signatureUrl) && (
+            <div className="invoice-sign-art">
+              {sealUrl && <img src={sealUrl} alt="Seal" className="invoice-seal" />}
+              {signatureUrl && <img src={signatureUrl} alt="Signature" className="invoice-signature" />}
+            </div>
+          )}
+          {seller.signatory_name && <div className="invoice-sign-name">{seller.signatory_name}{seller.signatory_title ? `, ${seller.signatory_title}` : ""}</div>}
+          <div className="muted" style={{ fontSize: 11.5 }}>Authorised Signatory</div>
+        </div>
       </footer>
     </article>
   );

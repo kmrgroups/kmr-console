@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertManager } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionState } from "@/lib/action-state";
 import { setFlash } from "@/lib/flash";
 
@@ -58,6 +59,11 @@ const settingsSchema = z.object({
   bank_ifsc: z.string().trim().toUpperCase().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "IFSC: 11 characters, e.g. FDRL0002514").or(z.literal("")).transform((v) => v || null),
   bank_swift: z.string().trim().toUpperCase().regex(/^[A-Z0-9]{8}([A-Z0-9]{3})?$/, "SWIFT: 8 or 11 characters").or(z.literal("")).transform((v) => v || null),
   payment_days: z.string().trim().transform(Number).refine((v) => Number.isInteger(v) && v >= 0 && v <= 120, "Payment days: 0 to 120"),
+  trade_name: opt(200), constitution: opt(60), website: opt(120), signatory_name: opt(120), signatory_title: opt(80),
+  udyam_no: z.string().trim().toUpperCase().regex(/^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/, "Udyam number looks like UDYAM-PY-03-0058991").or(z.literal("")).transform((v) => v || null),
+  msme_category: z.enum(["Micro", "Small", "Medium", ""]).transform((v) => v || null),
+  show_seal: z.string().optional().transform((v) => v === "on"),
+  show_msme_note: z.string().optional().transform((v) => v === "on"),
 });
 
 export async function saveBillingSettings(_: ActionState, form: FormData): Promise<ActionState> {
@@ -172,4 +178,35 @@ export async function rejectPayment(_: ActionState, form: FormData): Promise<Act
     await setFlash({ ok: "Payment report rejected. The customer sees the reason on the pay link." });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);
+}
+
+/** Company seal or signature for invoices — kept in the private kmr-billing bucket, never public. */
+export async function uploadBillingImage(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const kind = String(form.get("kind"));
+    if (kind !== "seal" && kind !== "signature") return { error: "Unknown image." };
+    const file = form.get("image");
+    if (!(file instanceof File) || !file.size) return { error: "Choose an image file." };
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return { error: "Use a PNG (best, with a transparent background), JPG or WebP image." };
+    if (file.size > 2 * 1024 * 1024) return { error: "The image must be under 2 MB." };
+    const path = `${kind}/${Date.now()}.${file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"}`;
+    const { error: upErr } = await createAdminClient().storage.from("kmr-billing").upload(path, file, { contentType: file.type });
+    if (upErr) return { error: upErr.message };
+    // Older files are kept: invoices already issued still point to the seal / signature they were issued with
+    const supabase = await createClient();
+    const { error } = await supabase.from("billing_settings").update({ [`${kind}_path`]: path, updated_at: new Date().toISOString() }).eq("id", true);
+    if (error) return { error: error.message };
+    revalidatePath("/billing");
+    return { ok: `${kind === "seal" ? "Seal" : "Signature"} saved. New invoices use it when issued.` };
+  } catch (e) { return fail(e); }
+}
+
+export async function removeBillingImage(form: FormData) {
+  await assertManager();
+  const kind = String(form.get("kind"));
+  if (kind !== "seal" && kind !== "signature") return;
+  const supabase = await createClient();
+  await supabase.from("billing_settings").update({ [`${kind}_path`]: null, updated_at: new Date().toISOString() }).eq("id", true);
+  revalidatePath("/billing");
 }

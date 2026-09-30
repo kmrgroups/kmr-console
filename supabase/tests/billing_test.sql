@@ -34,6 +34,9 @@ insert into console.prices (product_code, period, currency, unit_amount, min_sea
   ('hrm', 'month', 'INR', 60, 25), ('hrm', 'year', 'INR', 600, 25), ('balloon', 'month', 'INR', 999, 1), ('hrm', 'month', 'USD', 1.5, 25);
 select pg_temp.fails($$select console.issue_invoice(console.create_invoice('00000000-0000-0000-0000-00000000b002', 'month', current_date, '[{"product_code":"hrm","seats":1}]'))$$, 'cannot issue without a bank account or UPI ID');
 update console.billing_settings set bank_account_name = 'KMR GROUP OF COMPANIES', bank_account_no = '12345678901234', bank_ifsc = 'FDRL0001234', bank_name = 'Federal Bank', bank_branch = 'Test branch', bank_swift = 'FDRLINBBIBD' where id;
+update console.billing_settings set trade_name = 'Test Traders', legal_name = 'A Person', constitution = 'Proprietorship', udyam_no = 'UDYAM-KA-03-0000001', msme_category = 'Micro',
+  signatory_name = 'A Person', signatory_title = 'Proprietor', seal_path = 'seal/x.png', signature_path = 'signature/x.png' where id;
+select pg_temp.fails($$update console.billing_settings set udyam_no = 'UDYAM-123' where id$$, 'malformed Udyam number refused');
 select pg_temp.fails($$select console.create_invoice('00000000-0000-0000-0000-00000000b001', 'year', current_date, '[{"product_code":"balloon","seats":2}]')$$, 'no yearly Balloon price → clear error');
 
 -- same state: CGST + SGST; minimum seats applied
@@ -59,6 +62,9 @@ select pg_temp.ok((select total = 17700 from console.invoices where id = (select
 -- issue: gapless numbering, frozen details, no more changes
 select pg_temp.ok(console.issue_invoice((select id from t_inv where k = 'ka')) = 'KMR/' || console.fin_year(current_date) || '/0001', 'first issued invoice is KMR/<FY>/0001');
 select pg_temp.ok(console.issue_invoice((select id from t_inv where k = 'tn')) = 'KMR/' || console.fin_year(current_date) || '/0002', 'second is /0002');
+select pg_temp.ok((select seller ->> 'trade_name' = 'Test Traders' and seller ->> 'legal_name' = 'A Person' and seller ->> 'udyam_no' = 'UDYAM-KA-03-0000001'
+                     and seller ->> 'signature_path' = 'signature/x.png' and seller ->> 'state_code' = '29' and not seller ? 'invoice_prefix'
+                     from console.invoices where id = (select id from t_inv where k = 'tn')), 'trade name, legal name, Udyam and signature frozen on the invoice');
 select pg_temp.ok((select seller ->> 'gstin' = '29AAACK1234K1Z5' and buyer ->> 'tax_id' = '33AABCC1234C1Z5' and due_date = current_date + 15
                      from console.invoices where id = (select id from t_inv where k = 'tn')), 'seller and buyer frozen on the invoice; due in 15 days');
 select pg_temp.fails($$select console.add_invoice_line((select id from t_inv where k = 'ka'), 'x', 1, 1)$$, 'issued invoice cannot be changed');

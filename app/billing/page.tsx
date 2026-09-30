@@ -6,7 +6,8 @@ import { Empty, fmtDate, one } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
 import { p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
-import { deletePrice, saveBillingSettings, savePrice } from "@/app/billing-actions";
+import { deletePrice, removeBillingImage, saveBillingSettings, savePrice, uploadBillingImage } from "@/app/billing-actions";
+import { billingImageUrls } from "@/lib/billing-files";
 
 export const metadata = { title: "Prices & invoices" };
 
@@ -27,6 +28,7 @@ export default async function Billing() {
   if (!s) {
     return <AppShell staff={staff} active="/billing"><div className="alert warn">Billing is not set up in the database yet. In Supabase → SQL Editor run <b>supabase/migrations/0018_billing.sql</b>, then refresh this page.</div></AppShell>;
   }
+  const images = await billingImageUrls({ ...s, show_seal: true });
   const prodName = Object.fromEntries((products ?? []).map((x) => [x.code, x.name]));
   const seatLabel = Object.fromEntries((products ?? []).map((x) => [x.code, x.seat_label]));
   const inv = invoices ?? [];
@@ -114,9 +116,14 @@ export default async function Billing() {
         {(!s.address || (!s.bank_account_no && !s.upi_id)) && <div className="alert warn">Fill in your address and bank account (or UPI ID) before issuing the first invoice.</div>}
         {manager ? (
           <ActionForm action={saveBillingSettings} submitLabel="Save seller details" className="formgrid">
-            <label className="field">Legal name<input name="legal_name" defaultValue={s.legal_name} required /></label>
-            <label className="field">GSTIN<input name="gstin" defaultValue={s.gstin ?? ""} placeholder="29ABCDE1234F1Z5" maxLength={15} /></label>
-            <label className="field">PAN<input name="pan" defaultValue={s.pan ?? ""} maxLength={10} /></label>
+            <label className="field">Trade name<input name="trade_name" defaultValue={s.trade_name ?? ""} placeholder="As on the GST certificate" /><span className="help">The name invoices lead with</span></label>
+            <label className="field">Legal name<input name="legal_name" defaultValue={s.legal_name} required /><span className="help">As on the GST certificate (the proprietor for a proprietorship)</span></label>
+            <label className="field">Constitution<select name="constitution" defaultValue={s.constitution ?? ""}><option value=""></option>{["Proprietorship", "Partnership", "LLP", "Private Limited Company", "Public Limited Company", "One Person Company"].map((x) => <option key={x}>{x}</option>)}</select></label>
+            <label className="field">GSTIN<input name="gstin" defaultValue={s.gstin ?? ""} placeholder="34ABCDE1234F1Z5" maxLength={15} /></label>
+            <label className="field">PAN<input name="pan" defaultValue={s.pan ?? ""} maxLength={10} /><span className="help">Printed on invoices; never shown on the website</span></label>
+            <label className="field">Udyam (MSME) number<input name="udyam_no" defaultValue={s.udyam_no ?? ""} placeholder="UDYAM-PY-03-0000000" /></label>
+            <label className="field">MSME category<select name="msme_category" defaultValue={s.msme_category ?? ""}><option value=""></option><option>Micro</option><option>Small</option><option>Medium</option></select></label>
+            <label className="field">Website<input name="website" defaultValue={s.website ?? ""} placeholder="www.kmr-groups.com" /></label>
             <label className="field full">Address<input name="address" defaultValue={s.address ?? ""} /></label>
             <label className="field">City<input name="city" defaultValue={s.city ?? ""} /></label>
             <label className="field">State<input name="state" defaultValue={s.state ?? ""} placeholder="Karnataka" /></label>
@@ -140,8 +147,34 @@ export default async function Billing() {
             <label className="field">UPI ID<input name="upi_id" defaultValue={s.upi_id ?? ""} placeholder="kmrgroups@fbl" /><span className="help">The pay link shows a UPI QR with the amount filled in</span></label>
             <label className="field full">Other payment notes<textarea name="bank_details" rows={2} defaultValue={s.bank_details ?? ""} placeholder="e.g. Cheques payable to KMR GROUP OF COMPANIES." /></label>
             <label className="field full">Terms<textarea name="terms" rows={2} defaultValue={s.terms ?? ""} placeholder="Subscription renews on payment. Prices exclude GST unless stated." /></label>
+            <div className="field full" style={{ marginTop: 6 }}><b>Authorised signatory</b></div>
+            <label className="field">Name<input name="signatory_name" defaultValue={s.signatory_name ?? ""} placeholder="R. Rajavelu" /></label>
+            <label className="field">Designation<input name="signatory_title" defaultValue={s.signatory_title ?? ""} placeholder="Proprietor" /></label>
+            <label className="field full checkline"><input type="checkbox" name="show_seal" defaultChecked={s.show_seal !== false} /> Show the seal and signature on invoices</label>
+            <label className="field full checkline"><input type="checkbox" name="show_msme_note" defaultChecked={s.show_msme_note !== false} /> Show the MSME note (MSMED Act, 2006 — payment within 45 days) when a Udyam number is set</label>
           </ActionForm>
         ) : <p className="muted">Only an owner or administrator can change these.</p>}
+      </div>
+
+      <div className="card">
+        <h2>Seal &amp; signature</h2>
+        <p className="muted" style={{ marginTop: -4 }}>Printed in the signature block of new invoices. Kept private — shown only on invoices, through links that expire. A PNG with a transparent background looks best.</p>
+        <div className="grid two">
+          {(["seal", "signature"] as const).map((kind) => (
+            <div key={kind} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 14 }}>
+              <b>{kind === "seal" ? "Company seal" : "Signature"}</b>
+              <div style={{ height: 120, display: "grid", placeItems: "center", background: "var(--surface-2)", borderRadius: 8, margin: "8px 0" }}>
+                {images[kind] ? <img src={images[kind]!} alt="" style={{ maxHeight: 110, maxWidth: "90%", objectFit: "contain" }} /> : <small className="muted">None yet</small>}
+              </div>
+              {manager && <>
+                <ActionForm action={uploadBillingImage} submitLabel={images[kind] ? "Replace" : "Upload"} variant="secondary" hidden={{ kind }}>
+                  <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required />
+                </ActionForm>
+                {images[kind] && <form action={removeBillingImage} style={{ marginTop: 6 }}><input type="hidden" name="kind" value={kind} /><button className="linkbtn">Remove from new invoices</button></form>}
+              </>}
+            </div>
+          ))}
+        </div>
       </div>
     </AppShell>
   );
