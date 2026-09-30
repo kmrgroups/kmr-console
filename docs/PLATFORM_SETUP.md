@@ -221,3 +221,25 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
   Vercel project, add the webhook `https://www.kmr-groups.com/api/pay/razorpay/webhook` (events *payment.captured*,
   *order.paid*), and make sure Razorpay's settlement bank account is the same Federal Bank account. Then tick
   *Online payment*. Every online payment is checked with Razorpay (signature, order, amount) before the order is paid.
+
+## 12. Milestone 5 — safety, emails, health (run `supabase/migrations/0022_hardening.sql` once)
+
+**Add these in Vercel to BOTH projects (kmr-console and the website), then Redeploy:**
+
+```
+RESEND_API_KEY=re_…                 # same key the HRM uses (resend.com › API keys)
+EMAIL_FROM=KMR Group of Companies <no-reply@kmr-groups.com>   # domain verified in Resend
+ALERT_EMAIL=info@kmr-groups.com      # where KMR's own notices go (orders, payments, enquiries, errors)
+```
+and in kmr-console only: `CRON_SECRET=` any long random text (without it the nightly backup now refuses to run).
+
+What happens automatically:
+- **Emails** — invoice issued (with pay link), payment received / rejected, support ticket replies, shop order
+  placed / paid / rejected, payment reported (to KMR), enquiries and pilot requests (KMR + thank-you to the customer),
+  job applications (KMR + applicant). Without the keys nothing is sent and the Console shows "skipped".
+- **Protection** — too many sign-ins, orders, payment reports or form posts from one place are refused for a while.
+- **Error alerts** — server errors are recorded; one email per error per hour.
+- **Backups** — every night, two files (Console + website data; customers' app data), kept 30 days.
+- **Console › System health** — traffic lights for errors, emails, backups; **Console › Activity log** — who changed what.
+- **Website** — security headers, `sitemap.xml`, `robots.txt`, company details for Google, Vercel Analytics
+  (switch on under Vercel › the website project › Analytics).

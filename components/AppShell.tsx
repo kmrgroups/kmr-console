@@ -16,6 +16,8 @@ const NAV: { href: string; label: string; icon: IconName; owner?: boolean }[] = 
   { href: "/products", label: "Products & versions", icon: "layers" },
   { href: "/staff", label: "KMR staff", icon: "shield" },
   { href: "/data", label: "Data & backups", icon: "download" },
+  { href: "/health", label: "System health", icon: "bell" },
+  { href: "/activity", label: "Activity log", icon: "clock" },
   { href: "/branding", label: "KMR branding", icon: "building" },
 ];
 

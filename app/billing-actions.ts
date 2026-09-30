@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionState } from "@/lib/action-state";
 import { setFlash } from "@/lib/flash";
+import { mailInvoiceIssued, mailPaymentReceived, mailPaymentRejected } from "@/lib/notify";
 
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
 const opt = (max = 300) => z.string().trim().max(max).optional().transform((v) => v || null);
@@ -125,7 +126,8 @@ export async function issueInvoice(_: ActionState, form: FormData): Promise<Acti
   try {
     await assertManager();
     const num = await rpc("issue_invoice", { p_invoice: id });
-    await setFlash({ ok: `Invoice ${num} issued. Share the pay link with the customer, or mark it paid when the money arrives.` });
+    await mailInvoiceIssued(id);
+    await setFlash({ ok: `Invoice ${num} issued and emailed to the customer's contact (with the pay link). Mark it paid when the money arrives.` });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);
 }
@@ -155,6 +157,7 @@ export async function markInvoicePaid(_: ActionState, form: FormData): Promise<A
   try {
     await assertManager();
     await rpc("mark_invoice_paid", { p_invoice: id, p_reference: form.get("reference"), p_date: form.get("paid_on") || null, p_method: form.get("pay_method") || "neft" });
+    await mailPaymentReceived(id);
     await setFlash({ ok: "Payment recorded. The invoice is paid and the customer's licences are renewed for the paid period." });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);
@@ -165,6 +168,7 @@ export async function confirmPayment(_: ActionState, form: FormData): Promise<Ac
   try {
     await assertManager();
     await rpc("confirm_payment", { p_payment: form.get("payment_id") });
+    await mailPaymentReceived(id);
     await setFlash({ ok: "Payment confirmed. The invoice is paid and the customer's licences are renewed for the paid period." });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);
@@ -175,6 +179,7 @@ export async function rejectPayment(_: ActionState, form: FormData): Promise<Act
   try {
     await assertManager();
     await rpc("reject_payment", { p_payment: form.get("payment_id"), p_reason: form.get("reason") });
+    await mailPaymentRejected(id, String(form.get("reason") ?? ""));
     await setFlash({ ok: "Payment report rejected. The customer sees the reason on the pay link." });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);

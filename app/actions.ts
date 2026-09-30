@@ -10,6 +10,7 @@ import { randomUUID } from "node:crypto";
 import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
 import { setFlash } from "@/lib/flash";
+import { mailTicketReply } from "@/lib/notify";
 
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
 const opt = z.string().trim().max(300).optional().transform((v) => v || null);
@@ -235,6 +236,7 @@ export async function replyTicket(_: ActionState, form: FormData): Promise<Actio
     if (["low", "normal", "high", "urgent"].includes(priority)) await supabase.from("tickets").update({ priority }).eq("id", id);
     const assignee = String(form.get("assigned_to") ?? "");
     if (assignee) await supabase.from("tickets").update({ assigned_to: assignee === "none" ? null : assignee }).eq("id", id);
+    if (body) await mailTicketReply(id, body, status);
     revalidatePath(`/tickets/${id}`);
     return { ok: body ? "Reply sent — the customer sees it under Help & support." : "Ticket updated." };
   } catch (e) { return fail(e); }

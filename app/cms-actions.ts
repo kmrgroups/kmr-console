@@ -10,6 +10,7 @@ import { SAMPLE_TABLES, sampleRows } from "@/lib/cms-sample";
 import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
 import { setFlash } from "@/lib/flash";
+import { mailOrderUpdate } from "@/lib/notify";
 
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
@@ -154,12 +155,16 @@ async function orderRpc(fn: string, args: Record<string, unknown>) {
 export async function confirmOrderPayment(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     const r = await orderRpc("shop_confirm_payment", { p_order: form.get("id"), p_method: form.get("pay_method") || null, p_reference: form.get("reference") || null, p_paid_on: form.get("paid_on") || null });
+    if (r === "paid") await mailOrderUpdate(String(form.get("id")), true);
     return { ok: r === "paid" ? "Payment confirmed — the order is paid and stock reduced." : `Payment confirmed (${r}).` };
   } catch (e) { return fail(e); }
 }
 export async function rejectOrderPayment(_: ActionState, form: FormData): Promise<ActionState> {
-  try { await orderRpc("shop_reject_payment", { p_order: form.get("id"), p_reason: form.get("reason") }); return { ok: "Report rejected — the customer sees the reason on their order page." }; }
-  catch (e) { return fail(e); }
+  try {
+    await orderRpc("shop_reject_payment", { p_order: form.get("id"), p_reason: form.get("reason") });
+    await mailOrderUpdate(String(form.get("id")), false, String(form.get("reason") ?? ""));
+    return { ok: "Report rejected — the customer is emailed and sees the reason on their order page." };
+  } catch (e) { return fail(e); }
 }
 export async function cancelShopOrder(_: ActionState, form: FormData): Promise<ActionState> {
   try { await orderRpc("shop_cancel_order", { p_order: form.get("id"), p_reason: form.get("reason") || "" }); return { ok: "Order cancelled." }; }

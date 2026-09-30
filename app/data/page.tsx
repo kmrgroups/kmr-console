@@ -40,7 +40,7 @@ export default async function DataPage() {
         </div>
         <div className="card" style={{ marginTop: 16 }}>
           <h2>Nightly backups</h2>
-          <p className="muted">Saved automatically every night at 12 AM (India time) and kept for 7 days.</p>
+          <p className="muted">Saved automatically every night at 12 AM (India time) and kept for 30 days — one file for the Console and website, one for the customers’ app data (Operations Master, Balloon, Process Documents, Capacity).</p>
           <AutoBackupToggle />
           {backups.length ? (
             <div className="tablewrap" style={{ marginTop: 12 }}><table>
