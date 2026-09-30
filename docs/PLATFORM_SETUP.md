@@ -298,6 +298,11 @@ Every Operations Master card now shows how many records are **sample** and how m
 - **Flush data** — removes your own (non-sample) records of that list. A JSON backup downloads automatically first;
   use Load data with that file to bring them back.
 
-The **Sample drawing** card (companies with Balloon Inspector) adds a ready-made drawing, Mounting Plate EX-2040, to
-the company's Balloon Inspector reports. Opening it there balloons it automatically. **Flush sample drawing** removes it.
-The drawing file itself lives on the website (`/it/balloon/samples/`), so no storage upload is needed.
+The **Balloon Inspector drawings** card (companies with Balloon Inspector; run `0028_balloon_card_data.sql` too) has
+the same four buttons:
+
+- **Load sample** adds a ready-made drawing, Mounting Plate EX-2040, to the company's Balloon Inspector reports; opening
+  it there balloons it automatically. **Flush sample** removes it. The drawing file lives on the website
+  (`/it/balloon/samples/`), so no storage upload is needed.
+- **Flush data** removes the company's own reports (everything except the sample). A JSON backup downloads first;
+  drawing files stay in storage. **Load data** with that file (or a Data Master Balloon backup) brings them back.
