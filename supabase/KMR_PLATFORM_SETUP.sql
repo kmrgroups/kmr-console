@@ -4468,19 +4468,30 @@ begin
 end $fn$;
 
 -- logins nobody uses any more (after a clean-out): the Console deletes them through the Supabase admin API
+drop function if exists console.orphan_logins();
 create or replace function console.orphan_logins() returns table (user_id uuid, email text)
-language sql stable security definer set search_path = console, public, auth as $fn$
-  select u.id, u.email::text from auth.users u
-   where not exists (select 1 from console.staff s where s.user_id = u.id)
-     and not exists (select 1 from hrm.app_users a where a.id = u.id)
-     and not exists (select 1 from console.customer_members m where m.email = lower(u.email))
-     and (to_regclass('public.staff_profiles') is null or not exists (select 1 from public.staff_profiles p where p.id = u.id))
-     and not exists (select 1 from public.bi_platform_admins p where p.user_id = u.id or p.email = lower(u.email))
-     and not exists (select 1 from public.pd_platform_admins p where p.user_id = u.id or p.email = lower(u.email))
-     and not exists (select 1 from public.bi_members p where p.email = lower(u.email))
-     and not exists (select 1 from public.pd_members p where p.email = lower(u.email))
-     and not exists (select 1 from public.cp_members p where p.email = lower(u.email))
-$fn$;
+language plpgsql stable security definer set search_path = console, public, auth as $fn$
+-- builds the "still in use" list only from tables and columns that exist in this project (the apps differ slightly)
+declare ids uuid[] := '{}'; mails text[] := '{}'; t text; c text; more uuid[]; m text[];
+begin
+  foreach t in array array['console.staff','hrm.app_users','console.customer_members','public.staff_profiles',
+                           'public.bi_platform_admins','public.pd_platform_admins','public.bi_members','public.pd_members','public.cp_members'] loop
+    if to_regclass(t) is null then continue; end if;
+    foreach c in array array['user_id','id'] loop
+      if exists (select 1 from pg_attribute where attrelid = to_regclass(t) and attname = c and not attisdropped and atttypid = 'uuid'::regtype)
+         and not (c = 'id' and t in ('console.customer_members')) then
+        execute format('select coalesce(array_agg(%I), ''{}'') from %s', c, t) into more;
+        ids := ids || more;
+      end if;
+    end loop;
+    if exists (select 1 from pg_attribute where attrelid = to_regclass(t) and attname = 'email' and not attisdropped) then
+      execute format('select coalesce(array_agg(lower(email::text)), ''{}'') from %s', t) into m;
+      mails := mails || m;
+    end if;
+  end loop;
+  return query select u.id, u.email::text from auth.users u
+    where not (u.id = any(ids)) and not (lower(coalesce(u.email, '')) = any(mails));
+end $fn$;
 
 -- ---------- demo: Operations Master sample for one customer ----------
 create or replace function console.ops_demo_load(p_customer uuid) returns integer
