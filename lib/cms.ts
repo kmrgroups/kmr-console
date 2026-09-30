@@ -65,8 +65,8 @@ export const SECTIONS: Section[] = [
       { k: "gstin", label: "GSTIN", help: "Shown in the footer and on About" }, { k: "udyam_number", label: "Udyam registration no." },
       { k: "msme_category", label: "MSME category" }, { k: "cin", label: "CIN / LLPIN" }, { k: "constitution", label: "Constitution" },
       { k: "founded_year", label: "Founded (year)", type: "number" }, { k: "trademark_status", label: "Trademark", wide: true },
-      { k: "logo_url", label: "Logo (header, footer, favicon-size mark)", type: "image" }, { k: "logo_full_url", label: "Logo with business verticals", type: "image" },
-      { k: "letterhead_url", label: "Letterhead", type: "image" },
+      { k: "logo_url", label: "Company logo", type: "image", help: "Shown in the header and footer. A PNG with a transparent background looks best." },
+      { k: "about_image_url", label: "About section photo", type: "image", help: "Beside “About” on the home page — your office, team or plant." },
       { k: "short_about", label: "Short introduction (footer, home page)", type: "textarea", wide: true },
       { k: "about_story", label: "Our story (About page)", type: "longtext", wide: true },
       { k: "vision", label: "Vision", type: "textarea", wide: true }, { k: "mission", label: "Mission", type: "textarea", wide: true },
@@ -81,7 +81,7 @@ export const SECTIONS: Section[] = [
       { k: "whatsapp_number", label: "WhatsApp (country code + number, no +)", help: "e.g. 919876543210" }, { k: "website_url", label: "Website", type: "url" },
       { k: "business_hours", label: "Business hours", wide: true, help: "e.g. Mon – Sat, 9:30 am – 6:30 pm" },
       { k: "map_lat", label: "Map latitude", type: "number" }, { k: "map_lng", label: "Map longitude", type: "number" },
-      { k: "map_embed_url", label: "Google Maps embed link (optional)", type: "url", wide: true, help: "Google Maps › Share › Embed a map › copy the src link. Otherwise the latitude / longitude are used." },
+      { k: "map_embed_url", label: "Google Maps link (optional)", wide: true, help: "Paste any Google Maps link for your location (Share › Copy link), or the “Embed a map” code. Without it, the map uses the latitude / longitude, else the address." },
       { k: "linkedin_url", label: "LinkedIn", type: "url" }, { k: "facebook_url", label: "Facebook", type: "url" }, { k: "instagram_url", label: "Instagram", type: "url" },
       { k: "youtube_url", label: "YouTube", type: "url" }, { k: "twitter_url", label: "X (Twitter)", type: "url" },
     ] },
@@ -222,7 +222,6 @@ export const SECTIONS: Section[] = [
 export const EXTRA: { href: string; label: string; group: GroupKey; roles: Role[] }[] = [
   { href: "/cms/orders", label: "Orders & payments", group: "shop", roles: SALES },
   { href: "/cms/payments", label: "Payment settings", group: "shop", roles: ALL },
-  { href: "/cms/import", label: "Import from Operations Master", group: "shop", roles: ALL },
 ];
 
 export const sectionByKey = (k: string) => SECTIONS.find((s) => s.key === k);

@@ -34,6 +34,7 @@ export function ActionForm({
       className={className ?? "stack"}
       onSubmit={(e) => {
         e.preventDefault();
+        if (e.currentTarget.querySelector('[data-uploading="1"]')) { window.alert("Please wait — a file is still uploading."); return; }
         if (confirm && !window.confirm(confirm)) return;
         const data = new FormData(e.currentTarget);
         startTransition(() => formAction(data));

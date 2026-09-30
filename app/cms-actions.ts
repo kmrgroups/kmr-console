@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import { assertStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { canEdit, sectionByKey, type Field, type Section } from "@/lib/cms";
-import { MEDIA_BUCKET, PRIVATE_BUCKETS, uploadFile, web } from "@/lib/cms-server";
+import { MEDIA_BUCKET, PRIVATE_BUCKETS, web } from "@/lib/cms-server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { SAMPLE_TABLES, sampleRows } from "@/lib/cms-sample";
+import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
 import { setFlash } from "@/lib/flash";
 
@@ -12,7 +15,7 @@ const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
 const TOUCH = ["products", "hero_content", "company_info", "legal_pages", "job_openings", "job_applications", "site_settings"];
 
-async function readField(f: Field, form: FormData, folder: string): Promise<unknown> {
+async function readField(f: Field, form: FormData): Promise<unknown> {
   const raw = form.get(f.k);
   const s = typeof raw === "string" ? raw.trim() : "";
   switch (f.type) {
@@ -25,13 +28,10 @@ async function readField(f: Field, form: FormData, folder: string): Promise<unkn
       return n;
     }
     case "image": case "document": {
-      if (form.get(`${f.k}__clear`) === "on") return null;
-      const file = form.get(`${f.k}__file`);
-      if (file instanceof File && file.size) {
-        if (file.size > (f.type === "image" ? 15 : 10) * 1024 * 1024) throw new Error(`${f.label}: the file is too large.`);
-        return uploadFile(f.type === "image" ? MEDIA_BUCKET : PRIVATE_BUCKETS[f.bucket ?? "records"], folder, file);
-      }
-      return s || null;
+      // the browser already uploaded the file (startUpload); the field holds its address
+      if (!s) return null;
+      if (f.type === "image" && !/^https?:\/\//.test(s) && !s.startsWith("/")) throw new Error(`${f.label}: upload the file again.`);
+      return s;
     }
     case "url": if (s && !/^(https?:\/\/|\/|#|mailto:|tel:)/i.test(s)) return `https://${s}`; return s || null;
     case "email": if (s && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s)) throw new Error(`${f.label}: enter a valid email.`); return s.toLowerCase() || null;
@@ -57,7 +57,7 @@ export async function saveRecord(_: ActionState, form: FormData): Promise<Action
     const row: Record<string, unknown> = {};
     for (const f of s.fields) {
       if (f.readonly) continue;
-      const v = await readField(f, form, s.table);
+      const v = await readField(f, form);
       if (f.required && (v === null || v === "")) return { error: `${f.label} is required.` };
       row[f.k] = v;
     }
@@ -79,8 +79,7 @@ export async function saveRecord(_: ActionState, form: FormData): Promise<Action
       newId = data.id;
     }
     refresh(s);
-    if (id) return { ok: "Saved. The website shows the change within a minute." };
-    await setFlash({ ok: `${cap(s.singular)} added.` });
+    await setFlash({ ok: id ? "Saved. The website shows the change within a minute." : `${cap(s.singular)} added.` });
   } catch (e) { return fail(e); }
   redirect(`/cms/${s.key}/${newId}`);
 }
@@ -98,6 +97,35 @@ export async function deleteRecord(_: ActionState, form: FormData): Promise<Acti
     await setFlash({ ok: `${cap(s.singular)} deleted.` });
   } catch (e) { return fail(e); }
   redirect(`/cms/${s.key}`);
+}
+
+const IMAGE_TYPES = /^(image\/(jpeg|png|webp|gif|svg\+xml|avif)|video\/(mp4|webm))$/;
+const DOC_TYPES = /^(application\/pdf|image\/(jpeg|png|webp))$/;
+
+/**
+ * Upload step 1: a one-time signed link so the browser sends the file straight to storage (with a progress bar).
+ * Large photos no longer pass through the Console server, whose request size is limited on Vercel.
+ */
+export async function startUpload(input: { section: string; field: string; name: string; type: string; size: number }):
+  Promise<{ error?: string; signedUrl?: string; value?: string; preview?: string }> {
+  try {
+    const s = await access(input.section);
+    const f = s.fields.find((x) => x.k === input.field && (x.type === "image" || x.type === "document") && !x.readonly);
+    if (!f) return { error: "This field does not take files." };
+    const image = f.type === "image";
+    if (!(image ? IMAGE_TYPES : DOC_TYPES).test(input.type)) return { error: image ? "Choose a JPG, PNG, WebP or GIF photo (or an MP4 video)." : "Choose a PDF or an image." };
+    const max = image ? (input.type.startsWith("video/") ? 50 : 25) : 10;
+    if (input.size > max * 1024 * 1024) return { error: `The file is too large — up to ${max} MB.` };
+    const ext = (input.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
+    const path = `${s.table}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const bucket = image ? MEDIA_BUCKET : PRIVATE_BUCKETS[f.bucket ?? "records"];
+    const store = createAdminClient().storage.from(bucket);
+    const { data, error } = await store.createSignedUploadUrl(path);
+    if (error || !data) return { error: `Could not start the upload: ${error?.message ?? "no link"}` };
+    return image
+      ? { signedUrl: data.signedUrl, value: store.getPublicUrl(path).data.publicUrl }
+      : { signedUrl: data.signedUrl, value: "private:" + path };
+  } catch (e) { return { error: (e as Error).message }; }
 }
 
 /** Show / hide on the website, straight from the list. */
@@ -152,14 +180,67 @@ export async function savePaymentSettings(_: ActionState, form: FormData): Promi
   } catch (e) { return fail(e); }
 }
 
-/** Import ticked Operations Master parts as website products (hidden until reviewed). */
-export async function publishFromOps(_: ActionState, form: FormData): Promise<ActionState> {
+// ---------------- Sample content (Website CMS › Overview) ----------------
+async function assertManagerStaff() {
+  const staff = await assertStaff();
+  if (staff.role !== "owner" && staff.role !== "admin") throw new Error("Only an owner or administrator can do this.");
+}
+
+export async function loadSampleContent(_: ActionState): Promise<ActionState> {
   try {
-    await assertStaff();
-    const supabase = await createClient();
-    const { data, error } = await supabase.rpc("publish_ops_products", { p_customer: form.get("customer_id"), p_codes: form.getAll("code").map(String), p_business: form.get("business") || "shop" });
-    if (error) return { error: error.message };
-    revalidatePath("/cms/products"); revalidatePath("/cms/trade");
-    return { ok: `${data.added} new product${data.added === 1 ? "" : "s"} added, hidden until you set the price, stock and photo and tick “Show on the website”${data.refreshed ? `; ${data.refreshed} refreshed` : ""}.` };
+    await assertManagerStaff();
+    const db = web(); const rows = sampleRows(env.platformUrl);
+    const { count } = await db.from("hero_slides").select("id", { count: "exact", head: true }).eq("sample", true);
+    if (count) return { error: "Sample content is already loaded. Remove it first to load it again." };
+    let n = 0;
+    for (const t of SAMPLE_TABLES) {
+      for (const r of rows[t] as Record<string, unknown>[]) {          // one at a time: each row sets only its own fields
+        const { error } = await db.from(t).insert({ ...r, sample: true, is_active: true });
+        if (error) throw new Error(`${t}: ${/column .*sample/.test(error.message) ? "run the website's supabase/add-cms-update.sql first" : error.message}`);
+        n++;
+      }
+    }
+    // photos only where there is none yet
+    const { data: c } = await db.from("company_info").select("id,about_image_url,founder_photo_url").limit(1).maybeSingle();
+    if (c) {
+      const patch: Record<string, string> = {};
+      if (!c.about_image_url) patch.about_image_url = rows.company.about_image_url;
+      if (!c.founder_photo_url) patch.founder_photo_url = rows.company.founder_photo_url;
+      if (Object.keys(patch).length) await db.from("company_info").update(patch).eq("id", c.id);
+    }
+    const { data: vs } = await db.from("verticals").select("id,slug,image_url");
+    for (const v of vs ?? []) if (!v.image_url && v.slug && rows.verticals[v.slug]) await db.from("verticals").update({ image_url: rows.verticals[v.slug] }).eq("id", v.id);
+    revalidatePath("/cms", "layout");
+    await setFlash({ ok: `Loaded ${n} sample items (slides, numbers, products, programmes, a solution, a trade item, job openings, people and gallery photos). They are marked “sample”. The website shows them within a minute.` });
   } catch (e) { return fail(e); }
+  redirect("/cms");
+}
+
+export async function removeSampleContent(_: ActionState): Promise<ActionState> {
+  try {
+    await assertManagerStaff();
+    const db = web(); const site = `${env.platformUrl}/sample/`;
+    let removed = 0, hidden = 0;
+    for (const t of SAMPLE_TABLES) {
+      const { data, error } = await db.from(t).delete().eq("sample", true).select("id");
+      if (!error) { removed += data?.length ?? 0; continue; }
+      // a sample product that already has an order cannot be deleted — hide it instead
+      const { data: left } = await db.from(t).select("id").eq("sample", true);
+      for (const r of left ?? []) {
+        const { error: e2 } = await db.from(t).delete().eq("id", r.id);
+        if (e2) { await db.from(t).update({ is_active: false }).eq("id", r.id); hidden++; } else removed++;
+      }
+    }
+    const { data: c } = await db.from("company_info").select("id,about_image_url,founder_photo_url").limit(1).maybeSingle();
+    if (c) {
+      const patch: Record<string, null> = {};
+      if (c.about_image_url?.startsWith(site)) patch.about_image_url = null;
+      if (c.founder_photo_url?.startsWith(site)) patch.founder_photo_url = null;
+      if (Object.keys(patch).length) await db.from("company_info").update(patch).eq("id", c.id);
+    }
+    await db.from("verticals").update({ image_url: null }).like("image_url", `${site}%`);
+    revalidatePath("/cms", "layout");
+    await setFlash({ ok: `Sample content removed (${removed} items${hidden ? `; ${hidden} sample product(s) with orders were hidden instead` : ""}). Your own content was not touched.` });
+  } catch (e) { return fail(e); }
+  redirect("/cms");
 }

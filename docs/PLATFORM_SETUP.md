@@ -197,7 +197,7 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 ## 11. Website CMS (www.kmr-groups.com has no admin panel)
 
 *Already ran the platform setup?* Run **`supabase/migrations/0021_website.sql`** once, then the website's
-**`supabase/add-multi-business.sql`** and **`supabase/add-premium-site.sql`** (in that order). The website's
+**`supabase/add-multi-business.sql`**, **`supabase/add-premium-site.sql`** and **`supabase/add-cms-update.sql`** (in that order). The website's
 **`supabase/drop-operations.sql`** permanently removes the old website Operations tables that nothing else uses (it keeps `employees`, which the HR module uses) — export them first if needed.
 
 **Website CMS** (sidebar) manages every part of the website — add, edit, hide / show, delete:
@@ -208,7 +208,9 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 - **Careers** — job openings and applications (résumés in the private `kmr-careers` bucket, opened with expiring links).
 - **About us** — leadership team, gallery. **Policies & records** — any number of policies (footer link on / off) and
   private registrations & licences.
-- **Orders & payments**, **Payment settings**, **Import from Operations Master** (Online shop group).
+- **Orders & payments** and **Payment settings** (Online shop group). Customers' Operations Master data is confidential and is never copied to the website.
+- **Sample content** (Overview): load example slides, products, jobs, people and photos, and remove them in one click.
+- Photos upload straight from the browser to storage with a progress bar (up to 25 MB) and are shown whole on the website — never cropped.
 - Owner / admin edit everything; sales edit products, programmes, solutions, trade items and orders; support can view.
 
 **Payments** (Website CMS › Payment settings):

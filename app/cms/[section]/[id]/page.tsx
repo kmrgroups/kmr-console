@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireStaff } from "@/lib/auth";
+import { createHash } from "crypto";
 import { ActionForm } from "@/components/ActionForm";
+import { FileField } from "@/components/FileField";
 import { canEdit, sectionByKey, type Field } from "@/lib/cms";
 import { privateLink, web } from "@/lib/cms-server";
 import { p } from "@/lib/base-path";
@@ -9,7 +11,7 @@ import { deleteRecord, saveRecord } from "@/app/cms-actions";
 
 export const metadata = { title: "Website CMS" };
 
-function Input({ f, v, edit, doc }: { f: Field; v: unknown; edit: boolean; doc?: string | null }) {
+function Input({ f, v, edit, doc, section }: { f: Field; v: unknown; edit: boolean; doc?: string | null; section: string }) {
   const val = v === null || v === undefined ? "" : String(v);
   const wide = f.wide || ["textarea", "longtext", "image", "document"].includes(f.type ?? "");
   const cls = `field${wide ? " full" : ""}`;
@@ -22,26 +24,13 @@ function Input({ f, v, edit, doc }: { f: Field; v: unknown; edit: boolean; doc?:
     case "select": return ro
       ? <label className={cls}>{f.label}<input readOnly value={f.opts!.find((o) => o[0] === val)?.[1] ?? val} /></label>
       : <label className={cls}>{f.label}<select name={f.k} defaultValue={val} required={f.required}>{!f.required && <option value="" />}{f.opts!.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>{help}</label>;
-    case "image": case "document": {
-      const video = /\.(mp4|webm)(\?|$)/i.test(val);
-      return (
-        <div className={cls}>
-          <span>{f.label}</span>
-          <div className="row" style={{ alignItems: "flex-start", gap: 14 }}>
-            {f.type === "image"
-              ? (val ? (video ? <video src={val} style={{ width: 160, borderRadius: 8 }} controls /> : <img src={val} alt="" style={{ width: 120, height: 120, objectFit: "contain", background: "#f3f4f6", borderRadius: 8, border: "1px solid var(--border)" }} />)
-                : <div style={{ width: 120, height: 120, borderRadius: 8, border: "1px dashed var(--border)", display: "grid", placeItems: "center" }}><small className="muted">no image</small></div>)
-              : (doc ? <a className="btn secondary small" href={doc} target="_blank" rel="noopener">Open {f.bucket === "careers" ? "résumé" : "document"}</a> : <small className="muted">None</small>)}
-            {!ro && <div className="stack" style={{ gap: 6, flex: 1, minWidth: 220 }}>
-              <input type="file" name={`${f.k}__file`} accept={f.type === "image" ? "image/*,video/mp4,video/webm" : "application/pdf,image/*"} />
-              <input type="hidden" name={f.k} defaultValue={val} />
-              {val && <label className="checkline" style={{ display: "flex", gap: 6, fontSize: 13 }}><input type="checkbox" name={`${f.k}__clear`} style={{ width: "auto" }} /> Remove</label>}
-              <small className="muted">{f.type === "image" ? "Shown on the public website. JPG, PNG or WebP (MP4 for videos)." : "Stored privately — opened with a link that expires."}</small>
-              {help}
-            </div>}
-          </div>
+    case "image": case "document":
+      if (ro) return (
+        <div className={cls}><span>{f.label}</span>
+          {f.type === "image" ? (val ? <img src={val} alt="" className="thumb" style={{ width: 150, height: 110 }} /> : <small className="muted">None</small>)
+            : (doc ? <a className="btn secondary small" href={doc} target="_blank" rel="noopener" style={{ alignSelf: "flex-start" }}>Open {f.bucket === "careers" ? "résumé" : "document"}</a> : <small className="muted">None</small>)}
         </div>);
-    }
+      return <FileField section={section} name={f.k} label={f.label} kind={f.type} value={val} docLink={doc} help={f.help} required={f.required} />;
     case "date": return <label className={cls}>{f.label}<input name={f.k} type="date" defaultValue={val.slice(0, 10)} readOnly={ro} required={f.required && !ro} />{help}</label>;
     default: return <label className={cls}>{f.label}<input name={f.k} type={f.type === "email" ? "email" : "text"} inputMode={f.type === "number" || f.type === "money" ? "decimal" : undefined}
       defaultValue={val} readOnly={ro} required={f.required && !ro} />{help}</label>;
@@ -75,7 +64,6 @@ export default async function SectionEdit({ params }: { params: Promise<{ sectio
         {preview && shown && <a className="btn secondary" href={env.platformUrl + preview} target="_blank" rel="noopener">View on the website ↗</a>}
       </div>
       {!edit && <div className="alert warn">Your role can view this but not change it.</div>}
-      {Boolean(row.ops_code) && <div className="alert info" style={{ marginBottom: 12 }}>Imported from the Operations Master (part {String(row.ops_code)}). Importing again refreshes the name and description only.</div>}
       {s.key === "applications" && !isNew && <div className="card"><div className="row">
         <a className="btn secondary small" href={`mailto:${row.email}?subject=${encodeURIComponent(`Your application: ${row.job_title}`)}`}>Email {String(row.name).split(" ")[0]}</a>
         {Boolean(row.phone) && <a className="btn secondary small" href={`tel:${row.phone}`}>Call</a>}
@@ -83,10 +71,10 @@ export default async function SectionEdit({ params }: { params: Promise<{ sectio
       </div></div>}
       <div className="card">
         {edit ? (
-          <ActionForm action={saveRecord} submitLabel={isNew ? `Add ${s.singular}` : "Save changes"} pendingLabel="Saving…" className="formgrid" hidden={{ __section: s.key, __id: isNew ? "" : id }}>
-            {s.fields.map((f) => <Input key={f.k} f={f} v={row[f.k]} edit doc={doc} />)}
+          <ActionForm key={createHash("md5").update(JSON.stringify(row)).digest("hex")} action={saveRecord} submitLabel={isNew ? `Add ${s.singular}` : "Save changes"} pendingLabel="Saving…" className="formgrid" hidden={{ __section: s.key, __id: isNew ? "" : id }}>
+            {s.fields.map((f) => <Input key={f.k} f={f} v={row[f.k]} edit doc={doc} section={s.key} />)}
           </ActionForm>
-        ) : <div className="formgrid">{s.fields.map((f) => <Input key={f.k} f={f} v={row[f.k]} edit={false} doc={doc} />)}</div>}
+        ) : <div className="formgrid">{s.fields.map((f) => <Input key={f.k} f={f} v={row[f.k]} edit={false} doc={doc} section={s.key} />)}</div>}
       </div>
       {edit && !isNew && !s.noDelete && (
         <div className="card">

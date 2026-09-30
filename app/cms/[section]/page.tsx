@@ -44,7 +44,6 @@ export default async function SectionList({ params, searchParams }: { params: Pr
       <div className="pagehead">
         <div><h1>{s.label}</h1><p>{s.intro}</p></div>
         <div className="row">
-          {s.key === "products" && edit && <a className="btn secondary" href={p("/cms/import")}>Import from Operations Master</a>}
           {edit && !s.noCreate && <a className="btn" href={p(`/cms/${s.key}/new`)}>+ Add {s.singular}</a>}
         </div>
       </div>
@@ -66,7 +65,7 @@ export default async function SectionList({ params, searchParams }: { params: Pr
               const preview = s.preview?.(row);
               return (
                 <tr key={row.id} className={shown ? "" : "hidden-row"}>
-                  {s.list.map((k) => <td key={k}>{cell(s, k, row[k])}</td>)}
+                  {s.list.map((k, i) => <td key={k}>{cell(s, k, row[k])}{i === 1 && row.sample ? <> <span className="badge warn">sample</span></> : null}</td>)}
                   <td><div className="rowactions">
                     {preview && shown && <a className="btn secondary small" href={env.platformUrl + preview} target="_blank" rel="noopener" title="View on the website">View</a>}
                     <a className="btn secondary small" href={p(`/cms/${s.key}/${row.id}`)}>{edit ? "Edit" : "Open"}</a>
