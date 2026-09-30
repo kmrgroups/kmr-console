@@ -198,7 +198,7 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 
 *Already ran the platform setup?* Run **`supabase/migrations/0021_website.sql`** once, then the website's
 **`supabase/add-multi-business.sql`** and **`supabase/add-premium-site.sql`** (in that order). The website's
-**`supabase/drop-operations.sql`** permanently removes the old website Operations tables — export them first if needed.
+**`supabase/drop-operations.sql`** permanently removes the old website Operations tables that nothing else uses (it keeps `employees`, which the HR module uses) — export them first if needed.
 
 **Website CMS** (sidebar) manages every part of the website — add, edit, hide / show, delete:
 - **Brand & company** — company profile (logo, GSTIN, Udyam, story, vision, mission, values), contact & social links
