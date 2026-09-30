@@ -12,7 +12,11 @@ function publicUrl(request: NextRequest, path: string): URL {
   return new URL(`${request.nextUrl.basePath}${path}`, `${proto.split(",")[0]}://${host.split(",")[0]}`);
 }
 
+// Public: each invoice's pay link and the Razorpay endpoints (customers are not Console users)
+const PUBLIC = /^\/(pay\/[a-f0-9]+|api\/pay\/(order|verify|webhook))\/?$/;
+
 export async function middleware(request: NextRequest) {
+  if (PUBLIC.test(request.nextUrl.pathname)) return NextResponse.next();
   let response = NextResponse.next({ request });
   const supabase = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     cookieOptions: authCookieOptions,

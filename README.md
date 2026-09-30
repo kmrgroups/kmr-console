@@ -9,4 +9,4 @@ which product, until when, for how many), product versions, and KMR staff. Produ
 
 Milestones: 1 Console + HRM licences ✓ · 2 Balloon Inspector & Process Documents under Console licences,
 one login across apps ✓ · 3 support tickets, releases, pilot requests from the website ✓ · 4 prices, test payments and
-invoices · 5 hardening.
+invoices ✓ · 5 hardening.

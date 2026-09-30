@@ -7,7 +7,10 @@ import { ActionForm } from "@/components/ActionForm";
 import { CustomerFields } from "@/components/CustomerFields";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { env } from "@/lib/env";
-import { CUSTOMER_TONE, LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
+import { CUSTOMER_TONE, INVOICE_TONE, LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
+import { fmtMoney } from "@/lib/money";
+import { p } from "@/lib/base-path";
+import { createInvoice } from "@/app/billing-actions";
 import { enableHrm, enableTool, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 
@@ -44,6 +47,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   }
   const toolUse: Record<string, { users: number; items: number }> = {};
   for (const l of (licences ?? []) as Licence[]) if (isTool(l.product_code) && l.product_ref) toolUse[l.product_code] = await toolUsage(l.product_code, l.product_ref);
+  const [{ data: invoices }, { data: prices }] = await Promise.all([
+    supabase.from("invoices").select("id,number,status,currency,total,issue_date,due_date,created_at").eq("customer_id", c.id).order("created_at", { ascending: false }),
+    supabase.from("prices").select("product_code,period,currency,unit_amount,min_seats").eq("active", true).eq("currency", c.currency),
+  ]);
+  // A renewal starts the day after the earliest current licence ends; otherwise today
+  const ends = ((licences ?? []) as Licence[]).map((l) => l.valid_until).filter((d): d is string => !!d && d >= today()).sort();
+  const billFrom = ends.length ? addDays(ends[0], 1) : today();
+  const priceOf = (code: string, period: string) => (prices ?? []).find((x) => x.product_code === code && x.period === period);
   const { data: members } = await supabase.from("customer_members").select("email,full_name,is_admin,roles").eq("customer_id", c.id).order("is_admin", { ascending: false }).order("email");
   const prodName: Record<string, string> = Object.fromEntries(((products ?? []) as { code: string; name: string }[]).map((x) => [x.code, x.name]));
   const suggestedSlug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "company";
@@ -176,6 +187,49 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             );
           })}
         </div>
+      </div>
+
+
+      <div className="card">
+        <div className="spread"><h2>Billing</h2>{manager && <a className="btn secondary small" href={p("/billing")}>Price list</a>}</div>
+        {invoices?.length ? (
+          <div className="tablewrap" style={{ marginBottom: 14 }}><table>
+            <thead><tr><th>Invoice</th><th>Date</th><th style={{ textAlign: "right" }}>Total</th><th>Status</th></tr></thead>
+            <tbody>{invoices.map((i) => {
+              const late = i.status === "issued" && i.due_date && i.due_date < today();
+              return <tr key={i.id}><td><a className="mono" href={p(`/invoices/${i.id}`)}><b>{i.number ?? "Draft"}</b></a></td><td>{fmtDate(i.issue_date ?? i.created_at)}</td>
+                <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{fmtMoney(i.total, i.currency)}</td><td><span className={`badge ${late ? "danger" : INVOICE_TONE[i.status]}`}>{late ? "overdue" : i.status}</span></td></tr>;
+            })}</tbody></table></div>
+        ) : <p className="muted">No invoices yet.</p>}
+        {manager && (
+          <details>
+            <summary className="btn small">Create invoice</summary>
+            <div style={{ marginTop: 10 }}>
+              <p className="muted" style={{ fontSize: 13 }}>Billed in <b>{c.currency}</b> from the price list, with GST worked out from {c.country === "IN" ? <>the customer&apos;s {c.tax_id ? "GSTIN" : "state"}</> : "their country (export, no GST)"}. You get a draft to check before issuing. When it is paid, the ticked products&apos; licences renew for the period.</p>
+              <ActionForm action={createInvoice} submitLabel="Create draft invoice" pendingLabel="Creating…" hidden={{ customer_id: c.id }}>
+                <div className="row">
+                  <label className="field" style={{ flex: 1, minWidth: 160 }}>Billing<select name="period" defaultValue="month"><option value="month">Monthly</option><option value="year">Yearly</option></select></label>
+                  <label className="field" style={{ flex: 1, minWidth: 160 }}>Period starts<input type="date" name="from" defaultValue={billFrom} required /></label>
+                </div>
+                <div className="stack" style={{ gap: 6 }}>
+                  {(products ?? []).map((pr) => {
+                    const l = (licences ?? []).find((x) => x.product_code === pr.code) as Licence | undefined;
+                    const m = priceOf(pr.code, "month"), y = priceOf(pr.code, "year");
+                    return (
+                      <div key={pr.code} className="row" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", justifyContent: "space-between" }}>
+                        <label style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 200 }}>
+                          <input type="checkbox" name="product" value={pr.code} defaultChecked={!!l && ["trial", "pilot", "active"].includes(l.status)} />
+                          <span><b>{pr.name}</b><br /><small className="muted">{m ? `${fmtMoney(m.unit_amount, c.currency)}/month` : "no monthly price"} · {y ? `${fmtMoney(y.unit_amount, c.currency)}/year` : "no yearly price"} per {pr.seat_label.replace(/s$/, "")}{(m ?? y) ? `, min ${(m ?? y)!.min_seats}` : ""}</small></span>
+                        </label>
+                        <label className="row" style={{ gap: 6, fontSize: 13 }}>{pr.seat_label}<input type="number" name={`seats_${pr.code}`} min={1} defaultValue={l?.seats ?? (m ?? y)?.min_seats ?? 1} style={{ width: 90 }} /></label>
+                      </div>);
+                  })}
+                </div>
+                <label className="field">Note on the invoice (optional)<input name="notes" placeholder="e.g. PO 4500012345" /></label>
+              </ActionForm>
+            </div>
+          </details>
+        )}
       </div>
 
       <div className="grid two">
