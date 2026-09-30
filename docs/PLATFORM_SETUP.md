@@ -258,3 +258,14 @@ Run `supabase/migrations/0023_test_data.sql` once (after 0022), and the website'
 3. **Clean out** (type FLUSH) — removes customers, invoices, payments, tickets, enquiries, orders, applications,
    app workspaces, HRM companies (KMR's own HRM company keeps its settings and administrators; set `KMR_HRM_SLUG` if its
    short name is not `kmr`), logs and unused logins. A full backup of every app is saved first and listed on the page.
+
+## 14. Operations Master everywhere (run `supabase/migrations/0024_ops_links.sql` once)
+
+- **Process Documents** reads machines, gauges and customers from the customer's Operations Master (read-only in the
+  workspace, with an "Open Operations Master" button), and fills part name, drawing no., revision, material and
+  customer from **Parts** when a new project starts. A workspace that typed its own lists first gets a one-time
+  **Move to Operations Master** button. Consumables stay per workspace.
+- **Operations Master › Download all (Excel)** — one sheet per list; **Upload Excel workbook** — existing codes are
+  updated, new ones added, nothing is deleted.
+- New fields: Machines — capacity, processes it can do, max job size, capability, PM frequency; Customers — our
+  supplier code, address, their CC / SC symbols, engineering approval.
