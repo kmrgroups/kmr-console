@@ -287,3 +287,17 @@ Documents, Capacity Planner and the Operations Master — with the number of rec
 (type FLUSH; a JSON backup is downloaded first, then the data is removed). Logins, users and access are never removed.
 HRM flush can also reset the company setup (plants, departments, shifts, leave types, holidays, payroll rules) to the
 defaults. Balloon Inspector drawing files are kept so a restore brings reports back complete.
+
+## 17. Operations Master card buttons and sample drawing (run `supabase/migrations/0027_ops_card_actions.sql`, after 0026)
+
+Every Operations Master card now shows how many records are **sample** and how many are **yours**, with four buttons:
+
+- **Load sample** / **Flush sample** — only that list's sample records (company administrators).
+- **Load data** — upload a JSON file for that list (a file from Flush data, a Data Master backup, or a plain list).
+  Existing codes are updated, new ones added.
+- **Flush data** — removes your own (non-sample) records of that list. A JSON backup downloads automatically first;
+  use Load data with that file to bring them back.
+
+The **Sample drawing** card (companies with Balloon Inspector) adds a ready-made drawing, Mounting Plate EX-2040, to
+the company's Balloon Inspector reports. Opening it there balloons it automatically. **Flush sample drawing** removes it.
+The drawing file itself lives on the website (`/it/balloon/samples/`), so no storage upload is needed.
