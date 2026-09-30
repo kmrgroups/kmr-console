@@ -269,3 +269,12 @@ Run `supabase/migrations/0023_test_data.sql` once (after 0022), and the website'
   updated, new ones added, nothing is deleted.
 - New fields: Machines — capacity, processes it can do, max job size, capability, PM frequency; Customers — our
   supplier code, address, their CC / SC symbols, engineering approval.
+
+## 15. Operations Master is the only source (run `supabase/migrations/0025_ops_sample_per_list.sql`)
+
+- Every list has its own **Load sample … / Flush sample …** button (administrators). Flush removes only sample
+  records; anything you added or changed stays. Uploading a downloaded workbook unchanged keeps sample records as sample.
+- Process Documents and Capacity Planner linked to a customer use **only** the Operations Master: an empty list there
+  is an empty list in the app (no built-in machines or consumables). Earlier lists typed into an app are kept aside
+  and offered once through **Move to Operations Master**.
+- Consumables have **Used in processes** (e.g. TURN1, VMC, WASH) so Process Documents lists them per operation.
