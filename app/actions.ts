@@ -243,7 +243,7 @@ export async function replyTicket(_: ActionState, form: FormData): Promise<Actio
 export async function setLeadStatus(form: FormData) {
   await assertStaff();
   const status = String(form.get("status") ?? "");
-  if (!["new", "contacted", "converted", "dropped"].includes(status)) return;
+  if (!["new", "contacted", "quoted", "converted", "dropped"].includes(status)) return;
   const supabase = await createClient();
   await supabase.from("leads").update({ status }).eq("id", String(form.get("id") ?? ""));
   revalidatePath("/leads");
@@ -259,9 +259,9 @@ export async function convertLead(form: FormData) {
   if (!customerId) {
     const country = /^[A-Z]{2}$/.test(String(l.country ?? "").toUpperCase()) ? String(l.country).toUpperCase() : "IN";
     const { data: c, error } = await supabase.from("customers").insert({
-      name: l.company, country, currency: country === "IN" ? "INR" : "USD", contact_name: l.name, contact_email: l.email,
-      contact_phone: l.phone, status: "lead", source: "Website pilot request",
-      notes: [l.products?.length ? `Interested in: ${l.products.join(", ")}` : "", l.message ?? ""].filter(Boolean).join("\n"), created_by: staff.user_id,
+      name: l.company || l.name, country, currency: country === "IN" ? "INR" : "USD", contact_name: l.name, contact_email: l.email,
+      contact_phone: l.phone, status: "lead", source: l.business === "software" ? "Website pilot request" : `Website enquiry (${l.business})`,
+      notes: [l.products?.length ? `Interested in: ${l.products.join(", ")}` : "", l.product_name ? `Enquiry about: ${l.product_name}${l.quantity ? ` · qty ${l.quantity}` : ""}` : "", l.message ?? ""].filter(Boolean).join("\n"), created_by: staff.user_id,
     }).select("id").single();
     if (error || !c) return;
     customerId = c.id;

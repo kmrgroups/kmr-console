@@ -193,3 +193,20 @@ Run **`supabase/migrations/0016_capacity_masters.sql`** once (needs 0015).
 - **Seal & signature**: upload PNGs (transparent background looks best). They are stored in the private `kmr-billing`
   bucket and shown only on invoices through links that expire. Issued invoices keep the seal / signature they were
   issued with; a new upload applies to invoices issued afterwards.
+
+## 11. Website management (www.kmr-groups.com has no admin panel any more)
+
+*Already ran the platform setup?* Run **`supabase/migrations/0021_website.sql`** once, and the website's
+**`supabase/add-multi-business.sql`** once (either order).
+
+- **Website** (sidebar) — Products, Banner, Businesses, Leadership, Gallery, Legal pages, Company info, Compliance
+  (documents go to the private `kmr-records` bucket) and **Shop orders** (confirm or reject bank / UPI payments).
+  Owner, admin and sales can edit; support can only view.
+- **Publish from Operations Master** (Website → Products) — pick a company's Operations Master (KMR's own by default),
+  tick parts and choose the business (Online shop, Training, Import & Export, Trading, Distribution). They arrive
+  hidden, priced from the customer rate contract; add a photo, check price and stock, then tick *Show on the website*.
+  Trade businesses are enquiry-only (quote requests, no online payment).
+- **Enquiries** — every website form (software trial, training, shop questions, quotes) arrives here, tagged with
+  its business. Convert one to open it as a customer.
+- **Operations** — the website's old Customers, Vendors, Items, Warehouses, Stock ledger and Employees.
+- The Software page lists the apps and prices from **Products & versions** automatically.
