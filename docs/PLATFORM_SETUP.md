@@ -335,3 +335,20 @@ platform:
 - The HRM's daily recruitment job (`/it/hrm/api/cron/recruitment`, about 8:30 AM IST) sends interview reminders and
   regret messages and lapses old offers. It needs `CRON_SECRET` set in the HRM's Vercel project (same as the existing
   nightly job).
+
+## 20. Sample data through the whole flow (run HRM `0007_sample_flow.sql`, then `supabase/migrations/0031_sample_flow.sql`)
+
+Grand Master › Sample Data Master › **Load sample data** (and Console › Test data) now fill every HRM module that is
+built, joined up with each other:
+
+- 24 sample employees in two plants, a month of attendance, leave and pending requests, salaries and two loans (as before).
+- The hiring flow: 3 openings with approved job descriptions (one waiting for approval), 10 candidates with resumes
+  scored by the HRM's own engine, and one at every stage — new, shortlisted against the recommendation, on hold,
+  declined with the regret sent, interview coming up, interview done with the panel's scorecard, offer sent, offer
+  declined, offer accepted. The accepted one is a new joiner on the employee list with the salary from the offer.
+- Pressing **Load sample data** again on a company that already has the sample employees adds the missing parts.
+- Everything sample shows a **Sample** tag in HRM, never appears on the public careers page, and is never messaged:
+  sample e-mails end in `@demo.kmr.test`, and the HRM skips every e-mail and WhatsApp to them (a made-up mobile
+  number might belong to a real person).
+- **Flush sample data** removes all of it. **Flush real data** keeps it. The Data Master's full HRM flush removes both.
+- Each new HRM module adds its own sample data to `hrm.demo_flow`, so this button keeps covering everything.
