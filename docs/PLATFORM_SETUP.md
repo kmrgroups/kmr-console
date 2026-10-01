@@ -376,3 +376,18 @@ position → R&R sheet (roles, responsibilities, authority, competency, KPI; lan
 clauses) → competency mapping per person → KPI sheet per person → training needs → calendar → attendance → effectiveness.
 Every employee has a Position (new joiners get it from the requisition). What was written per designation becomes a
 position of that name. Sample data includes five positions with holders. The platform setup file includes it.
+
+## 23. HRM free AI for the QMS (run HRM `0010_ai.sql`; no console file)
+
+The AI drafts the position's job description and R&R sheet, proposes training programmes for needs that have none,
+writes pre / post test questions and puts the QMS findings in order. A named person approves or accepts everything it
+writes; every run is logged (HRM › QMS › AI & review). Only free services are used.
+
+To switch it on (plain steps):
+1. Make one or more free keys: **openrouter.ai** → Keys; **console.groq.com** → API Keys; **aistudio.google.com** → Get API key. No card needed.
+2. Vercel → the **kmr-hrm** project → Settings → Environment Variables → add `OPENROUTER_API_KEY`, `GROQ_API_KEY`
+   and/or `GEMINI_API_KEY` (Production) → Redeploy.
+3. HRM → QMS → AI & review → **Check the connection**.
+
+Never paste a key into chat or e-mail. Without keys the HRM uses its own rule-based writer. The full flush also clears
+the AI log; the platform setup file includes it.
