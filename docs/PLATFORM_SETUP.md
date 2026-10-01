@@ -352,3 +352,19 @@ built, joined up with each other:
   number might belong to a real person).
 - **Flush sample data** removes all of it. **Flush real data** keeps it. The Data Master's full HRM flush removes both.
 - Each new HRM module adds its own sample data to `hrm.demo_flow`, so this button keeps covering everything.
+
+## 21. HRM QMS & training — Phase 5A (run HRM `0008_qms.sql`, then `supabase/migrations/0032_hrm_qms.sql`)
+
+- HRM › **QMS & training**: skill matrix, competency mapping, training needs (TNI), training plan with ID-card
+  attendance, training effectiveness, on-the-job training, internal auditors, roles & responsibilities, KPIs and the
+  Audit Pack PDF (IATF 16949 7.2 / 7.3, ISO 9001 5.3, 6.2, 7.2, 9.1). Employees sign their R&R and awareness sessions
+  in *My skills & training*.
+- Every company gets a ready competency library (18) and training programmes (14); new companies get them, and the
+  payroll and recruitment defaults, the moment they are created.
+- Grand Master › Load sample data also loads sample QMS records joined to the sample people (two lines with a skill
+  matrix and alerts, competency gaps, training done / scheduled / planned, effectiveness due and evaluated, OJT,
+  auditors, R&R, three months of KPIs). Flush real data keeps them; Flush sample data removes them.
+- The flushes call `hrm.module_flush(tenant, 'all' | 'real' | 'sample')`; later HRM modules add their tables there.
+  The competency library and training programmes are company setup: Flush real data keeps them.
+- The nightly HRM job also sends training reminders the day before and tells supervisors which effectiveness checks
+  are due. WhatsApp templates to submit: `hrm_training_invite`, `hrm_training_reminder`.
