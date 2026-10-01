@@ -306,3 +306,19 @@ the same four buttons:
   (`/it/balloon/samples/`), so no storage upload is needed.
 - **Flush data** removes the company's own reports (everything except the sample). A JSON backup downloads first;
   drawing files stay in storage. **Load data** with that file (or a Data Master Balloon backup) brings them back.
+
+## 18. Grand Master (run `supabase/migrations/0029_grand_master.sql`, after 0028)
+
+KMR Apps › Masters › **Grand Master** (company administrators), three cards for the whole company:
+
+1. **Real Data Master** — everything the team created in every app (HRM, Balloon Inspector, Process Documents,
+   Capacity Planner, Operations Master), not the sample data. **Download JSON** saves one file for all apps.
+   **Upload JSON** puts every app back as it was in that file. **Flush real data** (type FLUSH) downloads that file
+   first, then removes the real data. Sample data, company setup, logins and access stay.
+2. **Sample Data Master** — **Load sample data** fills every app at once (HRM sample employees with a month of
+   attendance, the sample drawing, all Operations Master sample lists). **Flush sample data** removes only sample data.
+   HRM works out the sample attendance through `/it/hrm/api/sample-attendance` (needs the HRM app deployed).
+3. **Administration Data** — company details & logo, users & access, invoices & payments. **Download JSON**,
+   **Upload JSON** and **Flush admin data** (choose the parts; the backup downloads first). The company name, you and
+   the main contact always stay; logins are never deleted. Invoices and payments are KMR's tax records: company
+   administrators can download them, only KMR staff can flush or restore them.
