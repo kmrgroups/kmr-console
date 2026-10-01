@@ -398,3 +398,11 @@ Announcements (with acknowledgement), recognition wall and Employee of the month
 savings, and surveys (anonymous by default; results only from 5 answers) — HRM › Engagement, and *Notices & ideas* in each
 person's portal. Grand Master › Load sample data now also loads sample engagement records ("HRM engagement" in the
 counts); the sample and real flushes clear them with the rest. The platform setup file includes it.
+
+## 25. HRM policies & compliance — Phase 5C (run HRM `0012_compliance.sql`; no console file)
+
+Controlled documents (policies, procedures, formats — revision, prepared / approved by, review date, master list PDF),
+policies acknowledged by each person in the portal, and the statutory compliance register (PF, ESI, PT, TDS, returns,
+licence renewals — a Karnataka starting list the company checks with its consultant) with proof and daily reminders.
+Every new company gets the starting list; Grand Master sample data includes sample documents and filings
+("HRM policies & compliance" in the counts). The platform setup file includes it.
