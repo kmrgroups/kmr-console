@@ -322,3 +322,16 @@ KMR Apps › Masters › **Grand Master** (company administrators), three cards 
    **Upload JSON** and **Flush admin data** (choose the parts; the backup downloads first). The company name, you and
    the main contact always stay; logins are never deleted. Invoices and payments are KMR's tax records: company
    administrators can download them, only KMR staff can flush or restore them.
+
+## 19. HRM recruitment (run HRM `0006_recruitment.sql`, then `supabase/migrations/0030_hrm_recruitment.sql`)
+
+HRM Phase 4 adds Recruitment (requisitions, job descriptions, resume scoring, careers page, interviews, offers). On the
+platform:
+
+- KMR Apps › Users & access can give the HRM role **Interviewer**: they sit on interview panels and fill in scorecards,
+  and see nothing else in HRM.
+- Data Master and Grand Master flushes of HRM also clear recruitment data. Resume files stay in storage (bucket
+  `hrm-resumes`), so a restore brings them back.
+- The HRM's daily recruitment job (`/it/hrm/api/cron/recruitment`, about 8:30 AM IST) sends interview reminders and
+  regret messages and lapses old offers. It needs `CRON_SECRET` set in the HRM's Vercel project (same as the existing
+  nightly job).
