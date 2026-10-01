@@ -391,3 +391,10 @@ To switch it on (plain steps):
 
 Never paste a key into chat or e-mail. Without keys the HRM uses its own rule-based writer. The full flush also clears
 the AI log; the platform setup file includes it.
+
+## 24. HRM engagement — Phase 5B (run HRM `0011_engage.sql`; no console file)
+
+Announcements (with acknowledgement), recognition wall and Employee of the month, suggestions / Kaizen with review and
+savings, and surveys (anonymous by default; results only from 5 answers) — HRM › Engagement, and *Notices & ideas* in each
+person's portal. Grand Master › Load sample data now also loads sample engagement records ("HRM engagement" in the
+counts); the sample and real flushes clear them with the rest. The platform setup file includes it.
