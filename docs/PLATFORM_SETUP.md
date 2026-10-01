@@ -368,3 +368,11 @@ built, joined up with each other:
   The competency library and training programmes are company setup: Flush real data keeps them.
 - The nightly HRM job also sends training reminders the day before and tells supervisors which effectiveness checks
   are due. WhatsApp templates to submit: `hrm_training_invite`, `hrm_training_reminder`.
+
+## 22. HRM positions (run HRM `0009_positions.sql`; no console file)
+
+The QMS runs on **Position + Role + Department** instead of designations: requisition → job description of the
+position → R&R sheet (roles, responsibilities, authority, competency, KPI; landscape PDF with the company logo and
+clauses) → competency mapping per person → KPI sheet per person → training needs → calendar → attendance → effectiveness.
+Every employee has a Position (new joiners get it from the requisition). What was written per designation becomes a
+position of that name. Sample data includes five positions with holders. The platform setup file includes it.
