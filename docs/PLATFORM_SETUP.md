@@ -406,3 +406,11 @@ policies acknowledged by each person in the portal, and the statutory compliance
 licence renewals — a Karnataka starting list the company checks with its consultant) with proof and daily reminders.
 Every new company gets the starting list; Grand Master sample data includes sample documents and filings
 ("HRM policies & compliance" in the counts). The platform setup file includes it.
+
+## 26. HRM safety — Phase 5D (run HRM `0013_safety.sql`; no console file)
+
+Incidents and near misses (employees report from the phone with a photo), investigation with why-why and root cause,
+corrective / preventive actions with owners, days without a lost-time injury, LTIFR and severity rate from the man-hours in
+attendance, PPE with replacement dates, and medical examination dates (no medical findings). Every new company gets a
+starting PPE list; Grand Master sample data includes sample incidents, PPE issues and examinations ("HRM safety" in the counts).
+The platform setup file includes it.
