@@ -414,3 +414,14 @@ corrective / preventive actions with owners, days without a lost-time injury, LT
 attendance, PPE with replacement dates, and medical examination dates (no medical findings). Every new company gets a
 starting PPE list; Grand Master sample data includes sample incidents, PPE issues and examinations ("HRM safety" in the counts).
 The platform setup file includes it.
+
+## 22. Sales Flow — monthly sales plan vs actual despatch (run `supabase/migrations/0033_sales_flow.sql`)
+
+*Needs 0011, 0015 and 0029.* Adds the product **Sales Flow** (licence code `sales`, one per customer company).
+
+1. Supabase → SQL Editor → run `supabase/migrations/0033_sales_flow.sql` (already included for new projects in `KMR_PLATFORM_SETUP.sql`).
+2. Website repo: copy `website-files/it/sales.html` to `/it/sales.html` and set `CFG.SUPABASE_ANON_KEY` (same publishable key as the other apps).
+3. Console → customer → **Switch on Sales Flow** (administrator name + email, licence status/valid until) → the card appears on the customer's KMR Apps page.
+4. Colleagues: Administration › Users & access → role **Sales Flow** = admin / editor / viewer.
+5. In the app: **Sales plan › Add parts** (customer, part no., part name, price from Operations Master and the customer's rate contract) → enter demand qty and delivery (specific date / daily / weekly) → **Daily despatch** each day → **Dashboard**.
+6. Try the screens without a database: open `/it/sales.html?demo=1`.
