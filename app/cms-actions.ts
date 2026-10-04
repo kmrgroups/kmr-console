@@ -14,7 +14,7 @@ import { mailOrderUpdate } from "@/lib/notify";
 
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
 const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
-const TOUCH = ["products", "hero_content", "company_info", "legal_pages", "job_openings", "job_applications", "site_settings"];
+const TOUCH = ["products", "app_listings", "hero_content", "company_info", "legal_pages", "job_openings", "job_applications", "site_settings"];
 
 async function readField(f: Field, form: FormData): Promise<unknown> {
   const raw = form.get(f.k);
