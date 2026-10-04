@@ -187,7 +187,7 @@ const toolSchema = z.object({
 });
 
 /** Switch on Sales Flow: one Sales Flow per customer (licence product_ref = the customer's id); access follows the customer's user list. */
-async function enableSales(d: { customer_id: string; workspace: string; admin_name: string; admin_email: string; status: "trial" | "pilot" | "active"; valid_until: string | null; seats: number | null }): Promise<ActionState> {
+async function enableSales(d: { product_code: string; customer_id: string; workspace: string; admin_name: string; admin_email: string; status: "trial" | "pilot" | "active"; valid_until: string | null; seats: number | null }): Promise<ActionState> {
   const supabase = await createClient();
   const { data: c } = await supabase.from("customers").select("id,status").eq("id", d.customer_id).single();
   if (!c) return { error: "Customer not found." };
@@ -199,13 +199,13 @@ async function enableSales(d: { customer_id: string; workspace: string; admin_na
     { onConflict: "customer_id,email", ignoreDuplicates: true });
   if (mErr) return { error: `Could not add the administrator: ${mErr.message}` };
   const { error } = await supabase.from("licences").insert({
-    customer_id: c.id, product_code: "sales", status: d.status, valid_until: d.valid_until, seats: d.seats,
+    customer_id: c.id, product_code: d.product_code, status: d.status, valid_until: d.valid_until, seats: d.seats,
     product_ref: c.id, product_slug: d.workspace,
   });
-  if (error) return { error: /duplicate|unique/.test(error.message) ? "This customer already has Sales Flow." : error.message };
+  if (error) return { error: /duplicate|unique/.test(error.message) ? "This customer already has this app." : error.message };
   if (c.status === "lead") await supabase.from("customers").update({ status: d.status === "active" ? "active" : "pilot" }).eq("id", c.id);
   revalidatePath(`/customers/${c.id}`);
-  const url = `${env.platformUrl}/it/sales.html`;
+  const url = `${env.platformUrl}/it/${d.product_code === "calib" ? "calibration" : "sales"}.html`;
   return {
     ok: login.password
       ? `Switched on. Send the administrator: sign-in ${url} · email ${d.admin_email} · temporary password ${login.password} (shown only now). They add colleagues under Administration › Users & access.`
@@ -220,7 +220,7 @@ export async function enableTool(_: ActionState, form: FormData): Promise<Action
     const parsed = toolSchema.safeParse(Object.fromEntries(form));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const d = parsed.data;
-    if (d.product_code === "sales") return await enableSales(d);
+    if (d.product_code === "sales" || d.product_code === "calib") return await enableSales(d);
     if (!isTool(d.product_code)) return { error: "Unknown product." };
     const supabase = await createClient();
     const { data: c } = await supabase.from("customers").select("id,status").eq("id", d.customer_id).single();
