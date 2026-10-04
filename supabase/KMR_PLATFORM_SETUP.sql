@@ -10245,6 +10245,671 @@ end $$;
 revoke all on function public.kmr_portal_stats(text) from public, anon;
 grant execute on function public.kmr_portal_stats(text) to authenticated;
 
+
+-- =====================================================================
+-- migrations/0034_sales_flow_company.sql
+-- =====================================================================
+-- Sales Flow 0034 — lets /it/sales.html find the signed-in person's company when it is opened without ?co=
+-- (e.g. from the KMR Apps card). Needs 0033. Safe to re-run.
+create or replace function public.kmr_sf_my_companies() returns jsonb
+language sql stable security definer set search_path = console, public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('slug', c.slug, 'name', c.name) order by c.name), '[]')
+    from console.customers c
+   where c.slug is not null and console.sf_role(c.id) is not null
+$$;
+revoke all on function public.kmr_sf_my_companies() from public, anon;
+grant execute on function public.kmr_sf_my_companies() to authenticated;
+
+
+-- =====================================================================
+-- migrations/0035_sales_flow_prices.sql
+-- =====================================================================
+-- Sales Flow 0035 — finds more prices in the Operations Master. Needs 0033. Safe to re-run.
+-- Price for a part = the customer's rate contract for it (item = part number OR part name, spelling/spaces ignored):
+--   1. the contract of that customer that is valid today, 2. else any customer contract valid today,
+--   3. else the latest contract even if it has expired (marked "expired" in the picker), 4. else a price held on the part itself
+--   (price / rate / selling_price / sale_price / unit_price). When nothing is found the price is 0 and can be typed in the plan.
+create or replace function public.kmr_sf_parts(p_slug text) returns jsonb
+language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid; today date := (now() at time zone 'Asia/Kolkata')::date;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.sf_role(cid) is null then raise exception 'You have no access to Sales Flow.'; end if;
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+             'part_code', p.code, 'part_name', p.name, 'drawing_no', p.data ->> 'drawing_no',
+             'buyer_code', coalesce(cu.code, p.data ->> 'customer', ''), 'buyer_name', coalesce(cu.name, p.data ->> 'customer', ''),
+             'price', coalesce(rc.rate, pp.rate, 0),
+             'currency', coalesce(rc.currency, 'INR'), 'uom', coalesce(rc.uom, 'pcs'),
+             'price_source', case when rc.rate is not null then 'rate contract ' || rc.code || case when rc.valid then '' else ' (expired)' end
+                                  when pp.rate is not null then 'part master' else null end)
+           order by coalesce(cu.name, p.data ->> 'customer', ''), p.code)
+      from console.ops_records p
+      left join lateral (
+        select c.code, c.name from console.ops_records c
+         where c.customer_id = p.customer_id and c.kind = 'customers'
+           and (c.code = p.data ->> 'customer' or lower(trim(c.name)) = lower(trim(coalesce(p.data ->> 'customer', '')))) limit 1) cu on true
+      left join lateral (
+        select r.code, rr.rate, coalesce(nullif(r.data ->> 'currency', ''), 'INR') currency, coalesce(nullif(r.data ->> 'uom', ''), 'pcs') uom,
+               ((coalesce(r.data ->> 'valid_from', '') !~ '^\d{4}-\d{2}-\d{2}$' or (r.data ->> 'valid_from')::date <= today)
+                and (coalesce(r.data ->> 'valid_to', '') !~ '^\d{4}-\d{2}-\d{2}$' or (r.data ->> 'valid_to')::date >= today)) as valid
+          from console.ops_records r
+          cross join lateral (select substring(replace(coalesce(r.data ->> 'rate', ''), ',', '') from '[0-9]+(\.[0-9]+)?')::numeric as rate) rr
+         where r.customer_id = p.customer_id and r.kind = 'rate_contracts' and r.active and rr.rate is not null
+           and coalesce(r.data ->> 'party_type', 'Customer') ilike 'customer%'
+           and lower(trim(coalesce(r.data ->> 'item', ''))) in (lower(trim(p.code)), lower(trim(p.name)))
+         order by (lower(trim(r.name)) = lower(trim(coalesce(cu.name, p.data ->> 'customer', '')))) desc,
+                  ((coalesce(r.data ->> 'valid_from', '') !~ '^\d{4}-\d{2}-\d{2}$' or (r.data ->> 'valid_from')::date <= today)
+                   and (coalesce(r.data ->> 'valid_to', '') !~ '^\d{4}-\d{2}-\d{2}$' or (r.data ->> 'valid_to')::date >= today)) desc,
+                  coalesce(nullif(r.data ->> 'valid_from', ''), '0000') desc limit 1) rc on true
+      left join lateral (
+        select substring(replace(coalesce(nullif(p.data ->> 'price', ''), nullif(p.data ->> 'rate', ''), nullif(p.data ->> 'selling_price', ''),
+                                          nullif(p.data ->> 'sale_price', ''), nullif(p.data ->> 'unit_price', ''), ''), ',', '') from '[0-9]+(\.[0-9]+)?')::numeric as rate) pp on true
+     where p.customer_id = cid and p.kind = 'parts' and p.active), '[]');
+end $$;
+grant execute on function public.kmr_sf_parts(text) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0036_sales_flow_loss.sql
+-- =====================================================================
+-- Sales Flow 0036 — Sales loss reasons (per plan line) and Action plans. Needs 0033. Safe to re-run.
+--  • sf_lines gets loss_reason / loss_other ("Others" = customised typing).
+--  • sf_actions = action plans: issue (loss reason), brief, immediate action, permanent action, responsibility,
+--    target date, status (Opened / Under progress / Closed); optionally linked to one plan line (customer + part copied).
+alter table console.sf_lines add column if not exists loss_reason text;
+alter table console.sf_lines add column if not exists loss_other  text;
+
+create table if not exists console.sf_actions (
+  id               uuid primary key default gen_random_uuid(),
+  customer_id      uuid not null references console.customers(id) on delete cascade,
+  month            date,
+  line_id          uuid references console.sf_lines(id) on delete set null,
+  buyer_name       text not null default '',
+  part_code        text not null default '',
+  part_name        text not null default '',
+  issue            text not null check (length(trim(issue)) > 0),
+  issue_other      text,
+  brief            text not null default '',
+  immediate_action text not null default '',
+  permanent_action text not null default '',
+  responsible      text not null default '',
+  target_date      date,
+  status           text not null default 'Opened' check (status in ('Opened','Under progress','Closed')),
+  closed_at        timestamptz,
+  created_at       timestamptz not null default now(),
+  created_by       text,
+  updated_at       timestamptz not null default now(),
+  updated_by       text
+);
+create index if not exists sf_actions_cust on console.sf_actions (customer_id, status, target_date);
+alter table console.sf_actions enable row level security;
+drop policy if exists sf_actions_staff on console.sf_actions;
+create policy sf_actions_staff on console.sf_actions for all to authenticated using (console.is_staff()) with check (console.is_staff());
+
+-- reasons: p_rows = [{id, loss_reason, loss_other}]
+create or replace function public.kmr_sf_save_loss(p_slug text, p_rows jsonb) returns integer
+language plpgsql security definer set search_path = console, public as $$
+declare cid uuid; r jsonb; n integer := 0; rs text;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or coalesce(console.sf_role(cid), '') not in ('admin','editor') then
+    raise exception 'You can view Sales Flow but not change it. Ask your administrator for editor access.';
+  end if;
+  for r in select * from jsonb_array_elements(p_rows) loop
+    rs := nullif(trim(coalesce(r ->> 'loss_reason', '')), '');
+    if rs is not null and length(rs) > 80 then raise exception 'The reason is too long.'; end if;
+    update console.sf_lines
+       set loss_reason = rs,
+           loss_other  = case when rs = 'Others' then left(nullif(trim(coalesce(r ->> 'loss_other', '')), ''), 120) end
+     where id = (r ->> 'id')::uuid and customer_id = cid;
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+grant execute on function public.kmr_sf_save_loss(text, jsonb) to authenticated;
+
+create or replace function public.kmr_sf_actions(p_slug text) returns jsonb
+language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.sf_role(cid) is null then raise exception 'You have no access to Sales Flow.'; end if;
+  return coalesce((select jsonb_agg(to_jsonb(a) - 'customer_id' order by (a.status = 'Closed'), a.target_date nulls last, a.created_at desc)
+                     from console.sf_actions a where a.customer_id = cid), '[]');
+end $$;
+grant execute on function public.kmr_sf_actions(text) to authenticated;
+
+-- p = {id?, issue, issue_other, line_id, month, buyer_name, part_code, part_name, brief, immediate_action, permanent_action,
+--      responsible, target_date, status}
+create or replace function public.kmr_sf_save_action(p_slug text, p jsonb) returns jsonb
+language plpgsql security definer set search_path = console, public as $$
+declare cid uuid; me text := lower(coalesce(auth.jwt() ->> 'email', '')); st text := coalesce(nullif(p ->> 'status', ''), 'Opened');
+        rid uuid; old console.sf_actions; ln uuid; ln_row console.sf_lines;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or coalesce(console.sf_role(cid), '') not in ('admin','editor') then
+    raise exception 'You can view Sales Flow but not change it. Ask your administrator for editor access.';
+  end if;
+  if st not in ('Opened','Under progress','Closed') then raise exception 'Status must be Opened, Under progress or Closed.'; end if;
+  if length(trim(coalesce(p ->> 'issue', ''))) = 0 then raise exception 'Choose the issue.'; end if;
+  if length(trim(coalesce(p ->> 'brief', ''))) = 0 then raise exception 'Write the issue brief.'; end if;
+  if length(trim(coalesce(p ->> 'responsible', ''))) = 0 then raise exception 'Enter who is responsible.'; end if;
+  if coalesce(p ->> 'target_date', '') = '' then raise exception 'Choose the target date.'; end if;
+  ln := nullif(p ->> 'line_id', '')::uuid;
+  if ln is not null then
+    select * into ln_row from console.sf_lines where id = ln and customer_id = cid;
+    if ln_row.id is null then ln := null; end if;
+  end if;
+  if nullif(p ->> 'id', '') is not null then
+    select * into old from console.sf_actions where id = (p ->> 'id')::uuid and customer_id = cid;
+    if old.id is null then raise exception 'Action plan not found.'; end if;
+    update console.sf_actions set
+        month = coalesce(ln_row.month, nullif(p ->> 'month', '')::date), line_id = ln,
+        buyer_name = coalesce(ln_row.buyer_name, left(coalesce(p ->> 'buyer_name', ''), 200)),
+        part_code = coalesce(ln_row.part_code, left(coalesce(p ->> 'part_code', ''), 80)),
+        part_name = coalesce(ln_row.part_name, left(coalesce(p ->> 'part_name', ''), 200)),
+        issue = left(trim(p ->> 'issue'), 80), issue_other = case when trim(p ->> 'issue') = 'Others' then left(nullif(trim(coalesce(p ->> 'issue_other', '')), ''), 120) end,
+        brief = left(trim(p ->> 'brief'), 4000), immediate_action = left(trim(coalesce(p ->> 'immediate_action', '')), 4000),
+        permanent_action = left(trim(coalesce(p ->> 'permanent_action', '')), 4000), responsible = left(trim(p ->> 'responsible'), 120),
+        target_date = (p ->> 'target_date')::date, status = st,
+        closed_at = case when st = 'Closed' then coalesce(old.closed_at, now()) else null end, updated_at = now(), updated_by = me
+      where id = old.id;
+    rid := old.id;
+  else
+    insert into console.sf_actions (customer_id, month, line_id, buyer_name, part_code, part_name, issue, issue_other, brief, immediate_action,
+                                    permanent_action, responsible, target_date, status, closed_at, created_by, updated_by)
+    values (cid, coalesce(ln_row.month, nullif(p ->> 'month', '')::date), ln, coalesce(ln_row.buyer_name, left(coalesce(p ->> 'buyer_name', ''), 200)),
+            coalesce(ln_row.part_code, left(coalesce(p ->> 'part_code', ''), 80)), coalesce(ln_row.part_name, left(coalesce(p ->> 'part_name', ''), 200)),
+            left(trim(p ->> 'issue'), 80), case when trim(p ->> 'issue') = 'Others' then left(nullif(trim(coalesce(p ->> 'issue_other', '')), ''), 120) end,
+            left(trim(p ->> 'brief'), 4000), left(trim(coalesce(p ->> 'immediate_action', '')), 4000), left(trim(coalesce(p ->> 'permanent_action', '')), 4000),
+            left(trim(p ->> 'responsible'), 120), (p ->> 'target_date')::date, st, case when st = 'Closed' then now() end, me, me)
+    returning id into rid;
+  end if;
+  return jsonb_build_object('id', rid);
+end $$;
+grant execute on function public.kmr_sf_save_action(text, jsonb) to authenticated;
+
+create or replace function public.kmr_sf_delete_action(p_slug text, p_id uuid) returns text
+language plpgsql security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or coalesce(console.sf_role(cid), '') not in ('admin','editor') then raise exception 'You cannot change Sales Flow.'; end if;
+  delete from console.sf_actions where id = p_id and customer_id = cid;
+  return 'ok';
+end $$;
+grant execute on function public.kmr_sf_delete_action(text, uuid) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0037_calibration.sql
+-- =====================================================================
+-- Calibration Hub 0037 (lean first version): instrument register, calibration records, gauge history, out-of-tolerance cases.
+-- Needs 0011, 0033. Licence product "calib" (one per customer company); roles via Users & access: admin / editor / viewer. Safe to re-run.
+create table if not exists console.cal_instruments (
+  id uuid primary key default gen_random_uuid(), customer_id uuid not null references console.customers(id) on delete cascade,
+  tag text not null, name text not null, itype text, make text, model text, serial_no text, range_text text, least_count text,
+  location text, department text, custodian text, criticality text not null default 'Major', cal_source text not null default 'External', lab text,
+  freq_months int not null default 12 check (freq_months > 0), tolerance text, status text not null default 'In use', last_cal date, next_due date, notes text,
+  created_at timestamptz not null default now(), unique (customer_id, tag));
+create table if not exists console.cal_records (
+  id uuid primary key default gen_random_uuid(), customer_id uuid not null references console.customers(id) on delete cascade,
+  instrument_id uuid not null references console.cal_instruments(id) on delete cascade, cal_date date not null, next_due date, kind text, lab text, accreditation text,
+  cert_no text, as_found_ok boolean, result text not null default 'Pass', max_error text, uncertainty text, temp_c numeric, humidity numeric, calibrator text,
+  reviewed_by text, reviewed_at timestamptz, remarks text, created_by text, created_at timestamptz not null default now());
+create table if not exists console.cal_events (
+  id uuid primary key default gen_random_uuid(), customer_id uuid not null references console.customers(id) on delete cascade,
+  instrument_id uuid not null references console.cal_instruments(id) on delete cascade, ev_date date not null default current_date, ev_type text not null, detail text, by_email text,
+  created_at timestamptz not null default now());
+create table if not exists console.cal_oot (
+  id uuid primary key default gen_random_uuid(), customer_id uuid not null references console.customers(id) on delete cascade,
+  instrument_id uuid not null references console.cal_instruments(id) on delete cascade, record_id uuid, opened_at date not null default current_date, summary text,
+  last_good date, risk text, notify text, action text, status text not null default 'Open', closed_at date);
+do $$ declare t text; begin foreach t in array array['cal_instruments','cal_records','cal_events','cal_oot'] loop
+  execute format('alter table console.%I enable row level security', t);
+  execute format('drop policy if exists %I on console.%I', t || '_staff', t);
+  execute format('create policy %I on console.%I for all to authenticated using (console.is_staff()) with check (console.is_staff())', t || '_staff', t);
+end loop; end $$;
+
+create or replace function console.cal_member(p_customer uuid, p_email text) returns boolean language sql stable security definer set search_path = console, public as $$
+  select exists (select 1 from console.customer_members m where m.customer_id = p_customer and m.email = lower(p_email) and (m.is_admin or coalesce(m.roles ->> 'calib', '') <> '')) $$;
+create or replace function console.cal_role(p_customer uuid) returns text language sql stable security definer set search_path = console, public as $$
+  select case when not coalesce((select ok from console.access_state('calib', p_customer)), false) then null
+    when console.is_customer_admin(p_customer) then 'admin'
+    else (select nullif(m.roles ->> 'calib', '') from console.customer_members m where m.customer_id = p_customer and m.email = lower(coalesce(auth.jwt() ->> 'email', ''))) end $$;
+
+create or replace function public.kmr_cal_context(p_slug text) returns jsonb language sql stable security definer set search_path = console, public as $$
+  select case when console.cal_role(c.id) is null then null else jsonb_build_object('role', console.cal_role(c.id), 'company', c.name) end from console.customers c where c.slug = lower(p_slug) $$;
+create or replace function public.kmr_cal_load(p_slug text) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.cal_role(cid) is null then raise exception 'You have no access to Calibration Hub.'; end if;
+  return jsonb_build_object(
+    'instruments', coalesce((select jsonb_agg(to_jsonb(i) - 'customer_id' order by i.tag) from console.cal_instruments i where i.customer_id = cid), '[]'),
+    'records', coalesce((select jsonb_agg(to_jsonb(r) - 'customer_id' order by r.cal_date desc) from console.cal_records r where r.customer_id = cid), '[]'),
+    'events', coalesce((select jsonb_agg(to_jsonb(e) - 'customer_id' order by e.ev_date desc, e.created_at desc) from console.cal_events e where e.customer_id = cid), '[]'),
+    'oot', coalesce((select jsonb_agg(to_jsonb(o) - 'customer_id' order by o.opened_at desc) from console.cal_oot o where o.customer_id = cid), '[]'));
+end $$;
+create or replace function console.cal_edit(p_slug text) returns uuid language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or coalesce(console.cal_role(cid), '') not in ('admin','editor') then raise exception 'You can view Calibration Hub but not change it. Ask your administrator for editor access.'; end if;
+  return cid;
+end $$;
+-- instrument: p = {id?, tag, name, itype, make, model, serial_no, range_text, least_count, location, department, custodian, criticality, cal_source, lab, freq_months, tolerance, status, notes}
+create or replace function public.kmr_cal_save_instrument(p_slug text, p jsonb) returns uuid language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); rid uuid;
+begin
+  if length(trim(coalesce(p ->> 'tag', ''))) = 0 or length(trim(coalesce(p ->> 'name', ''))) = 0 then raise exception 'Tag / ID and description are required.'; end if;
+  if nullif(p ->> 'id', '') is not null then
+    update console.cal_instruments set tag = trim(p ->> 'tag'), name = trim(p ->> 'name'), itype = p ->> 'itype', make = p ->> 'make', model = p ->> 'model', serial_no = p ->> 'serial_no',
+      range_text = p ->> 'range_text', least_count = p ->> 'least_count', location = p ->> 'location', department = p ->> 'department', custodian = p ->> 'custodian',
+      criticality = coalesce(nullif(p ->> 'criticality', ''), 'Major'), cal_source = coalesce(nullif(p ->> 'cal_source', ''), 'External'), lab = p ->> 'lab',
+      freq_months = coalesce(nullif(p ->> 'freq_months', '')::int, 12), tolerance = p ->> 'tolerance', status = coalesce(nullif(p ->> 'status', ''), 'In use'), notes = p ->> 'notes'
+     where id = (p ->> 'id')::uuid and customer_id = cid returning id into rid;
+  else
+    insert into console.cal_instruments (customer_id, tag, name, itype, make, model, serial_no, range_text, least_count, location, department, custodian, criticality, cal_source, lab, freq_months, tolerance, notes)
+    values (cid, trim(p ->> 'tag'), trim(p ->> 'name'), p ->> 'itype', p ->> 'make', p ->> 'model', p ->> 'serial_no', p ->> 'range_text', p ->> 'least_count', p ->> 'location', p ->> 'department',
+      p ->> 'custodian', coalesce(nullif(p ->> 'criticality', ''), 'Major'), coalesce(nullif(p ->> 'cal_source', ''), 'External'), p ->> 'lab', coalesce(nullif(p ->> 'freq_months', '')::int, 12), p ->> 'tolerance', p ->> 'notes')
+    returning id into rid;
+  end if;
+  return rid;
+exception when unique_violation then raise exception 'An instrument with this tag / ID already exists.';
+end $$;
+-- calibration: p = {instrument_id, cal_date, next_due?, kind, lab, accreditation, cert_no, as_found_ok, result, max_error, uncertainty, temp_c, humidity, calibrator, remarks}
+-- An as-found reading out of tolerance (as_found_ok = false) opens an out-of-tolerance case automatically.
+create or replace function public.kmr_cal_save_record(p_slug text, p jsonb) returns uuid language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); i console.cal_instruments; rid uuid; nd date; me text := lower(coalesce(auth.jwt() ->> 'email', '')); lg date;
+begin
+  select * into i from console.cal_instruments where id = (p ->> 'instrument_id')::uuid and customer_id = cid;
+  if i.id is null then raise exception 'Unknown instrument.'; end if;
+  if coalesce(p ->> 'cal_date', '') = '' then raise exception 'Choose the calibration date.'; end if;
+  nd := coalesce(nullif(p ->> 'next_due', '')::date, (p ->> 'cal_date')::date + (i.freq_months || ' months')::interval);
+  select max(cal_date) into lg from console.cal_records where instrument_id = i.id and as_found_ok is not false and result = 'Pass';
+  insert into console.cal_records (customer_id, instrument_id, cal_date, next_due, kind, lab, accreditation, cert_no, as_found_ok, result, max_error, uncertainty, temp_c, humidity, calibrator, remarks, created_by)
+  values (cid, i.id, (p ->> 'cal_date')::date, nd, coalesce(p ->> 'kind', i.cal_source), p ->> 'lab', p ->> 'accreditation', p ->> 'cert_no', (nullif(p ->> 'as_found_ok', ''))::boolean,
+    coalesce(nullif(p ->> 'result', ''), 'Pass'), p ->> 'max_error', p ->> 'uncertainty', nullif(p ->> 'temp_c', '')::numeric, nullif(p ->> 'humidity', '')::numeric, p ->> 'calibrator', p ->> 'remarks', me)
+  returning id into rid;
+  if coalesce(p ->> 'result', 'Pass') = 'Fail' then
+    update console.cal_instruments set status = 'Quarantine' where id = i.id;
+  else
+    update console.cal_instruments set last_cal = (p ->> 'cal_date')::date, next_due = nd, status = case when status in ('Quarantine','Out of service') then 'In use' else status end where id = i.id;
+  end if;
+  if (p ->> 'as_found_ok') = 'false' then
+    insert into console.cal_oot (customer_id, instrument_id, record_id, summary, last_good, risk, status)
+    values (cid, i.id, rid, 'As-found out of tolerance at calibration on ' || (p ->> 'cal_date') || coalesce(' (max error ' || (p ->> 'max_error') || ')', ''), lg, 'High', 'Open');
+  end if;
+  return rid;
+end $$;
+-- history event: p = {instrument_id, ev_type, detail}; a damage report quarantines the instrument
+create or replace function public.kmr_cal_event(p_slug text, p jsonb) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); me text := lower(coalesce(auth.jwt() ->> 'email', ''));
+begin
+  if not exists (select 1 from console.cal_instruments where id = (p ->> 'instrument_id')::uuid and customer_id = cid) then raise exception 'Unknown instrument.'; end if;
+  insert into console.cal_events (customer_id, instrument_id, ev_type, detail, by_email) values (cid, (p ->> 'instrument_id')::uuid, coalesce(p ->> 'ev_type', 'Note'), p ->> 'detail', me);
+  if p ->> 'ev_type' = 'Damage report' then update console.cal_instruments set status = 'Quarantine' where id = (p ->> 'instrument_id')::uuid; end if;
+  if p ->> 'ev_type' = 'Status change' and p ->> 'new_status' is not null then update console.cal_instruments set status = p ->> 'new_status' where id = (p ->> 'instrument_id')::uuid; end if;
+  return 'ok';
+end $$;
+create or replace function public.kmr_cal_close_oot(p_slug text, p_id uuid, p jsonb) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug);
+begin
+  update console.cal_oot set risk = coalesce(p ->> 'risk', risk), notify = p ->> 'notify', action = p ->> 'action', status = coalesce(p ->> 'status', status),
+    closed_at = case when p ->> 'status' = 'Closed' then current_date end where id = p_id and customer_id = cid;
+  return 'ok';
+end $$;
+do $$ declare f text; begin foreach f in array array['kmr_cal_context(text)','kmr_cal_load(text)','kmr_cal_save_instrument(text,jsonb)','kmr_cal_save_record(text,jsonb)','kmr_cal_event(text,jsonb)','kmr_cal_close_oot(text,uuid,jsonb)'] loop
+  execute format('grant execute on function public.%s to authenticated', f); end loop; end $$;
+
+insert into console.products (code, name, description, app_path, seat_label, current_version, sort_order)
+values ('calib', 'Calibration Hub', 'Instrument register, calibration due control, gauge history, out-of-tolerance cases, standards alignment', '/it/calibration.html', 'users', '1.0.0', 60)
+on conflict (code) do nothing;
+insert into console.releases (product_code, version, notes) values ('calib', '1.0.0', 'Calibration Hub: instrument register, calibration records, gauge history card, OOT cases, standards alignment') on conflict do nothing;
+
+-- ---------- portal: Sales Flow + Calibration Hub cards, access and figures ----------
+drop function if exists public.kmr_portal_stats(text);
+drop function if exists public.kmr_portal(text);
+create or replace function public.kmr_portal(p_slug text)
+returns table (product_code text, product_name text, app_path text, purchased boolean, ok boolean, status text,
+               valid_until date, message text, customer_name text, logo_url text, product_slug text,
+               has_access boolean, is_contact boolean)
+language plpgsql stable security definer set search_path = console, public as $$
+declare
+  em text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  uid uuid := auth.uid();
+  c console.customers%rowtype;
+  member boolean := false;
+begin
+  select * into c from console.customers where slug = lower(p_slug);
+  if c.id is null or em = '' then return; end if;
+  select true into member from console.licences l
+   where l.customer_id = c.id and (
+         (l.product_code = 'balloon'  and exists (select 1 from public.bi_members m where m.org_id = l.product_ref and lower(m.email) = em))
+      or (l.product_code = 'pd'       and exists (select 1 from public.pd_members m where m.org_id = l.product_ref and lower(m.email) = em))
+      or (l.product_code = 'capacity' and exists (select 1 from public.cp_members m where m.org_id = l.product_ref and m.email = em))
+      or (l.product_code = 'sales'    and console.sf_member(l.customer_id, em))
+      or (l.product_code = 'calib'    and console.cal_member(l.customer_id, em))
+      or (l.product_code = 'hrm'      and exists (select 1 from hrm.app_users u where u.tenant_id = l.product_ref and u.id = uid and u.active)))
+   limit 1;
+  if not coalesce(member, false) and lower(coalesce(c.contact_email, '')) <> em then return; end if;
+  return query
+    select p.code, p.name, p.app_path, (l.id is not null), coalesce(a.ok, false), coalesce(a.status, 'not_purchased'),
+           l.valid_until, a.message, c.name, c.logo_url, l.product_slug,
+           case p.code
+             when 'balloon'  then exists (select 1 from public.bi_members m where m.org_id = l.product_ref and lower(m.email) = em)
+             when 'pd'       then exists (select 1 from public.pd_members m where m.org_id = l.product_ref and lower(m.email) = em)
+             when 'capacity' then exists (select 1 from public.cp_members m where m.org_id = l.product_ref and m.email = em)
+             when 'sales'    then console.sf_member(l.customer_id, em)
+             when 'calib'    then console.cal_member(l.customer_id, em)
+             when 'hrm'      then exists (select 1 from hrm.app_users u where u.tenant_id = l.product_ref and u.id = uid and u.active)
+             else false end,
+           lower(coalesce(c.contact_email, '')) = em
+      from console.products p
+      left join console.licences l on l.product_code = p.code and l.customer_id = c.id
+      left join lateral console.access_state(p.code, l.product_ref) a on l.id is not null
+     where p.active
+     order by p.sort_order;
+end $$;
+revoke all on function public.kmr_portal(text) from public, anon;
+grant execute on function public.kmr_portal(text) to authenticated;
+
+create or replace function public.kmr_portal_join(p_slug text, p_product text) returns text
+language plpgsql security definer set search_path = console, public as $$
+declare em text := lower(coalesce(auth.jwt() ->> 'email', '')); cid uuid; ok boolean;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or em = '' then raise exception 'Unknown company link.'; end if;
+  if not exists (select 1 from console.licences where customer_id = cid and product_code = p_product and product_ref is not null) then
+    raise exception 'This app is not set up for your company yet. Please contact KMR.';
+  end if;
+  if console.is_customer_admin(cid) then
+    perform console.grant_admins(cid);          -- administrators: admin in every bought tool
+  end if;
+  perform console.sync_member(cid, em);         -- everyone: whatever Administration › Users & access says
+  ok := case p_product
+    when 'balloon'  then exists (select 1 from public.bi_members m join console.licences l on l.product_ref = m.org_id and l.product_code = 'balloon' where l.customer_id = cid and lower(m.email) = em)
+    when 'pd'       then exists (select 1 from public.pd_members m join console.licences l on l.product_ref = m.org_id and l.product_code = 'pd' where l.customer_id = cid and lower(m.email) = em)
+    when 'capacity' then exists (select 1 from public.cp_members m join console.licences l on l.product_ref = m.org_id and l.product_code = 'capacity' where l.customer_id = cid and m.email = em)
+    when 'sales'    then console.sf_member(cid, em)
+    when 'calib'    then console.cal_member(cid, em)
+    when 'hrm'      then exists (select 1 from hrm.app_users u join console.licences l on l.product_ref = u.tenant_id and l.product_code = 'hrm' where l.customer_id = cid and u.id = auth.uid() and u.active)
+    else false end;
+  if not ok then
+    raise exception 'You have not been given access to this app. Your company administrator can add it under KMR Apps › Administration › Users & access.';
+  end if;
+  return 'ok';
+end $$;
+revoke all on function public.kmr_portal_join(text, text) from public, anon;
+grant execute on function public.kmr_portal_join(text, text) to authenticated;
+
+create or replace function public.kmr_portal_stats(p_slug text) returns jsonb
+language plpgsql stable security definer set search_path = console, public as $$
+declare c uuid; out jsonb := '{}'; ref uuid; today date := (now() at time zone 'Asia/Kolkata')::date;
+begin
+  if not exists (select 1 from public.kmr_portal(p_slug)) then return out; end if;
+  select id into c from console.customers where slug = lower(p_slug);
+  select product_ref into ref from console.licences where customer_id = c and product_code = 'hrm';
+  if ref is not null then
+    out := out || jsonb_build_object('hrm', jsonb_build_object(
+      'Employees', (select count(*) from hrm.employees where tenant_id = ref and status = 'active'),
+      'In today', (select count(*) from hrm.attendance_days where tenant_id = ref and work_date = today and status in ('present','half_day','missed_punch')),
+      'Awaiting approval', (select count(*) from hrm.leave_requests where tenant_id = ref and status = 'pending')
+                          + (select count(*) from hrm.regularisation_requests where tenant_id = ref and status = 'pending')));
+  end if;
+  select product_ref into ref from console.licences where customer_id = c and product_code = 'balloon';
+  if ref is not null then
+    out := out || jsonb_build_object('balloon', jsonb_build_object(
+      'Reports', (select count(*) from public.bi_reports where org_id = ref),
+      'Users', (select count(*) from public.bi_members where org_id = ref)));
+  end if;
+  select product_ref into ref from console.licences where customer_id = c and product_code = 'pd';
+  if ref is not null then
+    out := out || jsonb_build_object('pd', jsonb_build_object(
+      'Projects', (select count(*) from public.pd_projects where org_id = ref),
+      'Users', (select count(*) from public.pd_members where org_id = ref)));
+  end if;
+  select product_ref into ref from console.licences where customer_id = c and product_code = 'capacity';
+  if ref is not null then
+    out := out || jsonb_build_object('capacity', jsonb_build_object(
+      'Users', (select count(*) from public.cp_members where org_id = ref),
+      'Saved versions', (select count(*) from public.cp_history where org_id = ref) + (select count(*) from public.cp_plans where org_id = ref)));
+  end if;
+  select product_ref into ref from console.licences where customer_id = c and product_code = 'sales';
+  if ref is not null then
+    out := out || jsonb_build_object('sales', jsonb_build_object(
+      'Users', (select count(*) from console.customer_members m where m.customer_id = c and coalesce(m.roles ->> 'sales', '') <> ''),
+      'Parts planned', (select count(*) from console.sf_lines where customer_id = c and month = date_trunc('month', today)::date)));
+  end if;
+  select product_ref into ref from console.licences where customer_id = c and product_code = 'calib';
+  if ref is not null then
+    out := out || jsonb_build_object('calib', jsonb_build_object(
+      'Instruments', (select count(*) from console.cal_instruments where customer_id = c and status = 'In use'),
+      'Overdue', (select count(*) from console.cal_instruments where customer_id = c and status = 'In use' and next_due < (now() at time zone 'Asia/Kolkata')::date)));
+  end if;
+  return out;
+end $$;
+revoke all on function public.kmr_portal_stats(text) from public, anon;
+grant execute on function public.kmr_portal_stats(text) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0038_calibration_import.sql
+-- =====================================================================
+-- Calibration Hub 0038 — bulk import of an existing gauge register (upsert by tag). Needs 0037. Safe to re-run.
+-- p_rows = [{tag, name, itype, make, model, serial_no, range_text, least_count, tolerance, department, location, custodian, criticality, cal_source, lab, freq_months, last_cal, next_due}]
+create or replace function public.kmr_cal_import(p_slug text, p_rows jsonb) returns jsonb language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); r jsonb; ins int := 0; upd int := 0; fm int; lc date; nd date; ex uuid;
+begin
+  for r in select * from jsonb_array_elements(p_rows) loop
+    continue when length(trim(coalesce(r ->> 'tag', ''))) = 0 or length(trim(coalesce(r ->> 'name', ''))) = 0;
+    fm := coalesce(nullif(r ->> 'freq_months', '')::int, 12); lc := nullif(r ->> 'last_cal', '')::date;
+    nd := coalesce(nullif(r ->> 'next_due', '')::date, case when lc is not null then lc + (fm || ' months')::interval end);
+    select id into ex from console.cal_instruments where customer_id = cid and tag = trim(r ->> 'tag');
+    if ex is null then
+      insert into console.cal_instruments (customer_id, tag, name, itype, make, model, serial_no, range_text, least_count, tolerance, department, location, custodian, criticality, cal_source, lab, freq_months, last_cal, next_due)
+      values (cid, trim(r ->> 'tag'), trim(r ->> 'name'), r ->> 'itype', r ->> 'make', r ->> 'model', r ->> 'serial_no', r ->> 'range_text', r ->> 'least_count', r ->> 'tolerance', r ->> 'department', r ->> 'location',
+              r ->> 'custodian', coalesce(nullif(r ->> 'criticality', ''), 'Major'), coalesce(nullif(r ->> 'cal_source', ''), 'External'), r ->> 'lab', fm, lc, nd);
+      ins := ins + 1;
+    else
+      update console.cal_instruments set name = trim(r ->> 'name'), itype = coalesce(r ->> 'itype', itype), make = coalesce(r ->> 'make', make), model = coalesce(r ->> 'model', model), serial_no = coalesce(r ->> 'serial_no', serial_no),
+        range_text = coalesce(r ->> 'range_text', range_text), least_count = coalesce(r ->> 'least_count', least_count), tolerance = coalesce(r ->> 'tolerance', tolerance), department = coalesce(r ->> 'department', department),
+        location = coalesce(r ->> 'location', location), custodian = coalesce(r ->> 'custodian', custodian), lab = coalesce(r ->> 'lab', lab), freq_months = fm, last_cal = coalesce(lc, last_cal), next_due = coalesce(nd, next_due)
+       where id = ex;
+      upd := upd + 1;
+    end if;
+  end loop;
+  return jsonb_build_object('inserted', ins, 'updated', upd);
+end $$;
+grant execute on function public.kmr_cal_import(text, jsonb) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0039_calibration_msa.sql
+-- =====================================================================
+-- Calibration Hub 0039 — MSA studies (Gage R&R, average & range method; computed in the app, stored with the data). Needs 0037. Safe to re-run.
+create table if not exists console.cal_msa (
+  id uuid primary key default gen_random_uuid(), customer_id uuid not null references console.customers(id) on delete cascade,
+  instrument_id uuid not null references console.cal_instruments(id) on delete cascade, study_type text not null default 'GRR',
+  characteristic text, study_date date not null default current_date, tolerance numeric, appraisers int, parts int, trials int,
+  data jsonb, results jsonb, decision text, performed_by text, created_at timestamptz not null default now());
+alter table console.cal_msa enable row level security;
+drop policy if exists cal_msa_staff on console.cal_msa;
+create policy cal_msa_staff on console.cal_msa for all to authenticated using (console.is_staff()) with check (console.is_staff());
+create or replace function public.kmr_cal_load(p_slug text) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.cal_role(cid) is null then raise exception 'You have no access to Calibration Hub.'; end if;
+  return jsonb_build_object(
+    'instruments', coalesce((select jsonb_agg(to_jsonb(i) - 'customer_id' order by i.tag) from console.cal_instruments i where i.customer_id = cid), '[]'),
+    'records', coalesce((select jsonb_agg(to_jsonb(r) - 'customer_id' order by r.cal_date desc) from console.cal_records r where r.customer_id = cid), '[]'),
+    'events', coalesce((select jsonb_agg(to_jsonb(e) - 'customer_id' order by e.ev_date desc, e.created_at desc) from console.cal_events e where e.customer_id = cid), '[]'),
+    'oot', coalesce((select jsonb_agg(to_jsonb(o) - 'customer_id' order by o.opened_at desc) from console.cal_oot o where o.customer_id = cid), '[]'),
+    'msa', coalesce((select jsonb_agg(to_jsonb(s) - 'customer_id' order by s.study_date desc) from console.cal_msa s where s.customer_id = cid), '[]'));
+end $$;
+
+create or replace function public.kmr_cal_save_msa(p_slug text, p jsonb) returns uuid language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); rid uuid;
+begin
+  if not exists (select 1 from console.cal_instruments where id = (p ->> 'instrument_id')::uuid and customer_id = cid) then raise exception 'Unknown instrument.'; end if;
+  insert into console.cal_msa (customer_id, instrument_id, study_type, characteristic, study_date, tolerance, appraisers, parts, trials, data, results, decision, performed_by)
+  values (cid, (p ->> 'instrument_id')::uuid, coalesce(p ->> 'study_type', 'GRR'), p ->> 'characteristic', coalesce(nullif(p ->> 'study_date', '')::date, current_date), nullif(p ->> 'tolerance', '')::numeric,
+          (p ->> 'appraisers')::int, (p ->> 'parts')::int, (p ->> 'trials')::int, p -> 'data', p -> 'results', p ->> 'decision', lower(coalesce(auth.jwt() ->> 'email', ''))) returning id into rid;
+  return rid;
+end $$;
+create or replace function public.kmr_cal_delete_msa(p_slug text, p_id uuid) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug);
+begin delete from console.cal_msa where id = p_id and customer_id = cid; return 'ok'; end $$;
+grant execute on function public.kmr_cal_load(text) to authenticated;
+grant execute on function public.kmr_cal_save_msa(text, jsonb) to authenticated;
+grant execute on function public.kmr_cal_delete_msa(text, uuid) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0040_calibration_ops_gauges.sql
+-- =====================================================================
+-- Calibration Hub 0040 — instruments saved with last calibration / next due (auto-calculated from the frequency), and gauges read from the Operations Master. Needs 0037, 0015. Safe to re-run.
+create or replace function public.kmr_cal_save_instrument(p_slug text, p jsonb) returns uuid language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); rid uuid;
+begin
+  if length(trim(coalesce(p ->> 'tag', ''))) = 0 or length(trim(coalesce(p ->> 'name', ''))) = 0 then raise exception 'Tag / ID and description are required.'; end if;
+  if nullif(p ->> 'id', '') is not null then
+    update console.cal_instruments set tag = trim(p ->> 'tag'), name = trim(p ->> 'name'), itype = p ->> 'itype', make = p ->> 'make', model = p ->> 'model', serial_no = p ->> 'serial_no',
+      range_text = p ->> 'range_text', least_count = p ->> 'least_count', location = p ->> 'location', department = p ->> 'department', custodian = p ->> 'custodian',
+      criticality = coalesce(nullif(p ->> 'criticality', ''), 'Major'), cal_source = coalesce(nullif(p ->> 'cal_source', ''), 'External'), lab = p ->> 'lab',
+      freq_months = coalesce(nullif(p ->> 'freq_months', '')::int, 12), tolerance = p ->> 'tolerance', status = coalesce(nullif(p ->> 'status', ''), 'In use'), notes = p ->> 'notes',
+      last_cal = nullif(p ->> 'last_cal', '')::date, next_due = coalesce(nullif(p ->> 'next_due', '')::date, case when nullif(p ->> 'last_cal', '') is not null then (p ->> 'last_cal')::date + (coalesce(nullif(p ->> 'freq_months', '')::int, 12) || ' months')::interval end)
+     where id = (p ->> 'id')::uuid and customer_id = cid returning id into rid;
+  else
+    insert into console.cal_instruments (customer_id, tag, name, itype, make, model, serial_no, range_text, least_count, location, department, custodian, criticality, cal_source, lab, freq_months, tolerance, notes, last_cal, next_due)
+    values (cid, trim(p ->> 'tag'), trim(p ->> 'name'), p ->> 'itype', p ->> 'make', p ->> 'model', p ->> 'serial_no', p ->> 'range_text', p ->> 'least_count', p ->> 'location', p ->> 'department',
+      p ->> 'custodian', coalesce(nullif(p ->> 'criticality', ''), 'Major'), coalesce(nullif(p ->> 'cal_source', ''), 'External'), p ->> 'lab', coalesce(nullif(p ->> 'freq_months', '')::int, 12), p ->> 'tolerance', p ->> 'notes', nullif(p ->> 'last_cal', '')::date,
+      coalesce(nullif(p ->> 'next_due', '')::date, case when nullif(p ->> 'last_cal', '') is not null then (p ->> 'last_cal')::date + (coalesce(nullif(p ->> 'freq_months', '')::int, 12) || ' months')::interval end))
+    returning id into rid;
+  end if;
+  return rid;
+exception when unique_violation then raise exception 'An instrument with this tag / ID already exists.';
+end $$;
+
+create or replace function public.kmr_cal_ops_gauges(p_slug text) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.cal_role(cid) is null then raise exception 'You have no access to Calibration Hub.'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('tag', g.code, 'name', g.name, 'itype', g.data ->> 'type', 'make', g.data ->> 'make', 'range_text', g.data ->> 'range', 'least_count', g.data ->> 'least_count',
+      'location', g.data ->> 'location', 'department', g.data ->> 'department', 'freq_months', nullif(substring(coalesce(g.data ->> 'cal_freq_months', '') from '[0-9]+'), '')::int,
+      'last_cal', case when coalesce(g.data ->> 'last_calibrated', '') ~ '^\d{4}-\d{2}-\d{2}' then left(g.data ->> 'last_calibrated', 10) end,
+      'next_due', case when coalesce(g.data ->> 'next_due', '') ~ '^\d{4}-\d{2}-\d{2}' then left(g.data ->> 'next_due', 10) end,
+      'added', exists (select 1 from console.cal_instruments i where i.customer_id = cid and i.tag = g.code)) order by g.code)
+    from console.ops_records g where g.customer_id = cid and g.kind = 'gauges' and g.active), '[]');
+end $$;
+grant execute on function public.kmr_cal_save_instrument(text, jsonb) to authenticated;
+grant execute on function public.kmr_cal_ops_gauges(text) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0041_calibration_ops_location.sql
+-- =====================================================================
+-- Calibration Hub 0041 — gauge location from the Operations Master: a machine code (shown as "code · machine name") or "Gauge room · room no."
+-- Operations Master › Gauges fields read: code, name, type, make, model, serial_no, range, least_count, tolerance, location (machine code or "Gauge room"),
+-- gauge_room_no (only when location = Gauge room), cal_freq_months, last_calibrated, next_due, department, criticality, lab, custodian. Needs 0040. Safe to re-run.
+create or replace function public.kmr_cal_ops_gauges(p_slug text) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.cal_role(cid) is null then raise exception 'You have no access to Calibration Hub.'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('tag', g.code, 'name', g.name, 'itype', g.data ->> 'type', 'make', g.data ->> 'make', 'range_text', g.data ->> 'range', 'least_count', g.data ->> 'least_count',
+      'location', case when lower(coalesce(g.data ->> 'location', '')) like 'gauge room%' then 'Gauge room' || coalesce(' · ' || nullif(trim(g.data ->> 'gauge_room_no'), ''), '')
+                       else coalesce((select m.code || ' · ' || m.name from console.ops_records m where m.customer_id = cid and m.kind = 'machines' and m.code = g.data ->> 'location' limit 1), g.data ->> 'location') end,
+      'department', g.data ->> 'department', 'model', g.data ->> 'model', 'serial_no', g.data ->> 'serial_no', 'tolerance', g.data ->> 'tolerance', 'criticality', g.data ->> 'criticality', 'lab', g.data ->> 'lab', 'custodian', g.data ->> 'custodian', 'cal_source', g.data ->> 'cal_source', 'freq_months', nullif(substring(coalesce(g.data ->> 'cal_freq_months', '') from '[0-9]+'), '')::int,
+      'last_cal', case when coalesce(g.data ->> 'last_calibrated', '') ~ '^\d{4}-\d{2}-\d{2}' then left(g.data ->> 'last_calibrated', 10) end,
+      'next_due', case when coalesce(g.data ->> 'next_due', '') ~ '^\d{4}-\d{2}-\d{2}' then left(g.data ->> 'next_due', 10) end,
+      'added', exists (select 1 from console.cal_instruments i where i.customer_id = cid and i.tag = g.code)) order by g.code)
+    from console.ops_records g where g.customer_id = cid and g.kind = 'gauges' and g.active), '[]');
+end $$;
+grant execute on function public.kmr_cal_ops_gauges(text) to authenticated;
+
+
+-- =====================================================================
+-- migrations/0042_calibration_crud.sql
+-- =====================================================================
+-- Calibration Hub 0042 — control plan picker for MSA, machine list, and edit / delete on every screen. Needs 0037, 0039. Safe to re-run.
+create or replace function console.cal_refresh(p_inst uuid) returns void language plpgsql security definer set search_path = console, public as $$
+declare r record;
+begin
+  select cal_date, next_due into r from console.cal_records where instrument_id = p_inst and result = 'Pass' order by cal_date desc, created_at desc limit 1;
+  update console.cal_instruments set last_cal = r.cal_date, next_due = r.next_due where id = p_inst;
+end $$;
+
+create or replace function public.kmr_cal_control_plan(p_slug text) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid; org uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.cal_role(cid) is null then raise exception 'You have no access to Calibration Hub.'; end if;
+  select product_ref into org from console.licences where customer_id = cid and product_code = 'pd' limit 1;
+  if org is null then return '[]'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('project_id', p.id, 'part_no', p.part_no, 'part_name', p.part_name, 'rev', p.rev,
+      'rows', coalesce((select jsonb_agg(jsonb_build_object('char_no', r ->> 'charNo', 'op_no', r ->> 'opNo', 'char', coalesce(nullif(r ->> 'product', ''), nullif(r ->> 'process', '')),
+                                                           'spec', r ->> 'spec', 'tech', r ->> 'tech', 'cls', r ->> 'cls'))
+                          from jsonb_array_elements(coalesce(p.doc #> '{docs,cp,rows}', '[]'::jsonb)) r
+                         where coalesce(nullif(r ->> 'product', ''), nullif(r ->> 'process', '')) is not null), '[]')) order by p.part_no)
+                     from public.pd_projects p where p.org_id = org), '[]');
+end $$;
+
+create or replace function public.kmr_cal_ops_machines(p_slug text) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid;
+begin
+  select id into cid from console.customers where slug = lower(p_slug);
+  if cid is null or console.cal_role(cid) is null then raise exception 'You have no access to Calibration Hub.'; end if;
+  return coalesce((select jsonb_agg(jsonb_build_object('code', m.code, 'name', m.name) order by m.code) from console.ops_records m where m.customer_id = cid and m.kind = 'machines' and m.active), '[]');
+end $$;
+
+create or replace function public.kmr_cal_delete_instrument(p_slug text, p_id uuid) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug);
+begin delete from console.cal_instruments where id = p_id and customer_id = cid; return 'ok'; end $$;
+
+create or replace function public.kmr_cal_update_record(p_slug text, p_id uuid, p jsonb) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); iid uuid;
+begin
+  update console.cal_records set cal_date = (p ->> 'cal_date')::date, next_due = coalesce(nullif(p ->> 'next_due', '')::date, next_due), kind = p ->> 'kind', lab = p ->> 'lab', accreditation = p ->> 'accreditation',
+    cert_no = p ->> 'cert_no', as_found_ok = (nullif(p ->> 'as_found_ok', ''))::boolean, result = coalesce(nullif(p ->> 'result', ''), 'Pass'), max_error = p ->> 'max_error', uncertainty = p ->> 'uncertainty',
+    temp_c = nullif(p ->> 'temp_c', '')::numeric, humidity = nullif(p ->> 'humidity', '')::numeric, calibrator = p ->> 'calibrator', remarks = p ->> 'remarks'
+   where id = p_id and customer_id = cid returning instrument_id into iid;
+  if iid is not null then perform console.cal_refresh(iid); end if;
+  return 'ok';
+end $$;
+create or replace function public.kmr_cal_delete_record(p_slug text, p_id uuid) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); iid uuid;
+begin delete from console.cal_records where id = p_id and customer_id = cid returning instrument_id into iid; if iid is not null then perform console.cal_refresh(iid); end if; return 'ok'; end $$;
+create or replace function public.kmr_cal_delete_oot(p_slug text, p_id uuid) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug);
+begin delete from console.cal_oot where id = p_id and customer_id = cid; return 'ok'; end $$;
+create or replace function public.kmr_cal_delete_event(p_slug text, p_id uuid) returns text language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug);
+begin delete from console.cal_events where id = p_id and customer_id = cid; return 'ok'; end $$;
+
+-- MSA: save now also updates an existing study (p.id)
+create or replace function public.kmr_cal_save_msa(p_slug text, p jsonb) returns uuid language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.cal_edit(p_slug); rid uuid;
+begin
+  if not exists (select 1 from console.cal_instruments where id = (p ->> 'instrument_id')::uuid and customer_id = cid) then raise exception 'Unknown instrument.'; end if;
+  if nullif(p ->> 'id', '') is not null then
+    update console.cal_msa set instrument_id = (p ->> 'instrument_id')::uuid, characteristic = p ->> 'characteristic', study_date = coalesce(nullif(p ->> 'study_date', '')::date, study_date), tolerance = nullif(p ->> 'tolerance', '')::numeric,
+      appraisers = (p ->> 'appraisers')::int, parts = (p ->> 'parts')::int, trials = (p ->> 'trials')::int, data = p -> 'data', results = p -> 'results', decision = p ->> 'decision'
+     where id = (p ->> 'id')::uuid and customer_id = cid returning id into rid;
+  else
+    insert into console.cal_msa (customer_id, instrument_id, study_type, characteristic, study_date, tolerance, appraisers, parts, trials, data, results, decision, performed_by)
+    values (cid, (p ->> 'instrument_id')::uuid, coalesce(p ->> 'study_type', 'GRR'), p ->> 'characteristic', coalesce(nullif(p ->> 'study_date', '')::date, current_date), nullif(p ->> 'tolerance', '')::numeric,
+            (p ->> 'appraisers')::int, (p ->> 'parts')::int, (p ->> 'trials')::int, p -> 'data', p -> 'results', p ->> 'decision', lower(coalesce(auth.jwt() ->> 'email', ''))) returning id into rid;
+  end if;
+  return rid;
+end $$;
+do $$ declare f text; begin foreach f in array array['kmr_cal_control_plan(text)','kmr_cal_ops_machines(text)','kmr_cal_delete_instrument(text,uuid)','kmr_cal_update_record(text,uuid,jsonb)','kmr_cal_delete_record(text,uuid)','kmr_cal_delete_oot(text,uuid)','kmr_cal_delete_event(text,uuid)','kmr_cal_save_msa(text,jsonb)'] loop
+  execute format('grant execute on function public.%s to authenticated', f); end loop; end $$;
+
 -- =====================================================================
 -- The Console owner
 -- =====================================================================
