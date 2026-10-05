@@ -35,10 +35,6 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
         <div><p className="muted"><a href={p("/billing?tab=quotes")}>← Quotations</a></p>
           <h1 className="mono">{q.number}</h1>
           <p>{q.to_name} · {fmtDate(q.quote_date)} · <span className="badge">{q.status}</span>{q.lead_id && <> · <a href={p(`/leads`)}>against an enquiry</a></>}{q.updated_by && <small className="muted"> · last saved by {q.updated_by}</small>}</p></div>
-        <div className="row" style={{ gap: 8 }}>
-          <a className="btn" href={p(`/api/quotes/${q.id}/pdf`)} target="_blank" rel="noopener">Open PDF</a>
-          <a className="btn secondary" href={p(`/api/quotes/${q.id}/pdf?download=1`)}>Download PDF</a>
-        </div>
       </div>
       {saved && <div className="alert ok">Quotation {q.number} saved.</div>}
       {setup && <div className="alert warn">Quotations are not set up in the database yet. In Supabase → SQL Editor run <b>{setup}</b>, then refresh this page.</div>}

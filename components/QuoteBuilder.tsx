@@ -87,6 +87,28 @@ export function QuoteBuilder({ initial, customers, leads = [], startLead, produc
     setQ((x) => ({ ...x, lines: [...x.lines, { product_code: c.product_code, particulars: c.name, detail: c.detail ?? "", basis: c.basis, qty: Number(c.default_qty), rate: Number(c.amount), months: 12 }] }));
   }
 
+  const [pdfBusy, setPdfBusy] = useState<"" | "view" | "download">("");
+  async function pdf(download: boolean) {
+    setMsg({});
+    // open the tab inside the tap (phones block pop-ups opened after a wait), then fill it with the PDF
+    const tab = download ? null : window.open("", "_blank");
+    if (tab) tab.document.write("<p style='font:16px system-ui;padding:24px;color:#555'>Preparing the quotation PDF…</p>");
+    setPdfBusy(download ? "download" : "view");
+    try {
+      const r = await fetch(p("/api/quotes/preview"), { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ ...q, number: initial?.number ?? null, status: status ?? "draft", download }) });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `Could not make the PDF (${r.status}).`);
+      const url = URL.createObjectURL(await r.blob());
+      if (download) {
+        const a = document.createElement("a"); a.href = url;
+        a.download = `Quotation_${String(initial?.number || "draft").replace(/[^\w-]+/g, "-")}_${(q.to_name || "").replace(/[^\w-]+/g, "-").slice(0, 40)}.pdf`;
+        document.body.append(a); a.click(); a.remove();
+      } else if (tab) tab.location.href = url; else window.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (e) { tab?.close(); setMsg({ error: (e as Error).message }); }
+    finally { setPdfBusy(""); }
+  }
+
   function save(openPdf: boolean) {
     setMsg({});
     start(async () => {
@@ -271,11 +293,13 @@ export function QuoteBuilder({ initial, customers, leads = [], startLead, produc
           <label className="field" style={{ marginTop: 10 }}>Internal note (not printed)<input value={q.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
           {msg.error && <div className="alert danger" style={{ marginTop: 10 }}>{msg.error}</div>}
           {msg.ok && <div className="alert ok" style={{ marginTop: 10 }}>{msg.ok}</div>}
-          <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
-            <button type="button" className="btn" disabled={busy} onClick={() => save(true)}>{busy ? "Saving…" : "Save & open PDF"}</button>
-            <button type="button" className="btn secondary" disabled={busy} onClick={() => save(false)}>Save</button>
+          {/* check the PDF first, then save */}
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 8, marginTop: 12 }}>
+            <button type="button" className="btn" disabled={!!pdfBusy || busy} onClick={() => pdf(false)}>{pdfBusy === "view" ? "Preparing…" : "View PDF"}</button>
+            <button type="button" className="btn secondary" disabled={!!pdfBusy || busy} onClick={() => pdf(true)}>{pdfBusy === "download" ? "Preparing…" : "Download PDF"}</button>
           </div>
-          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>The PDF is printed on the letterhead with the seal and signature{draft ? ", marked DRAFT until you mark it sent" : ""}.</p>
+          <button type="button" className="btn accent" style={{ width: "100%", marginTop: 8 }} disabled={busy || !!pdfBusy} onClick={() => save(false)}>{busy ? "Saving…" : initial?.id ? "Save changes" : "Save quotation"}</button>
+          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>View or download the PDF of what is on screen — on the letterhead with the seal and signature{draft ? ", marked DRAFT until you mark it sent" : ""} — then save.{!initial?.id ? " The quotation number is given when you save." : ""}</p>
         </div>
         {children}
       </aside>
