@@ -499,3 +499,24 @@ tr.hidden-row td:last-child { opacity: 1; }
 .uperr { margin: 0; font-size: 13px; color: var(--danger); }
 .upwarn { margin: 0; font-size: 13px; color: var(--warn, #b45309); }
 .thumb { object-fit: contain !important; background: #f3f4f6; }
+
+/* ---------- phones: every screen fits the screen width ----------
+   Grid and flex children default to min-width:auto, so one wide table or tab strip used to stretch the whole page.
+   With min-width:0 they shrink to the screen and wide content scrolls inside its own box (.tablewrap, .tabs). */
+.shell > *, .main, .cms > *, .grid > *, .formgrid > *, .row > *, .spread > *, .pagehead > * { min-width: 0; }
+.main input, .main select, .main textarea { max-width: 100%; min-width: 0; }
+.main img, .main video, .main iframe { max-width: 100%; }
+.main h1, .main h2, .main p, .main td, .main dd { overflow-wrap: anywhere; }
+.tabs { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs a, .tabs button { white-space: nowrap; flex: none; }
+@media (max-width: 640px) {
+  .pagehead { flex-wrap: wrap; gap: 10px; }
+  .pagehead .btn, .pagehead .row { max-width: 100%; }
+  .toolbar input, .toolbar select { min-width: 0; width: 100%; }
+  .main form.row, .main .row { flex-wrap: wrap; }
+  .tablewrap table { font-size: 13px; }
+}
+/* the costing catalogue's Edit form: a pop-over on desktop, a sheet from the bottom on phones */
+.editpop { position: absolute; right: 24px; z-index: 30; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; width: min(560px, calc(100vw - 48px)); box-shadow: 0 12px 30px rgba(0,0,0,.15); text-align: left; white-space: normal; }
+@media (max-width: 700px) { .editpop { position: fixed; left: 0; right: 0; bottom: 0; width: auto; max-height: 85vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); } }

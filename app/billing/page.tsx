@@ -188,7 +188,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
                 <td><span className={`badge ${c.active ? "ok" : ""}`}>{c.active ? "in use" : "paused"}</span></td>
                 {manager && <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
                   <details style={{ display: "inline-block" }}><summary className="btn secondary small">Edit</summary>
-                    <div style={{ position: "absolute", right: 24, zIndex: 5, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 10, padding: 14, width: 560, boxShadow: "0 12px 30px rgba(0,0,0,.15)", textAlign: "left" }}>
+                    <div className="editpop">
                       <CostForm c={c} products={products ?? []} />
                     </div></details>
                   <form action={deleteCostItem} style={{ display: "inline" }}><input type="hidden" name="id" value={c.id} /><button className="btn ghost small">Remove</button></form>

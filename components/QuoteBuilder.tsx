@@ -78,8 +78,13 @@ export function QuoteBuilder({ initial, customers, products, costs, defaults }: 
       <style>{`.qb table input,.qb table select,.qb table textarea{padding:6px 8px;font-size:13px}.qb .tot{display:grid;grid-template-columns:1fr auto;gap:6px 18px;font-size:14px}.qb .tot b{text-align:right}
         .qb .grand{background:var(--brand,#0B2A6F);color:#fff;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
         .qb .grand b{font-size:20px}.qb .chips{display:flex;flex-wrap:wrap;gap:8px}.qb .chips button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
-        .qb .chips button.on{border-color:var(--ok);color:var(--ok)}.qb .sticky{position:sticky;top:12px}.qb .icon{border:0;background:none;cursor:pointer;color:var(--muted);padding:2px 4px}`}</style>
-      <div className="grid" style={{ gridTemplateColumns: "minmax(0,1fr) 320px", gap: 16, alignItems: "start" }}>
+        .qb .chips button.on{border-color:var(--ok);color:var(--ok)}.qb .sticky{position:sticky;top:12px}.qb .icon{border:0;background:none;cursor:pointer;color:var(--muted);padding:2px 4px}
+        .qb-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}.qb-layout>*{min-width:0}
+        .qb .side2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+        .qb table input,.qb table select{min-width:64px}.qb table td:nth-child(2) input{min-width:180px}
+        @media(max-width:1000px){.qb-layout{grid-template-columns:minmax(0,1fr)}.qb .sticky{position:static;order:-1}}
+        @media(max-width:640px){.qb .grand b{font-size:18px}.qb .chips button{font-size:12.5px;padding:6px 10px}}`}</style>
+      <div className="qb-layout">
         <div>
           <div className="card">
             <h2>To</h2>
@@ -164,7 +169,7 @@ export function QuoteBuilder({ initial, customers, products, costs, defaults }: 
         <div className="sticky">
           <div className="card">
             <h2>{initial?.number ?? "New quotation"}</h2>
-            <div className="formgrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+            <div className="side2">
               <label className="field">Date<input type="date" value={q.quote_date} onChange={(e) => set("quote_date", e.target.value)} /></label>
               <label className="field">Valid until<input type="date" value={q.valid_until ?? ""} onChange={(e) => set("valid_until", e.target.value)} /></label>
               <label className="field">Discount %<input {...NUM} value={q.discount_pct} onChange={(e) => set("discount_pct", Number(e.target.value) || 0)} /></label>
