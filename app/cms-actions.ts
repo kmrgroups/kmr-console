@@ -114,9 +114,9 @@ export async function startUpload(input: { section: string; field: string; name:
     const f = s.fields.find((x) => x.k === input.field && (x.type === "image" || x.type === "document") && !x.readonly);
     if (!f) return { error: "This field does not take files." };
     const image = f.type === "image";
-    if (!(image ? IMAGE_TYPES : DOC_TYPES).test(input.type)) return { error: image ? "Choose a JPG, PNG, WebP or GIF photo (or an MP4 video)." : "Choose a PDF or an image." };
+    if (!(image ? IMAGE_TYPES : DOC_TYPES).test(input.type)) return { error: image ? (input.type.startsWith("video/") ? "This video still needs preparing — tap Choose video… again on Safari (iPhone) or Chrome." : "Choose a JPG, PNG, WebP or GIF photo.") : "Choose a PDF or an image." };
     const max = image ? (input.type.startsWith("video/") ? 50 : 25) : 10;
-    if (input.size > max * 1024 * 1024) return { error: `The file is too large — up to ${max} MB.` };
+    if (input.size > max * 1024 * 1024) return { error: input.type.startsWith("video/") ? `The video is over ${max} MB even after preparing — please trim it to under 2 minutes.` : `The file is too large — up to ${max} MB.` };
     const ext = (input.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "bin";
     const path = `${s.table}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
     const bucket = image ? MEDIA_BUCKET : PRIVATE_BUCKETS[f.bucket ?? "records"];

@@ -51,7 +51,7 @@ const productFields = (kinds: [string, string][], extra: Field[] = []): Field[] 
   { k: "is_active", label: "Show on the website", type: "bool" }, { k: "featured", label: "Feature on the home page", type: "bool" },
   { k: "sort_order", label: "Order in lists", type: "number" },
   { k: "image_url", label: "Photo", type: "image" },
-  { k: "video_url", label: "Promo video (MP4, Instagram-reel size 9:16, under 50 MB)", type: "image", help: "Plays when the card is tapped. Upload the thumbnail photo below too." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
+  { k: "video_url", label: "Promo video (Instagram-reel size 9:16)", type: "image", help: "Any phone video up to 3 minutes — it is resized to 720 × 1280 and made web-ready before upload (keep the screen open while it prepares). Plays when the card is tapped." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
   { k: "description", label: "Description", type: "longtext", wide: true },
 ];
 const POINT_FIELDS: Field[] = [
@@ -156,7 +156,7 @@ export const SECTIONS: Section[] = [
       { k: "title", label: "Name", required: true }, { k: "code", label: "Short label", help: "e.g. SOFTWARE" }, { k: "link", label: "Link" }, { k: "slug", label: "Key (optional)" },
       { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show", type: "bool" },
       { k: "image_url", label: "Photo", type: "image" }, { k: "icon_url", label: "Icon", type: "image" },
-      { k: "video_url", label: "Promo video (MP4, Instagram-reel size 9:16, under 50 MB)", type: "image", help: "Plays when the card is tapped. Upload the thumbnail photo below too." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
+      { k: "video_url", label: "Promo video (Instagram-reel size 9:16)", type: "image", help: "Any phone video up to 3 minutes — it is resized to 720 × 1280 and made web-ready before upload (keep the screen open while it prepares). Plays when the card is tapped." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
       { k: "description", label: "Description", type: "textarea", wide: true },
     ] },
   // ---------------- Shop ----------------
@@ -178,7 +178,7 @@ export const SECTIONS: Section[] = [
       { k: "tagline", label: "One-line benefit", wide: true, help: "What the customer gets, in one sentence (shown on the cards)" },
       { k: "features", label: "Key features — one per line", type: "textarea", wide: true, help: "Three or four lines read best" },
       { k: "image_url", label: "Photo", type: "image", help: "A real photo or screenshot, 16:10 looks best (shown when there is no video)" },
-      { k: "video_url", label: "Promo video (MP4, Instagram-reel size 9:16, under 50 MB)", type: "image", help: "Plays when the card is tapped. Upload the thumbnail photo below too." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
+      { k: "video_url", label: "Promo video (Instagram-reel size 9:16)", type: "image", help: "Any phone video up to 3 minutes — it is resized to 720 × 1280 and made web-ready before upload (keep the screen open while it prepares). Plays when the card is tapped." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
       { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show on the website", type: "bool" },
     ] },
   { key: "solutions", table: "products", group: "software", label: "Software solutions", singular: "solution", roles: SALES, visible: "is_active", scope: { business: "software" }, preview: productPreview,
