@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 import { assertManager } from "@/lib/auth";
 import { setFlash } from "@/lib/flash";
 import type { ActionState } from "@/lib/action-state";
-import { DEMO, FLUSH_PARTS, flushPlatform, loadDemoEverywhere, removeDemoEverywhere, restoreSettings, saveFullBackup } from "@/lib/test-data";
+import { createClient } from "@/lib/supabase/server";
+import { DEMO, FLUSH_PARTS, flushPlatform, loadDemoEverywhere, removeDemoEverywhere, resetDemoWorkspace, restoreSettings, saveFullBackup } from "@/lib/test-data";
 
 const owner = async () => { const s = await assertManager(); if (s.role !== "owner") throw new Error("Only the owner can use Test data."); return s; };
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
@@ -18,6 +19,36 @@ export async function loadDemo(_: ActionState): Promise<ActionState> {
     await setFlash({ ok: `Demo data loaded. ${lines(steps)}.  ONE LOGIN FOR EVERY APP — email ${DEMO.email} · password ${password} (shown only now). Customer portal: www.kmr-groups.com/it/app/${DEMO.slug}` });
   } catch (e) { return fail(e); }
   redirect("/test-data");
+}
+
+/** Sample data left inside real companies: remove it from one company (a copy of exactly those rows is kept in the purge log). */
+export async function purgeSample(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await owner();
+    const slug = String(form.get("slug") ?? ""), confirm = String(form.get("confirm") ?? "");
+    const { data, error } = await (await createClient()).schema("public").rpc("kmr_sample_purge", { p_slug: slug, p_confirm: confirm });
+    if (error) return { error: error.message };
+    revalidatePath("/test-data");
+    return { ok: `Removed ${(data as { removed: number }).removed} sample records. A copy of them was saved in the purge log.` };
+  } catch (e) { return fail(e); }
+}
+export async function purgeAllSample(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await owner();
+    const { data, error } = await (await createClient()).schema("public").rpc("kmr_sample_purge_all", { p_confirm: String(form.get("confirm") ?? "") });
+    if (error) return { error: error.message };
+    const rows = (data ?? []) as { name: string; removed: number }[];
+    revalidatePath("/test-data");
+    return { ok: rows.length ? `Cleaned: ${rows.map((r) => `${r.name} (${r.removed})`).join(", ")}. Copies were saved in the purge log.` : "No sample data was found in any real company." };
+  } catch (e) { return fail(e); }
+}
+export async function resetDemo(_: ActionState): Promise<ActionState> {
+  try {
+    await owner();
+    await resetDemoWorkspace();
+    revalidatePath("/test-data");
+    return { ok: "Demo workspace reset: its sample data was reloaded." };
+  } catch (e) { return fail(e); }
 }
 
 export async function removeDemo(_: ActionState): Promise<ActionState> {

@@ -16,11 +16,19 @@ export default async function Dashboard() {
     supabase.from("tickets").select("id", { count: "exact", head: true }).in("status", ["open", "in_progress"]),
     supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "new"),
   ]);
-  const [{ data: customers }, { data: licences }, { data: products }] = await Promise.all([
-    supabase.from("customers").select("id,status"),
-    supabase.from("licences").select("id,status,valid_until,seats,product_code,customer:customers(id,name,code)"),
+  const load = (withKind: boolean) => Promise.all([
+    supabase.from("customers").select(withKind ? "id,status,kind" : "id,status"),
+    supabase.from("licences").select(withKind ? "id,status,valid_until,seats,product_code,customer:customers(id,name,code,kind)" : "id,status,valid_until,seats,product_code,customer:customers(id,name,code)"),
     supabase.from("products").select("code,name,current_version").eq("active", true).order("sort_order"),
   ]);
+  const first = await load(true);
+  const res = first[0].error || first[1].error ? await load(false) : first;   // before migration 0049 there is no customer "kind"
+  const products = res[2].data;
+  // KMR demo workspaces are not customers: they do not count in the figures
+  type Cust = { id: string; name?: string; code?: string; kind?: string };
+  const real = (c: Cust | Cust[] | null | undefined) => { const x = Array.isArray(c) ? c[0] : c; return !x || x.kind !== "demo"; };
+  const customers = ((res[0].data ?? []) as unknown as { id: string; status: string; kind?: string }[]).filter((c) => real(c));
+  const licences = ((res[1].data ?? []) as unknown as { id: string; status: string; valid_until: string | null; seats: number | null; product_code: string; customer: Cust | Cust[] | null }[]).filter((l) => real(l.customer));
   const count = (s: string) => (customers ?? []).filter((c) => c.status === s).length;
   const soon = (licences ?? []).filter((l) => l.valid_until && l.valid_until >= today() && l.valid_until <= addDays(today(), 30) && ["trial", "pilot", "active"].includes(l.status))
     .sort((a, b) => (a.valid_until! < b.valid_until! ? -1 : 1));

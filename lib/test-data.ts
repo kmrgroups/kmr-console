@@ -93,7 +93,7 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
   const { data: cust, error: cErr } = await d.from("customers").insert({
     name: DEMO.name, legal_name: DEMO.legal, country: "IN", currency: "INR", city: "Bengaluru", state: "Karnataka",
     contact_name: DEMO.person, contact_email: DEMO.email, contact_phone: "+91 90000 00000", status: "active", source: DEMO.source,
-    slug: DEMO.slug, notes: "Demo customer with a live workspace in every KMR app (Console › Test data).",
+    slug: DEMO.slug, kind: "demo", notes: "Demo customer with a live workspace in every KMR app (Console › Test data).",
   }).select("id").single();
   if (cErr || !cust) throw new Error(`Could not create the demo customer: ${cErr?.message}`);
   const login = await ensureLogin(DEMO.email, DEMO.person);
@@ -130,7 +130,17 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
     const { data, error } = await d.rpc("ops_demo_load", { p_customer: cust.id }); if (error) throw new Error(error.message);
     return `${data} sample records (machines, parts, routings, gauges…)`;
   });
+  await step("Sales Flow, Calibration Hub, APQP, PPAP", async () => {
+    const { data, error } = await d.rpc("demo_refresh", { p_cid: cust.id, p_full: false }); if (error) throw new Error(error.message);   // 0049: switches the four company-level apps on and adds their sample
+    return `on, with sample data (${Object.entries((data ?? {}) as Record<string, number>).filter(([k]) => ["sales", "calib", "apqp", "ppap"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")})`;
+  });
   return { steps, password };
+}
+
+/** Reload the demo workspace's sample data from scratch (also done every night). */
+export async function resetDemoWorkspace(): Promise<unknown> {
+  const { data, error } = await db().rpc("demo_refresh_all"); if (error) throw new Error(error.message);
+  return data;
 }
 
 export async function removeDemoEverywhere(): Promise<Step[]> {

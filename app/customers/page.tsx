@@ -7,14 +7,16 @@ import { CUSTOMER_TONE, LICENCE_TONE, effectiveStatus } from "@/lib/view";
 
 export const metadata = { title: "Customers" };
 
-export default async function Customers({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
+export default async function Customers({ searchParams }: { searchParams: Promise<{ q?: string; status?: string; demo?: string }> }) {
   const staff = await requireStaff();
-  const { q = "", status = "" } = await searchParams;
+  const { q = "", status = "", demo = "" } = await searchParams;
   const supabase = await createClient();
   let query = supabase.from("customers").select("id,code,name,country,status,contact_name,contact_email,created_at,licences(product_code,status,valid_until)").order("name").limit(500);
   if (status) query = query.eq("status", status);
   if (q) { const s = q.replace(/[%,()]/g, " ").trim(); query = query.or(`name.ilike.%${s}%,code.ilike.%${s}%,contact_email.ilike.%${s}%`); }
-  const { data } = await query;
+  // KMR demo workspaces are not customers: hidden unless asked for (before migration 0049 there is no "kind", so nothing is hidden)
+  let { data, error } = demo ? await query : await query.neq("kind", "demo");
+  if (error) ({ data } = await query);
   return (
     <AppShell staff={staff} active="/customers">
       <div className="pagehead"><div><h1>Customers</h1><p>Companies using, piloting or interested in KMR products.</p></div>
@@ -23,6 +25,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
         <input name="q" defaultValue={q} placeholder="Search name, code or email" />
         <select name="status" defaultValue={status}><option value="">All statuses</option>{["lead", "pilot", "active", "inactive"].map((s) => <option key={s}>{s}</option>)}</select>
         <button className="btn secondary small">Search</button>
+        <a className="btn ghost small" href={p(demo ? "/customers" : "/customers?demo=1")}>{demo ? "Hide demo workspaces" : "Show demo workspaces"}</a>
       </form>
       <div className="card" style={{ padding: 0 }}>
         {data?.length ? (

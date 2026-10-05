@@ -1,4 +1,4 @@
 {
   "regions": ["bom1"],
-  "crons": [{ "path": "/it/console/api/cron/backup", "schedule": "40 18 * * *" }]
+  "crons": [{ "path": "/it/console/api/cron/backup", "schedule": "40 18 * * *" }, { "path": "/it/console/api/cron/demo-reset", "schedule": "10 19 * * *" }]
 }
