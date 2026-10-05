@@ -27,6 +27,7 @@ export type ScopeRow = { module: string; capability: string };
 export type QuoteInput = {
   id?: string;
   customer_id?: string | null;
+  lead_id?: string | null;
   to_name: string; to_attn?: string; to_address?: string; to_gstin?: string; to_email?: string; to_phone?: string;
   subject: string; intro?: string;
   scope: ScopeRow[]; lines: QuoteLine[];

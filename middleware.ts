@@ -13,7 +13,7 @@ function publicUrl(request: NextRequest, path: string): URL {
 }
 
 // Public: each invoice's pay link and the "I've paid" report (customers are not Console users)
-const PUBLIC = /^\/(pay\/[a-f0-9]+|api\/pay\/report|api\/public-config)\/?$/;
+const PUBLIC = /^\/(pay\/[a-f0-9]+|api\/pay\/[a-f0-9]+\/pdf|api\/pay\/report|api\/public-config)\/?$/;
 
 export async function middleware(request: NextRequest) {
   if (PUBLIC.test(request.nextUrl.pathname)) return NextResponse.next();
@@ -36,4 +36,4 @@ export async function middleware(request: NextRequest) {
   }
   return response;
 }
-export const config = { matcher: ["/((?!api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|ico)$).*)"] };
+export const config = { matcher: ["/((?!api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|ico|jpg|jpeg|webp)$).*)"] };

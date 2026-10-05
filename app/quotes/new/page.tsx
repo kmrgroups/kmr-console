@@ -6,13 +6,14 @@ import { p } from "@/lib/base-path";
 
 export const metadata = { title: "New quotation" };
 
-export default async function NewQuote() {
+export default async function NewQuote({ searchParams }: { searchParams: Promise<{ lead?: string }> }) {
   const staff = await requireStaff();
+  const { lead } = await searchParams;
   const d = await quoteData();
   return (
     <AppShell staff={staff} active="/billing">
-      <div className="pagehead"><div><p className="muted"><a href={p("/billing?tab=quotes")}>← Quotations</a></p><h1>New quotation</h1><p>Pick the customer and the apps; the costing, scope and terms fill in. The PDF is printed on your letterhead.</p></div></div>
-      <QuoteBuilder {...d} />
+      <div className="pagehead"><div><p className="muted"><a href={p("/billing?tab=quotes")}>← Quotations</a></p><h1>New quotation</h1><p>Draft it manually, or against a website enquiry (the customer, subject and opening fill in). Pick the apps and the costing, scope and terms fill in. The PDF is printed on your letterhead.</p></div></div>
+      <QuoteBuilder {...d} startLead={lead && /^[0-9a-f-]{36}$/i.test(lead) ? lead : null} />
     </AppShell>
   );
 }

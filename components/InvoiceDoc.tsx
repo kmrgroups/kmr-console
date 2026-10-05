@@ -13,7 +13,7 @@ const num = (v: number | string) => Number(v);
 const addr = (p: Party) => [p.address, [p.city, p.state, p.postal_code].filter(Boolean).join(", ")].filter(Boolean);
 
 /** A4 invoice, printable (Print / Save as PDF). Draft invoices show the live seller and buyer details. */
-export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signatureUrl }: { inv: InvoiceData; lines: LineData[]; seller: Party; buyer: Party; logoUrl?: string | null; sealUrl?: string | null; signatureUrl?: string | null }) {
+export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signatureUrl, letterheadUrl }: { inv: InvoiceData; lines: LineData[]; seller: Party; buyer: Party; logoUrl?: string | null; letterheadUrl?: string | null; sealUrl?: string | null; signatureUrl?: string | null }) {
   const sellerName = seller.trade_name || seller.legal_name;
   const legalLine = seller.trade_name && seller.legal_name && seller.trade_name.toLowerCase() !== seller.legal_name.toLowerCase()
     ? `${seller.constitution === "Proprietorship" ? "Prop." : "Legal name:"} ${seller.legal_name}${seller.constitution && seller.constitution !== "Proprietorship" ? ` (${seller.constitution})` : ""}` : null;
@@ -23,10 +23,19 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signat
   const hasBank = Boolean(seller.bank_account_no || seller.bank_ifsc);
   const stamp = inv.status === "draft" ? "Draft" : inv.status === "cancelled" ? "Cancelled" : inv.status === "paid" ? "Paid" : null;
   return (
-    <article className="invoice">
+    <article className={`invoice${letterheadUrl ? " on-letterhead" : ""}`}>
+      {letterheadUrl && <div className="lh-band lh-top" style={{ backgroundImage: `url("${letterheadUrl}")` }} role="img" aria-label={`${sellerName} letterhead`} />}
       {stamp && <div className={`invoice-stamp ${inv.status}`}>{stamp}</div>}
       <header className="invoice-head">
-        <div>
+        {letterheadUrl ? (
+          <div className="invoice-statutory">
+            {/* the letterhead carries the name, address and contacts; the statutory details follow */}
+            {legalLine && <div>{legalLine}</div>}
+            {seller.gstin && <div>GSTIN <b className="mono">{seller.gstin}</b>{seller.state_code ? <> · State code {seller.state_code}</> : null}</div>}
+            {seller.pan && <div>PAN <span className="mono">{seller.pan}</span></div>}
+            {seller.udyam_no && <div>Udyam <span className="mono">{seller.udyam_no}</span>{seller.msme_category ? ` · ${seller.msme_category} enterprise` : ""}</div>}
+          </div>
+        ) : <div>
           {logoUrl && <img src={logoUrl} alt="" className="invoice-logo" />}
           <div className="invoice-seller">{sellerName}</div>
           {legalLine && <div className="muted" style={{ fontSize: 12.5, marginTop: -2 }}>{legalLine}</div>}
@@ -35,7 +44,7 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signat
           {seller.pan && <div>PAN <span className="mono">{seller.pan}</span></div>}
           {seller.udyam_no && <div>Udyam <span className="mono">{seller.udyam_no}</span>{seller.msme_category ? ` · ${seller.msme_category} enterprise` : ""}</div>}
           {(seller.email || seller.phone || seller.website) && <div>{[seller.email, seller.phone, seller.website].filter(Boolean).join(" · ")}</div>}
-        </div>
+        </div>}
         <div className="invoice-meta">
           <h2>{title}</h2>
           <table><tbody>
@@ -129,6 +138,7 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signat
           <div className="muted" style={{ fontSize: 11.5 }}>Authorised Signatory</div>
         </div>
       </footer>
+      {letterheadUrl && <div className="lh-band lh-bottom" style={{ backgroundImage: `url("${letterheadUrl}")` }} aria-hidden="true" />}
     </article>
   );
 }

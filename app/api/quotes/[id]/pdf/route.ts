@@ -3,6 +3,7 @@ import { getStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { quotePdf } from "@/lib/quote-pdf";
+import { signArt } from "@/lib/letterhead-files";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const supabase = await createClient();
   const [{ data: q }, { data: s }, { data: products }] = await Promise.all([
     supabase.from("quotes").select("*").eq("id", id).maybeSingle(),
-    supabase.from("billing_settings").select("trade_name,legal_name,gstin,letterhead_path").eq("id", true).maybeSingle(),
+    supabase.from("billing_settings").select("trade_name,legal_name,gstin,letterhead_path,signatory_name,signatory_title,seal_path,signature_path,show_seal").eq("id", true).maybeSingle(),
     supabase.from("products").select("code,seat_label"),
   ]);
   if (!q) return NextResponse.json({ error: "Quotation not found." }, { status: 404 });
@@ -24,7 +25,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (data) letterhead = new Uint8Array(await data.arrayBuffer());
   }
   const seats = Object.fromEntries((products ?? []).map((x) => [x.code, x.seat_label]));
-  const bytes = await quotePdf({ ...q, seller: s ?? {}, seat_label: (c) => (c && seats[c]) || "users" }, letterhead);
+  const art = await signArt(s);
+  const bytes = await quotePdf({ ...q, seller: s ?? {}, seat_label: (c) => (c && seats[c]) || "users" }, letterhead, art);
   const name = `Quotation_${String(q.number ?? "draft").replace(/[^\w-]+/g, "-")}_${String(q.to_name).replace(/[^\w-]+/g, "-").slice(0, 40)}.pdf`;
   const download = new URL(req.url).searchParams.get("download") === "1";
   return new NextResponse(Buffer.from(bytes), { headers: {

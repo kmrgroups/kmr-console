@@ -1,18 +1,19 @@
 "use client";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { saveQuote } from "@/app/quote-actions";
 import { BASIS, addDays, basisText, inWords, inr, lineAmount, totals, type Basis, type QuoteInput, type QuoteLine, type ScopeRow } from "@/lib/quote";
 import { p } from "@/lib/base-path";
 
 export type Customer = { id: string; name: string; legal_name: string | null; contact_name: string | null; contact_email: string | null; contact_phone: string | null; address: string | null; city: string | null; state: string | null; postal_code: string | null; tax_id: string | null };
 export type Product = { code: string; name: string; seat_label: string; description: string | null; prices: { period: string; unit_amount: number; min_seats: number }[]; features: string[]; tagline: string | null };
+export type Lead = { id: string; name: string; company: string | null; email: string | null; phone: string | null; country: string | null; business: string; product_name: string | null; quantity: string | null; message: string | null; status: string; customer_id: string | null; created_at: string };
 export type Cost = { id: string; product_code: string | null; name: string; detail: string | null; basis: Basis; amount: number; default_qty: number; include_by_default: boolean; active: boolean };
 
 const NUM = { inputMode: "decimal" as const, style: { width: "100%", textAlign: "right" as const } };
 
-export function QuoteBuilder({ initial, customers, products, costs, defaults }: {
+export function QuoteBuilder({ initial, customers, leads = [], startLead, products, costs, defaults }: {
   initial?: QuoteInput & { number?: string | null };
-  customers: Customer[]; products: Product[]; costs: Cost[];
+  customers: Customer[]; leads?: Lead[]; startLead?: string | null; products: Product[]; costs: Cost[];
   defaults: { includes: string; terms: string; validity: number; gst: number; today: string };
 }) {
   const [q, setQ] = useState<QuoteInput>(() => initial ?? {
@@ -20,6 +21,28 @@ export function QuoteBuilder({ initial, customers, products, costs, defaults }: 
     discount_pct: 0, gst_rate: defaults.gst, quote_date: defaults.today, valid_until: addDays(defaults.today, defaults.validity), customer_id: null,
   });
   const [msg, setMsg] = useState<{ ok?: string; error?: string }>({});
+  const BL: Record<string, string> = { software: "Software", shop: "Shop", training: "Training", import_export: "Import & export", trading: "Trading", distribution: "Distribution", general: "General" };
+  /** draft the quotation against a website enquiry: who it is for, what they asked about, and a reply opening */
+  function pickLead(id: string) {
+    const l = leads.find((x) => x.id === id);
+    if (!l) { set("lead_id", null); return; }
+    const c = l.customer_id ? customers.find((x) => x.id === l.customer_id) : undefined;
+    const when = new Date(l.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" });
+    const about = l.product_name || BL[l.business] || "your requirement";
+    setQ((x) => ({ ...x, lead_id: l.id,
+      customer_id: c?.id ?? x.customer_id ?? null,
+      to_name: c ? (c.legal_name || c.name) : (l.company || l.name),
+      to_attn: l.company ? l.name : (c?.contact_name ?? ""),
+      to_email: l.email ?? c?.contact_email ?? "", to_phone: l.phone ?? c?.contact_phone ?? "",
+      to_address: c ? [c.address, c.city, c.state].filter(Boolean).join(", ") : (l.country && l.country !== "IN" ? l.country : x.to_address ?? ""),
+      to_gstin: c?.tax_id ?? x.to_gstin ?? "",
+      subject: x.subject || `Quotation for ${about}${l.quantity ? ` — ${l.quantity}` : ""}`,
+      intro: `Thank you for your enquiry dated ${when} regarding ${about}${l.quantity ? ` (${l.quantity})` : ""}. We are pleased to submit our quotation below — the scope, the detailed costing and the commercial terms are given in this document.`,
+      notes: x.notes || (l.message ? `Enquiry: ${l.message.slice(0, 400)}` : ""),
+    }));
+  }
+  const leadNow = leads.find((x) => x.id === q.lead_id);
+  useEffect(() => { if (startLead && !initial) pickLead(startLead); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
   const [busy, start] = useTransition();
   const set = <K extends keyof QuoteInput>(k: K, v: QuoteInput[K]) => setQ((x) => ({ ...x, [k]: v }));
   const setLine = (i: number, patch: Partial<QuoteLine>) => setQ((x) => ({ ...x, lines: x.lines.map((l, k) => (k === i ? { ...l, ...patch } : l)) }));
@@ -89,6 +112,13 @@ export function QuoteBuilder({ initial, customers, products, costs, defaults }: 
           <div className="card">
             <h2>To</h2>
             <div className="formgrid">
+              <label className="field full">Against an enquiry <span className="muted">(optional)</span>
+                <select value={q.lead_id ?? ""} onChange={(e) => pickLead(e.target.value)}>
+                  <option value="">— none: draft the quotation manually —</option>
+                  {leads.map((l) => <option key={l.id} value={l.id}>{new Date(l.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} · {l.company || l.name} · {l.product_name || BL[l.business] || l.business}{l.status === "quoted" ? " (already quoted)" : ""}</option>)}
+                </select>
+                {leadNow?.message && <span className="help" style={{ whiteSpace: "pre-line" }}>“{leadNow.message.slice(0, 300)}{leadNow.message.length > 300 ? "…" : ""}”</span>}
+              </label>
               <label className="field">Existing customer<select value={q.customer_id ?? ""} onChange={(e) => pickCustomer(e.target.value)}><option value="">— a new prospect (type below) —</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
               <label className="field">Company name *<input value={q.to_name} onChange={(e) => set("to_name", e.target.value)} placeholder="ABC Engineering Pvt. Ltd." /></label>
               <label className="field">Attention<input value={q.to_attn ?? ""} onChange={(e) => set("to_attn", e.target.value)} placeholder="The Managing Director / Plant Head" /></label>

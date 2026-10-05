@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import QRCode from "qrcode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { InvoiceDoc, type InvoiceData, type LineData, type Party } from "@/components/InvoiceDoc";
-import { PrintButton } from "@/components/PrintButton";
+import { letterheadUrl } from "@/lib/letterhead-files";
+import { p as bp } from "@/lib/base-path";
 import { CopyValue, ReportPaymentForm } from "@/components/PayActions";
 import { fmtDate } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
@@ -29,7 +30,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   if (!data) notFound();
   const { invoice: inv, lines, paid_by, reported = [] } = data as Found;
   const s = inv.seller;
-  const [brand, images] = await Promise.all([platformBrand(), billingImageUrls(s)]);
+  const [brand, images, lh] = await Promise.all([platformBrand(), billingImageUrls(s), letterheadUrl(bp("/letterhead.jpg"))]);
   const today = new Date().toISOString().slice(0, 10);
   const total = Number(inv.total).toFixed(2);
   const waiting = reported.filter((r) => r.status === "reported");
@@ -61,7 +62,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
               : <span className={`badge ${inv.due_date && inv.due_date < today ? "danger" : "info"}`}>Due {fmtDate(inv.due_date)}</span>)}
           </div>
         </div>
-        <PrintButton label={inv.status === "paid" ? "Print / save receipt" : "Print / Save as PDF"} />
+        <a className="btn" href={bp(`/api/pay/${token}/pdf?download=1`)}>{inv.status === "paid" ? "Download receipt (PDF)" : "Download invoice (PDF)"}</a>
       </div>
 
       {inv.status === "issued" && (
@@ -106,7 +107,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
         </div>
       )}
 
-      <InvoiceDoc inv={inv} lines={lines} seller={s} buyer={inv.buyer} logoUrl={brand.logo_url} sealUrl={images.seal} signatureUrl={images.signature} />
+      <InvoiceDoc inv={inv} lines={lines} seller={s} buyer={inv.buyer} logoUrl={brand.logo_url} letterheadUrl={lh} sealUrl={images.seal} signatureUrl={images.signature} />
     </div>
   );
 }

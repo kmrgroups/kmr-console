@@ -6,7 +6,7 @@ export default {
   basePath,
   poweredByHeader: false,
   // the quotation PDF reads its fonts and the built-in letterhead from ./assets
-  outputFileTracingIncludes: { "/api/quotes/[id]/pdf": ["./assets/**/*"] },
+  outputFileTracingIncludes: { "/api/quotes/[id]/pdf": ["./assets/**/*"], "/api/invoices/[id]/pdf": ["./assets/**/*"], "/api/pay/[token]/pdf": ["./assets/**/*"] },
   experimental: { serverActions: { allowedOrigins, bodySizeLimit: "6mb" } },
   async headers() {
     return [{ source: "/(.*)", headers: [

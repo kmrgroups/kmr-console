@@ -2,6 +2,7 @@ import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
 import { Empty, fmtDateTime } from "@/components/ui";
+import { p } from "@/lib/base-path";
 import { convertLead, setLeadStatus } from "@/app/actions";
 
 export const metadata = { title: "Enquiries" };
@@ -17,6 +18,8 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
   if (b) q = q.eq("business", b);
   if (s) q = q.eq("status", s);
   const { data } = await q;
+  const { data: lq } = await supabase.from("quotes").select("id,number,lead_id").not("lead_id", "is", null);
+  const quoteOf = new Map((lq ?? []).map((x) => [x.lead_id as string, x]));
   const btn = (id: string, status: string, label: string) => (
     <form action={setLeadStatus} style={{ display: "inline" }}><input type="hidden" name="id" value={id} /><input type="hidden" name="status" value={status} /><button className="btn ghost small">{label}</button></form>);
   return (
@@ -41,7 +44,9 @@ export default async function Leads({ searchParams }: { searchParams: Promise<{ 
                 <td><span className={`badge ${TONE[l.status]}`}>{l.status}</span></td>
                 <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>
                   {l.status === "new" && btn(l.id, "contacted", "Contacted")}
-                  {["new", "contacted"].includes(l.status) && l.business !== "software" && btn(l.id, "quoted", "Quoted")}
+                  {quoteOf.get(l.id)
+                    ? <a className="btn secondary small" href={p(`/quotes/${quoteOf.get(l.id)!.id}`)}>{quoteOf.get(l.id)!.number ?? "Quotation"}</a>
+                    : !["converted", "dropped"].includes(l.status) && <a className="btn small" href={p(`/quotes/new?lead=${l.id}`)}>Quote</a>}
                   {l.status !== "dropped" && <form action={convertLead} style={{ display: "inline" }}><input type="hidden" name="id" value={l.id} /><button className="btn small">{l.customer_id ? "Open customer" : "Convert to customer"}</button></form>}
                   {!["converted", "dropped"].includes(l.status) && btn(l.id, "dropped", "Drop")}
                 </td>

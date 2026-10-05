@@ -24,7 +24,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
   if (!q) notFound();
   const d = await quoteData();
   const initial: QuoteInput & { number: string | null } = {
-    id: q.id, number: q.number, customer_id: q.customer_id, to_name: q.to_name, to_attn: q.to_attn ?? "", to_address: q.to_address ?? "", to_gstin: q.to_gstin ?? "",
+    id: q.id, number: q.number, customer_id: q.customer_id, lead_id: q.lead_id ?? null, to_name: q.to_name, to_attn: q.to_attn ?? "", to_address: q.to_address ?? "", to_gstin: q.to_gstin ?? "",
     to_email: q.to_email ?? "", to_phone: q.to_phone ?? "", subject: q.subject, intro: q.intro ?? "", scope: q.scope ?? [], lines: q.lines ?? [],
     includes: q.includes ?? "", terms: q.terms ?? "", discount_pct: Number(q.discount_pct), gst_rate: Number(q.gst_rate),
     quote_date: q.quote_date, valid_until: q.valid_until, notes: q.notes ?? "",
@@ -34,7 +34,7 @@ export default async function QuotePage({ params, searchParams }: { params: Prom
       <div className="pagehead">
         <div><p className="muted"><a href={p("/billing?tab=quotes")}>← Quotations</a></p>
           <h1 className="mono">{q.number}</h1>
-          <p>{q.to_name} · {fmtDate(q.quote_date)} · <span className="badge">{q.status}</span>{q.updated_by && <small className="muted"> · last saved by {q.updated_by}</small>}</p></div>
+          <p>{q.to_name} · {fmtDate(q.quote_date)} · <span className="badge">{q.status}</span>{q.lead_id && <> · <a href={p(`/leads`)}>against an enquiry</a></>}{q.updated_by && <small className="muted"> · last saved by {q.updated_by}</small>}</p></div>
         <div className="row" style={{ gap: 8 }}>
           <a className="btn" href={p(`/api/quotes/${q.id}/pdf`)} target="_blank" rel="noopener">Open PDF</a>
           <a className="btn secondary" href={p(`/api/quotes/${q.id}/pdf?download=1`)}>Download PDF</a>

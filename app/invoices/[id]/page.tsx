@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/AppShell";
 import { ActionForm, CopyLink } from "@/components/ActionForm";
 import { InvoiceDoc, type InvoiceData, type LineData, type Party } from "@/components/InvoiceDoc";
-import { PrintButton } from "@/components/PrintButton";
+import { letterheadUrl } from "@/lib/letterhead-files";
 import { fmtDate, fmtDateTime } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
 import { env } from "@/lib/env";
@@ -36,7 +36,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   // Drafts show today's seller and customer details; issued invoices show what was frozen on them
   const seller: Party = draft ? { ...(s ?? {}), state_code: s?.state_code ?? s?.gstin?.slice(0, 2) } : inv.seller;
   const buyer: Party = draft && c ? { code: c.code, name: c.legal_name || c.name, tax_id: c.tax_id, address: c.address, city: c.city, state: c.state, postal_code: c.postal_code, country: c.country, contact_name: c.contact_name, contact_email: c.contact_email } : inv.buyer;
-  const images = await billingImageUrls(seller);
+  const [images, lh] = await Promise.all([billingImageUrls(seller), letterheadUrl(p("/letterhead.jpg"))]);
   const payLink = `${env.platformUrl}${BASE_PATH}/pay/${inv.pay_token}`;
   const today = new Date().toISOString().slice(0, 10);
   const late = inv.status === "issued" && inv.due_date && inv.due_date < today;
@@ -46,11 +46,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       <div className="pagehead noprint">
         <div><h1>{inv.number ?? "Draft invoice"}</h1>
           <p>{c && <a href={p(`/customers/${c.id}`)}>{c.name}</a>} · {fmtMoney(inv.total, inv.currency)} · <span className={`badge ${late ? "danger" : INVOICE_TONE[inv.status]}`}>{late ? "overdue" : inv.status}</span></p></div>
-        <div className="row"><a className="btn secondary" href={p("/billing")}>All invoices</a><PrintButton /></div>
+        <div className="row"><a className="btn secondary" href={p("/billing?tab=invoices")}>All invoices</a><a className="btn" href={p(`/api/invoices/${inv.id}/pdf`)} target="_blank" rel="noopener">Open PDF</a><a className="btn secondary" href={p(`/api/invoices/${inv.id}/pdf?download=1`)}>Download PDF</a></div>
       </div>
 
       <div className="invoice-layout">
-        <InvoiceDoc inv={inv as InvoiceData} lines={(lines ?? []) as LineData[]} seller={seller} buyer={buyer} logoUrl={brand.logo_url} sealUrl={images.seal} signatureUrl={images.signature} />
+        <InvoiceDoc inv={inv as InvoiceData} lines={(lines ?? []) as LineData[]} seller={seller} buyer={buyer} logoUrl={brand.logo_url} letterheadUrl={lh} sealUrl={images.seal} signatureUrl={images.signature} />
 
         <aside className="stack noprint">
           {draft && manager && (

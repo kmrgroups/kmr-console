@@ -15,6 +15,7 @@ const num = z.coerce.number().finite();
 const quoteSchema = z.object({
   id: z.string().uuid().optional(),
   customer_id: z.string().uuid().nullable().optional(),
+  lead_id: z.string().uuid().nullable().optional(),
   to_name: z.string().trim().min(2, "Enter the customer's company name").max(200),
   to_attn: txt(200), to_address: txt(500), to_gstin: txt(15), to_email: txt(200), to_phone: txt(40),
   subject: z.string().trim().min(3, "Enter the subject of the quotation").max(300),
@@ -46,6 +47,7 @@ export async function saveQuote(input: QuoteInput): Promise<{ error?: string; id
     if (q.id) {
       const { data, error } = await supabase.from("quotes").update(row).eq("id", q.id).select("id,number").single();
       if (error) return { error: error.message };
+      await markQuoted(supabase, q.lead_id);
       revalidatePath("/billing"); revalidatePath(`/quotes/${q.id}`);
       return { id: data.id, number: data.number };
     }
@@ -53,9 +55,17 @@ export async function saveQuote(input: QuoteInput): Promise<{ error?: string; id
     if (nErr) return { error: nErr.message };
     const { data, error } = await supabase.from("quotes").insert({ ...row, number, created_by: me.email }).select("id,number").single();
     if (error) return { error: error.message };
+    await markQuoted(supabase, q.lead_id);
     revalidatePath("/billing");
     return { id: data.id, number: data.number };
   } catch (e) { return { error: (e as Error).message }; }
+}
+
+/** an enquiry that has been quoted moves to "quoted" (unless it is already converted or dropped) */
+async function markQuoted(supabase: Awaited<ReturnType<typeof createClient>>, leadId?: string | null) {
+  if (!leadId) return;
+  await supabase.from("leads").update({ status: "quoted" }).eq("id", leadId).in("status", ["new", "contacted"]);
+  revalidatePath("/leads");
 }
 
 export async function setQuoteStatus(_: ActionState, form: FormData): Promise<ActionState> {
