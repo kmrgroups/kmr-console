@@ -1,6 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
-import { startUpload } from "@/app/cms-actions";
+import { useEffect, useRef, useState } from "react";
+import { galleryVideos, startUpload } from "@/app/cms-actions";
 import { canCompressVideo, compressVideo } from "@/lib/video-compress";
 
 type Props = {
@@ -25,6 +25,22 @@ export function FileField({ section, name, label, kind, value, docLink, help, re
   const picker = useRef<HTMLInputElement>(null);
 
   const videoField = /video_url$/.test(name);
+  const posterName = name.replace(/video_url$/, "video_poster");
+  const [lib, setLib] = useState<{ open: boolean; loading?: boolean; error?: string; items?: { id: string; title: string | null; url: string; poster: string | null; used_for: string | null }[] }>({ open: false });
+  useEffect(() => {
+    const on = (e: Event) => { const d = (e as CustomEvent<{ name: string; value: string }>).detail; if (d?.name === name && d.value) { setVal(d.value); setPreview(null); setSt({ phase: "done", pct: 100, file: "from the gallery" }); } };
+    window.addEventListener("kmr-fill-field", on);
+    return () => window.removeEventListener("kmr-fill-field", on);
+  }, [name]);
+  async function openLibrary() {
+    setLib({ open: true, loading: true });
+    const r = await galleryVideos();
+    setLib({ open: true, error: r.error, items: r.items ?? [] });
+  }
+  function pick(it: { url: string; poster: string | null }) {
+    setVal(it.url); setPreview(null); setSt({ phase: "done", pct: 100, file: "from the gallery" }); setLib({ open: false });
+    if (it.poster) window.dispatchEvent(new CustomEvent("kmr-fill-field", { detail: { name: posterName, value: it.poster } }));
+  }
   async function choose(picked: File) {
     let file = picked;
     if (picked.type.startsWith("video/") || /\.(mov|m4v|hevc|3gp|mkv)$/i.test(picked.name)) {
@@ -71,6 +87,9 @@ export function FileField({ section, name, label, kind, value, docLink, help, re
             <button type="button" className="btn secondary small" disabled={st.phase === "uploading" || st.phase === "preparing"} onClick={() => picker.current?.click()}>
               {val || preview ? "Replace…" : videoField ? "Choose video…" : kind === "image" ? "Choose photo…" : "Choose file…"}
             </button>
+            {videoField && section !== "gallery" && (
+              <button type="button" className="btn secondary small" disabled={st.phase === "uploading" || st.phase === "preparing"} onClick={openLibrary}>Choose from gallery…</button>
+            )}
             {val && st.phase !== "uploading" && st.phase !== "preparing" && (
               <button type="button" className="btn ghost small" onClick={() => { setVal(""); setPreview(null); setSt({ phase: "idle", pct: 0 }); }}>Remove</button>
             )}
@@ -87,7 +106,23 @@ export function FileField({ section, name, label, kind, value, docLink, help, re
               <div style={{ width: `${Math.max(3, st.pct)}%` }} /><span>Uploading {st.pct}% — {st.file}</span>
             </div>
           )}
-          {st.phase === "done" && <p className="upok">✓ Uploaded ({st.file}). Click <b>Save changes</b> to publish it.</p>}
+          {st.phase === "done" && <p className="upok">{st.file === "from the gallery" ? <>✓ Chosen from the gallery.</> : <>✓ Uploaded ({st.file}).</>} Click <b>Save changes</b> to publish it.</p>}
+          {lib.open && (
+            <div className="gallerypick" role="dialog" aria-modal="true" aria-label="Choose a video from the gallery" onClick={() => setLib({ open: false })}>
+              <div className="gallerypick-box" onClick={(e) => e.stopPropagation()}>
+                <div className="spread"><b>Choose a video from the gallery</b><button type="button" className="btn ghost small" onClick={() => setLib({ open: false })}>Close</button></div>
+                <p className="muted" style={{ fontSize: 12.5, margin: "4px 0 10px" }}>Every promo video uploaded for an app, business, product or programme is kept here (Website CMS › Gallery). Picking one also fills its thumbnail.</p>
+                {lib.loading ? <p className="muted">Loading…</p> : lib.error ? <div className="alert error">{lib.error}</div> : !lib.items?.length
+                  ? <p className="muted">No videos in the gallery yet. Upload one here with <b>Choose video…</b> — it is added to the gallery when you save.</p>
+                  : <div className="gallerypick-grid">{lib.items.map((it) => (
+                      <button type="button" key={it.id} className={`gallerypick-item${it.url === val ? " on" : ""}`} onClick={() => pick(it)}>
+                        <span className="gallerypick-media">{it.poster ? <img src={it.poster} alt="" loading="lazy" /> : <video src={`${it.url}#t=0.5`} muted playsInline preload="metadata" />}<i>▶</i></span>
+                        <span className="gallerypick-t">{it.title || "Video"}</span>
+                        {it.used_for && <small className="muted">{it.used_for}</small>}
+                      </button>))}</div>}
+              </div>
+            </div>
+          )}
           {st.phase === "error" && <p className="uperr">{st.msg}</p>}
           {st.phase === "idle" && !val && value && <p className="upwarn">Will be removed when you save.</p>}
           <small className="muted">{help || (videoField ? "Any phone video. It is resized to 720 × 1280 (reel size) and made web-ready before upload — this takes about as long as the video." : kind === "image" ? "Shown on the website as uploaded — nothing is cropped. JPG, PNG or WebP up to 25 MB." : "Stored privately; opened with a link that expires. PDF or image up to 10 MB.")}</small>

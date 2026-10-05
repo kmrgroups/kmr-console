@@ -210,3 +210,19 @@ export async function removeSampleContent(_: ActionState): Promise<ActionState> 
   } catch (e) { return fail(e); }
   redirect("/cms");
 }
+
+/** The Gallery's videos, for the "Choose from gallery…" picker on promo-video fields. */
+export async function galleryVideos(): Promise<{ error?: string; items?: { id: string; title: string | null; url: string; poster: string | null; used_for: string | null }[] }> {
+  try {
+    await assertStaff();
+    const { data, error } = await web().from("gallery_items").select("id,title,media_url,thumbnail_url,used_for,created_at")
+      .eq("media_type", "video").order("created_at", { ascending: false }).limit(200);
+    if (error) {
+      // before 0046 there is no used_for column
+      const r = await web().from("gallery_items").select("id,title,media_url,thumbnail_url,created_at").eq("media_type", "video").order("created_at", { ascending: false }).limit(200);
+      if (r.error) return { error: r.error.message };
+      return { items: (r.data ?? []).map((x) => ({ id: x.id, title: x.title, url: x.media_url, poster: x.thumbnail_url, used_for: null })) };
+    }
+    return { items: (data ?? []).map((x) => ({ id: x.id, title: x.title, url: x.media_url, poster: x.thumbnail_url, used_for: x.used_for })) };
+  } catch (e) { return { error: (e as Error).message }; }
+}

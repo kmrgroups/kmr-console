@@ -236,11 +236,12 @@ export const SECTIONS: Section[] = [
       { k: "photo_url", label: "Photo", type: "image" }, { k: "bio", label: "Bio", type: "textarea", wide: true },
     ] },
   { key: "gallery", table: "gallery_items", group: "about", label: "Gallery", singular: "photo or video", roles: ALL, visible: "is_active",
-    intro: "Photos and videos on the Gallery page.", list: ["media_url", "title", "media_type", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10, media_type: "photo" },
+    intro: "Photos and videos on the Gallery page — and the video library: every promo video saved on an app, business, product or programme is added here automatically (\u201cUsed on\u201d shows where), and any video here can be picked for those cards with \u201cChoose from gallery…\u201d. Untick Show to keep a video out of the public Gallery page; it stays pickable.", list: ["media_url", "title", "media_type", "used_for", "is_active"], order: ["sort_order", true], defaults: { ...on, sort_order: 10, media_type: "photo" },
     fields: [
       { k: "title", label: "Caption" }, { k: "media_type", label: "Type", type: "select", opts: [["photo", "Photo"], ["video", "Video"]], required: true },
       { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show", type: "bool" },
       { k: "media_url", label: "Photo / video", type: "image", required: true }, { k: "thumbnail_url", label: "Video cover image", type: "image" },
+      { k: "used_for", label: "Used on", readonly: true, help: "Filled in automatically when the video is used on a card" },
     ] },
   // ---------------- Policies & records ----------------
   { key: "policies", table: "legal_pages", group: "policies", label: "Company policies", singular: "policy", roles: ALL, visible: "is_active", preview: (r) => `/policies/${r.slug}`,
