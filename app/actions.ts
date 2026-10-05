@@ -205,7 +205,7 @@ async function enableSales(d: { product_code: string; customer_id: string; works
   if (error) return { error: /duplicate|unique/.test(error.message) ? "This customer already has this app." : error.message };
   if (c.status === "lead") await supabase.from("customers").update({ status: d.status === "active" ? "active" : "pilot" }).eq("id", c.id);
   revalidatePath(`/customers/${c.id}`);
-  const url = `${env.platformUrl}/it/${d.product_code === "calib" ? "calibration" : "sales"}.html`;
+  const url = `${env.platformUrl}/it/${({ calib: "calibration", apqp: "apqp", ppap: "ppap" } as Record<string, string>)[d.product_code] ?? "sales"}.html`;
   return {
     ok: login.password
       ? `Switched on. Send the administrator: sign-in ${url} · email ${d.admin_email} · temporary password ${login.password} (shown only now). They add colleagues under Administration › Users & access.`
@@ -220,7 +220,7 @@ export async function enableTool(_: ActionState, form: FormData): Promise<Action
     const parsed = toolSchema.safeParse(Object.fromEntries(form));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const d = parsed.data;
-    if (d.product_code === "sales" || d.product_code === "calib") return await enableSales(d);
+    if (["sales", "calib", "apqp", "ppap"].includes(d.product_code)) return await enableSales(d);   // company-level apps: one per customer, access follows the user list
     if (!isTool(d.product_code)) return { error: "Unknown product." };
     const supabase = await createClient();
     const { data: c } = await supabase.from("customers").select("id,status").eq("id", d.customer_id).single();

@@ -5,11 +5,23 @@
 -- used, and any Gallery video can be picked for those cards. Needs 0045. Safe to re-run.
 -- =====================================================================
 do $$ begin
-  if to_regclass('public.gallery_items') is null then raise exception 'The website Gallery table (gallery_items) is missing.'; end if;
   if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'app_listings' and column_name = 'video_url')
   then raise exception 'Run 0045_media_costing_quotes.sql first.'; end if;
 end $$;
 
+do $outer$ begin
+  if to_regclass('public.gallery_items') is null then
+    raise notice '0046 skipped: the website Gallery table (gallery_items) is not in this project yet. Run the website SQL, then run this file again.';
+    return;
+  end if;
+  execute $body$
+-- the video columns of the cards (normally added by 0045; added here too so the order the files were run in does not matter)
+do $$ declare t text; begin foreach t in array array['verticals', 'products'] loop
+  if to_regclass('public.' || t) is not null then
+    execute format('alter table public.%I add column if not exists video_url text', t);
+    execute format('alter table public.%I add column if not exists video_poster text', t);
+  end if;
+end loop; end $$;
 alter table public.gallery_items add column if not exists used_for text;           -- e.g. "KMR Apps · Sales Flow"
 create index if not exists gallery_items_media on public.gallery_items (media_url);
 
@@ -67,3 +79,6 @@ do $$ declare r record; begin
       perform public.kmr_gallery_keep_video(r.video_url, r.video_poster, r.title, r.used); end loop;
   end if;
 end $$;
+
+  $body$;
+end $outer$;
