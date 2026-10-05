@@ -28,7 +28,7 @@ export default async function TestDataPage() {
   const sb = await createClient();
   const rep = await sb.schema("public").rpc("kmr_sample_report");
   const report = (rep.data ?? []) as { name: string; slug: string; code: string | null; kind: string; counts: Record<string, number>; total: number }[];
-  const dirty = report.filter((r) => r.kind !== "demo" && r.total > 0), demos = report.filter((r) => r.kind === "demo" && r.slug === DEMO.slug);
+  const realCos = report.filter((r) => r.kind !== "demo"), dirty = realCos.filter((r) => r.total > 0), demos = report.filter((r) => r.kind === "demo" && r.slug === DEMO.slug);
   const { data: purged } = await sb.from("sample_purge_log").select("customer_name,purged_at,counts").order("purged_at", { ascending: false }).limit(5);
   const said = (c: Record<string, number>) => Object.entries(c).filter(([, v]) => v > 0).map(([k, v]) => `${k} ${v}`).join(" · ");
   return (
@@ -39,24 +39,43 @@ export default async function TestDataPage() {
       {/* 0. Sample data belongs in the demo workspace only */}
       <div className="card" style={{ borderLeft: `4px solid ${rep.error ? "var(--warn,#f59e0b)" : dirty.length ? "var(--danger,#dc2626)" : "var(--ok,#16a34a)"}` }}>
         <h2>Sample data in real companies</h2>
-        <p className="muted" style={{ marginTop: 0 }}>Sample data is for testing and demos only, and now lives in the <b>KMR demo workspace</b>. New sample data can no longer be loaded into a real company. This lists any that is already there; removing it saves a copy of exactly those records first.</p>
-        {rep.error ? <div className="alert warn">This needs the database update <b>0049_demo_workspace.sql</b>. Run it in Supabase, then refresh. ({rep.error.message})</div>
-          : dirty.length ? (
-            <>
-              <div className="tablewrap"><table><thead><tr><th>Company</th><th>Sample records found</th><th>Remove</th></tr></thead><tbody>{dirty.map((r) => (
-                <tr key={r.slug}><td><b>{r.name}</b> <small className="muted mono">{r.code}</small></td><td><small>{said(r.counts)}</small></td>
-                  <td><ActionForm action={purgeSample} submitLabel="Remove" variant="danger" hidden={{ slug: r.slug }}><input name="confirm" placeholder="Type PURGE SAMPLE DATA" style={{ maxWidth: 230 }} /></ActionForm></td></tr>))}</tbody></table></div>
-              <div style={{ marginTop: 12 }}><ActionForm action={purgeAllSample} submitLabel={`Remove from all ${dirty.length} companies`} variant="danger"><input name="confirm" placeholder="Type PURGE SAMPLE DATA" style={{ maxWidth: 260 }} /></ActionForm></div>
-            </>
-          ) : <div className="alert ok">✓ No sample data in any real company.</div>}
-        {!!purged?.length && <p className="muted" style={{ fontSize: 12.5, marginBottom: 0 }}>Last clean-ups: {purged.map((x) => `${x.customer_name} (${new Date(x.purged_at).toLocaleDateString("en-IN")})`).join(" · ")}. Copies are in the purge log (database table <span className="mono">console.sample_purge_log</span>).</p>}
+        <p className="muted" style={{ marginTop: 0 }}>Sample data is for testing and demos only, and now lives in the <b>KMR demo workspace</b>. A real company can no longer load it. Every real company is listed below with what it still holds; removing sample data saves a copy of exactly those records first.</p>
+        {rep.error ? <div className="alert warn">This needs the database update <b>0049_demo_workspace.sql</b>. Run it in Supabase, then refresh. ({rep.error.message})</div> : (
+          <>
+            <p style={{ margin: "0 0 8px" }}><b>{realCos.length}</b> real {realCos.length === 1 ? "company" : "companies"} checked — {dirty.length
+              ? <b style={{ color: "var(--danger,#dc2626)" }}>{dirty.length} still {dirty.length === 1 ? "has" : "have"} sample data</b>
+              : <b style={{ color: "var(--ok,#16a34a)" }}>none has sample data</b>}.</p>
+            {realCos.length ? (
+              <div className="tablewrap"><table>
+                <thead><tr><th>Company</th><th>Sample data</th><th>Remove</th></tr></thead>
+                <tbody>{[...realCos].sort((x, y) => y.total - x.total || x.name.localeCompare(y.name)).map((r) => (
+                  <tr key={r.slug}>
+                    <td><b>{r.name}</b> <small className="muted mono">{r.code}</small></td>
+                    <td>{r.total ? <><span className="badge danger">{r.total}</span> <small>{said(r.counts)}</small></> : <span className="badge ok">✓ clean</span>}</td>
+                    <td>{r.total ? <ActionForm action={purgeSample} submitLabel="Remove" variant="danger" hidden={{ slug: r.slug }}><input name="confirm" placeholder="Type PURGE SAMPLE DATA" style={{ maxWidth: 230 }} /></ActionForm> : <span className="muted">—</span>}</td>
+                  </tr>))}</tbody>
+              </table></div>
+            ) : <p className="muted">There are no real companies yet.</p>}
+            {dirty.length > 1 && <div style={{ marginTop: 12 }}><ActionForm action={purgeAllSample} submitLabel={`Remove from all ${dirty.length} companies`} variant="danger"><input name="confirm" placeholder="Type PURGE SAMPLE DATA" style={{ maxWidth: 260 }} /></ActionForm></div>}
+          </>
+        )}
+        {!!purged?.length && <p className="muted" style={{ fontSize: 12.5, marginBottom: 0 }}>Last clean-ups: {purged.map((x) => `${x.customer_name} (${new Date(x.purged_at).toLocaleDateString("en-IN")})`).join(" · ")}. Copies are kept in the database table <span className="mono">console.sample_purge_log</span>.</p>}
       </div>
 
       <div className="card">
         <h2>Demo workspace</h2>
-        <p className="muted" style={{ marginTop: 0 }}>One company, <b>{DEMO.name}</b>, with a workspace in every app and the only login that has sample data ({DEMO.email}). It reloads itself every night at 12:40 AM India time, and you can reload it now. “Try with sample data” inside customers’ own screens never touches their data: it runs in the browser only.</p>
-        {demos.length ? <><p>Sample records now: <b>{demos[0].total}</b> <small className="muted">({said(demos[0].counts)})</small></p><ActionForm action={resetDemo} submitLabel="Reset demo data now" variant="secondary" /></>
-          : <p className="muted">The demo workspace is not set up yet — use “Load demo data” below.</p>}
+        <p className="muted" style={{ marginTop: 0 }}>One company, <b>{DEMO.name}</b>, with a workspace in every app and the only login that has sample data ({DEMO.email}). It reloads itself every night at 12:40 AM India time. “Try with sample data” inside customers’ own screens never touches their data: it runs in the browser only.</p>
+        {loaded ? (
+          <>
+            <p>✓ The demo workspace is set up{demos[0] ? <>. Sample records now: <b>{demos[0].total}</b> <small className="muted">({said(demos[0].counts)})</small></> : "."}</p>
+            <ActionForm action={resetDemo} submitLabel="Reset demo data now" variant="secondary" />
+          </>
+        ) : (
+          <>
+            <p>The demo workspace has not been set up yet. Setting it up creates the company, its single login and a workspace in every app, loads the sample data, and shows the login password <b>once</b>.</p>
+            <ActionForm action={loadDemo} submitLabel="Set up the demo workspace now" />
+          </>
+        )}
       </div>
 
       {/* 1. Backups */}
