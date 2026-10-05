@@ -5,6 +5,8 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "www.kmr-groups.com").spl
 export default {
   basePath,
   poweredByHeader: false,
+  // the quotation PDF reads its fonts and the built-in letterhead from ./assets
+  outputFileTracingIncludes: { "/api/quotes/[id]/pdf": ["./assets/**/*"] },
   experimental: { serverActions: { allowedOrigins, bodySizeLimit: "6mb" } },
   async headers() {
     return [{ source: "/(.*)", headers: [

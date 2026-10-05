@@ -51,6 +51,7 @@ const productFields = (kinds: [string, string][], extra: Field[] = []): Field[] 
   { k: "is_active", label: "Show on the website", type: "bool" }, { k: "featured", label: "Feature on the home page", type: "bool" },
   { k: "sort_order", label: "Order in lists", type: "number" },
   { k: "image_url", label: "Photo", type: "image" },
+  { k: "video_url", label: "Promo video (MP4, Instagram-reel size 9:16, under 50 MB)", type: "image", help: "Plays when the card is tapped. Upload the thumbnail photo below too." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
   { k: "description", label: "Description", type: "longtext", wide: true },
 ];
 const POINT_FIELDS: Field[] = [
@@ -155,6 +156,7 @@ export const SECTIONS: Section[] = [
       { k: "title", label: "Name", required: true }, { k: "code", label: "Short label", help: "e.g. SOFTWARE" }, { k: "link", label: "Link" }, { k: "slug", label: "Key (optional)" },
       { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show", type: "bool" },
       { k: "image_url", label: "Photo", type: "image" }, { k: "icon_url", label: "Icon", type: "image" },
+      { k: "video_url", label: "Promo video (MP4, Instagram-reel size 9:16, under 50 MB)", type: "image", help: "Plays when the card is tapped. Upload the thumbnail photo below too." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
       { k: "description", label: "Description", type: "textarea", wide: true },
     ] },
   // ---------------- Shop ----------------
@@ -169,13 +171,14 @@ export const SECTIONS: Section[] = [
   // ---------------- Software ----------------
   { key: "apps", table: "app_listings", group: "software", label: "KMR Apps on the website", singular: "app listing", roles: SALES, visible: "is_active", noCreate: true, noDelete: true,
     sitePath: "/software", titleOf: ["name"], preview: (r) => `/software#${r.code}`,
-    intro: "How each KMR App appears on the home page and the Software page: picture, one-line benefit, key features, order and show / hide. Every app under Products & versions is listed here automatically. Prices come from Billing › Price list (per user / employee, monthly and yearly). Leave the picture empty to use the built-in illustration.",
+    intro: "How each KMR App appears on the home page and the Software page: picture, one-line benefit, key features, order and show / hide. Every app under Products & versions is listed here automatically. Prices come from Billing › Price list (per user / employee, monthly and yearly). Upload a real photo — or a short promo video (Instagram-reel size, 9:16) with its thumbnail, which plays when the card is tapped. Without either, a simple illustration is shown.",
     list: ["image_url", "name", "tagline", "sort_order", "is_active"], order: ["sort_order", true], search: ["name", "tagline"],
     fields: [
       { k: "name", label: "App", readonly: true }, { k: "code", label: "Code", readonly: true },
       { k: "tagline", label: "One-line benefit", wide: true, help: "What the customer gets, in one sentence (shown on the cards)" },
       { k: "features", label: "Key features — one per line", type: "textarea", wide: true, help: "Three or four lines read best" },
-      { k: "image_url", label: "Picture", type: "image", help: "A screenshot or photo, 16:10 looks best. Empty = built-in illustration" },
+      { k: "image_url", label: "Photo", type: "image", help: "A real photo or screenshot, 16:10 looks best (shown when there is no video)" },
+      { k: "video_url", label: "Promo video (MP4, Instagram-reel size 9:16, under 50 MB)", type: "image", help: "Plays when the card is tapped. Upload the thumbnail photo below too." }, { k: "video_poster", label: "Video thumbnail (9:16 photo — 1080 × 1920 best)", type: "image", help: "Shown on the card with a ▶ play button" },
       { k: "sort_order", label: "Order", type: "number" }, { k: "is_active", label: "Show on the website", type: "bool" },
     ] },
   { key: "solutions", table: "products", group: "software", label: "Software solutions", singular: "solution", roles: SALES, visible: "is_active", scope: { business: "software" }, preview: productPreview,

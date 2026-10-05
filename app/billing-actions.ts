@@ -190,11 +190,12 @@ export async function uploadBillingImage(_: ActionState, form: FormData): Promis
   try {
     await assertManager();
     const kind = String(form.get("kind"));
-    if (kind !== "seal" && kind !== "signature") return { error: "Unknown image." };
+    if (kind !== "seal" && kind !== "signature" && kind !== "letterhead") return { error: "Unknown image." };
     const file = form.get("image");
     if (!(file instanceof File) || !file.size) return { error: "Choose an image file." };
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return { error: "Use a PNG (best, with a transparent background), JPG or WebP image." };
-    if (file.size > 2 * 1024 * 1024) return { error: "The image must be under 2 MB." };
+    if (file.size > (kind === "letterhead" ? 5 : 2) * 1024 * 1024) return { error: `The image must be under ${kind === "letterhead" ? 5 : 2} MB.` };
+    if (kind === "letterhead" && file.type === "image/webp") return { error: "Use a PNG or JPG for the letterhead (A4 portrait, e.g. 1240 × 1754 px)." };
     const path = `${kind}/${Date.now()}.${file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"}`;
     const { error: upErr } = await createAdminClient().storage.from("kmr-billing").upload(path, file, { contentType: file.type });
     if (upErr) return { error: upErr.message };
@@ -203,14 +204,14 @@ export async function uploadBillingImage(_: ActionState, form: FormData): Promis
     const { error } = await supabase.from("billing_settings").update({ [`${kind}_path`]: path, updated_at: new Date().toISOString() }).eq("id", true);
     if (error) return { error: error.message };
     revalidatePath("/billing");
-    return { ok: `${kind === "seal" ? "Seal" : "Signature"} saved. New invoices use it when issued.` };
+    return { ok: kind === "letterhead" ? "Letterhead saved. Every quotation PDF uses it from now on." : `${kind === "seal" ? "Seal" : "Signature"} saved. New invoices use it when issued.` };
   } catch (e) { return fail(e); }
 }
 
 export async function removeBillingImage(form: FormData) {
   await assertManager();
   const kind = String(form.get("kind"));
-  if (kind !== "seal" && kind !== "signature") return;
+  if (kind !== "seal" && kind !== "signature" && kind !== "letterhead") return;
   const supabase = await createClient();
   await supabase.from("billing_settings").update({ [`${kind}_path`]: null, updated_at: new Date().toISOString() }).eq("id", true);
   revalidatePath("/billing");
