@@ -152,28 +152,34 @@ export class LetterheadDoc {
    */
   async signBlock(o: { company: string; name?: string | null; title?: string | null; art?: SignArt; left?: string; acceptance?: boolean }) {
     const seal = await this.image(o.art?.seal), sig = await this.image(o.art?.signature);
-    const half = (X1 - X0 - 20) / 2, h = 104, sealH = 74, sealGap = 12;
+    const half = (X1 - X0 - 20) / 2, h = 104, sealH = o.acceptance ? 64 : 74, sealGap = 10;
     const sealW = seal ? (sealH / seal.height) * seal.width : 0;
     this.ensure(h + 14); this.y -= 8;
     const top = this.y;
     // our signatory area: the right half for invoices, the left half (after the seal) for quotations
     const oursX = o.acceptance ? X0 + (seal ? sealW + sealGap : 0) : X0 + half + 20, oursW = o.acceptance ? half - (seal ? sealW + sealGap : 0) : half;
-    if (seal) this.page.drawImage(seal, { x: oursX - sealGap - sealW, y: top - 14 - sealH, width: sealW, height: sealH, opacity: 0.92 });
+    if (seal) this.page.drawImage(seal, { x: oursX - sealGap - sealW, y: top - (h - sealH) / 2 - sealH, width: sealW, height: sealH, opacity: 0.92 });
     if (!o.acceptance && o.left) this.wrap(o.left, this.reg, 8, half - (seal ? sealW + 2 * sealGap : 0)).forEach((l, i) => this.text(l, X0, top - 60 - i * 11, this.reg, 8, MUTED));
     const box = (x: number, w: number, title: string, ours: boolean) => {
-      this.page.drawRectangle({ x, y: top - h, width: w, height: h, borderColor: LINE, borderWidth: 0.8, color: ours ? GOLDBG : WHITE });
-      this.text(title, x + 10, top - 16, this.bold, 8.6, NAVY);
-      const lineY = top - h + 30;
+      // white boxes: a signature scanned on white paper blends in (no white rectangle on a coloured fill)
+      this.page.drawRectangle({ x, y: top - h, width: w, height: h, borderColor: ours ? GOLD : LINE, borderWidth: ours ? 1 : 0.8, color: WHITE });
+      if (ours) this.page.drawRectangle({ x, y: top - 3, width: w, height: 3, color: GOLD });
+      // the heading always fits its box: shrink it, and wrap to two lines if it still does not fit
+      const room = w - 20; let fs = 8.6;
+      while (fs > 7 && this.width(title, this.bold, fs) > room) fs -= 0.2;
+      const tl = this.width(title, this.bold, fs) > room ? this.wrap(title, this.bold, fs, room) : [title];
+      tl.slice(0, 2).forEach((l, i) => this.text(l, x + 10, top - 16 - i * (fs + 2), this.bold, fs, NAVY));
+      const lineY = top - h + 30, sigTop = top - 22 - (tl.length > 1 ? fs + 2 : 0);
       if (ours && sig) {                                   // the signature rests on the signatory line
-        const maxW = w - 20, maxH = 44, sc = Math.min(maxW / sig.width, maxH / sig.height), sw = sig.width * sc, sh = sig.height * sc;
-        this.page.drawImage(sig, { x: x + 10, y: lineY + 2, width: sw, height: sh });
+        const maxW = w - 20, maxH = Math.min(44, sigTop - lineY - 2), sc = Math.min(maxW / sig.width, maxH / sig.height);
+        this.page.drawImage(sig, { x: x + 10, y: lineY + 2, width: sig.width * sc, height: sig.height * sc });
       }
       this.page.drawLine({ start: { x: x + 10, y: lineY }, end: { x: x + w - 10, y: lineY }, thickness: 0.6, color: MUTED });
       if (ours && o.name) this.text(`${o.name}${o.title ? `, ${o.title}` : ""}`, x + 10, top - h + 18, this.med, 8.4, INK);
       this.text(ours ? "Authorised signatory" : "Authorised signatory · name / designation", x + 10, top - h + 7, this.reg, 7.4, MUTED);
     };
-    box(oursX, oursW, o.acceptance ? `For ${o.company}`.toUpperCase() : `For ${o.company}`, true);
-    if (o.acceptance) box(X0 + half + 20, half, "CUSTOMER ACCEPTANCE", false);
+    box(oursX, oursW, `For ${o.company}`, true);
+    if (o.acceptance) box(X0 + half + 20, half, "Customer acceptance", false);
     this.y -= h + 10;
   }
 
