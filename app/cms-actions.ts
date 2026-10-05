@@ -79,10 +79,37 @@ export async function saveRecord(_: ActionState, form: FormData): Promise<Action
       if (error) return { error: /duplicate|unique/i.test(error.message) ? "That code / web address is already used by another record." : error.message };
       newId = data.id;
     }
+    let galleryNote = "";
+    if (typeof row.video_url === "string" && row.video_url) galleryNote = await keepInGallery(s, row, newId);
     refresh(s);
-    await setFlash({ ok: id ? "Saved. The website shows the change within a minute." : `${cap(s.singular)} added.` });
+    await setFlash({ ok: (id ? "Saved. The website shows the change within a minute." : `${cap(s.singular)} added.`) + galleryNote });
   } catch (e) { return fail(e); }
   redirect(`/cms/${s.key}/${newId}`);
+}
+
+/**
+ * Every promo video saved on a card is kept in the Gallery (the video library). Done here as well as by the 0046
+ * database trigger, so it works even where that migration has not been run yet. The same file is never added twice.
+ */
+async function keepInGallery(s: Section, row: Record<string, unknown>, id: string): Promise<string> {
+  try {
+    const url = String(row.video_url), poster = typeof row.video_poster === "string" ? row.video_poster : null;
+    let title = String(row.name ?? row.title ?? "");
+    if (!title && s.table === "app_listings") { const { data } = await web().from("app_listings").select("name").eq("id", id).maybeSingle(); title = data?.name ?? ""; }
+    const used = s.table === "app_listings" ? `KMR Apps · ${title}` : s.table === "verticals" ? `Business · ${title}` : `${s.label} · ${title}`;
+    const g = web().from("gallery_items");
+    const { data: have } = await g.select("id,thumbnail_url").eq("media_url", url).limit(1);
+    if (have?.length) {
+      if (!have[0].thumbnail_url && poster) await web().from("gallery_items").update({ thumbnail_url: poster }).eq("id", have[0].id);
+      return "";
+    }
+    const { data: last } = await web().from("gallery_items").select("sort_order").order("sort_order", { ascending: false }).limit(1);
+    const item = { title: (title || "Promo video").slice(0, 200), media_type: "video", media_url: url, thumbnail_url: poster, is_active: true, sort_order: Number(last?.[0]?.sort_order ?? 0) + 10 };
+    let { error } = await web().from("gallery_items").insert({ ...item, used_for: used });
+    if (error && /used_for/.test(error.message)) ({ error } = await web().from("gallery_items").insert(item));   // before 0046
+    revalidatePath("/cms/gallery");
+    return error ? ` (The video could not be added to the Gallery: ${error.message})` : " The video was also added to the Gallery.";
+  } catch (e) { return ` (The video could not be added to the Gallery: ${(e as Error).message})`; }
 }
 
 export async function deleteRecord(_: ActionState, form: FormData): Promise<ActionState> {

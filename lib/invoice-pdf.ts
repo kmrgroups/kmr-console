@@ -64,7 +64,7 @@ export async function invoicePdf(inv: InvoiceData, lines: LineData[], seller: Pa
   }
 
   const draft = inv.status === "draft";
-  await d.signBlock({ company, name: seller.signatory_name, title: seller.signatory_title, art: draft ? undefined : art,
+  await d.signBlock({ company, name: seller.signatory_name, title: seller.signatory_title, art,
     left: art?.seal || art?.signature ? "This is a computer-generated invoice." : "This is a computer-generated invoice and needs no signature." });
   return d.finish({ ref: inv.number ?? "Draft invoice", note: draft ? "Draft — not valid as a tax invoice until issued" : "Original for recipient",
     watermark: draft ? "DRAFT" : inv.status === "cancelled" ? "CANCELLED" : inv.status === "paid" ? "PAID" : null,

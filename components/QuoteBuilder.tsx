@@ -11,9 +11,12 @@ export type Cost = { id: string; product_code: string | null; name: string; deta
 
 const NUM = { inputMode: "decimal" as const, style: { width: "100%", textAlign: "right" as const } };
 
-export function QuoteBuilder({ initial, customers, leads = [], startLead, products, costs, defaults }: {
+export type Paper = { letterhead: string; seal: string | null; signature: string | null; company: string; signatory: string | null };
+
+export function QuoteBuilder({ initial, customers, leads = [], startLead, products, costs, defaults, paper, status, children }: {
   initial?: QuoteInput & { number?: string | null };
   customers: Customer[]; leads?: Lead[]; startLead?: string | null; products: Product[]; costs: Cost[];
+  paper: Paper; status?: string; children?: React.ReactNode;
   defaults: { includes: string; terms: string; validity: number; gst: number; today: string };
 }) {
   const [q, setQ] = useState<QuoteInput>(() => initial ?? {
@@ -96,133 +99,186 @@ export function QuoteBuilder({ initial, customers, leads = [], startLead, produc
     });
   }
 
+  const dateLong = (d?: string | null) => d ? new Date(d + "T00:00:00Z").toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric", timeZone: "UTC" }) : "—";
+  const draft = !status || status === "draft";
+  const recurring = q.lines.filter((l) => /per_(user_)?(month|year)/.test(l.basis)).reduce((a, l) => a + lineAmount(l), 0);
+
   return (
-    <div className="qb">
-      <style>{`.qb table input,.qb table select,.qb table textarea{padding:6px 8px;font-size:13px}.qb .tot{display:grid;grid-template-columns:1fr auto;gap:6px 18px;font-size:14px}.qb .tot b{text-align:right}
-        .qb .grand{background:var(--brand,#0B2A6F);color:#fff;border-radius:10px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
-        .qb .grand b{font-size:20px}.qb .chips{display:flex;flex-wrap:wrap;gap:8px}.qb .chips button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;cursor:pointer}
-        .qb .chips button.on{border-color:var(--ok);color:var(--ok)}.qb .sticky{position:sticky;top:12px}.qb .icon{border:0;background:none;cursor:pointer;color:var(--muted);padding:2px 4px}
-        .qb-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}.qb-layout>*{min-width:0}
-        .qb .side2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
-        .qb table input,.qb table select{min-width:64px}.qb table td:nth-child(2) input{min-width:180px}
-        @media(max-width:1000px){.qb-layout{grid-template-columns:minmax(0,1fr)}.qb .sticky{position:static;order:-1}}
-        @media(max-width:640px){.qb .grand b{font-size:18px}.qb .chips button{font-size:12.5px;padding:6px 10px}}`}</style>
-      <div className="qb-layout">
-        <div>
-          <div className="card">
-            <h2>To</h2>
-            <div className="formgrid">
-              <label className="field full">Against an enquiry <span className="muted">(optional)</span>
-                <select value={q.lead_id ?? ""} onChange={(e) => pickLead(e.target.value)}>
-                  <option value="">— none: draft the quotation manually —</option>
-                  {leads.map((l) => <option key={l.id} value={l.id}>{new Date(l.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} · {l.company || l.name} · {l.product_name || BL[l.business] || l.business}{l.status === "quoted" ? " (already quoted)" : ""}</option>)}
-                </select>
-                {leadNow?.message && <span className="help" style={{ whiteSpace: "pre-line" }}>“{leadNow.message.slice(0, 300)}{leadNow.message.length > 300 ? "…" : ""}”</span>}
-              </label>
-              <label className="field">Existing customer<select value={q.customer_id ?? ""} onChange={(e) => pickCustomer(e.target.value)}><option value="">— a new prospect (type below) —</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
-              <label className="field">Company name *<input value={q.to_name} onChange={(e) => set("to_name", e.target.value)} placeholder="ABC Engineering Pvt. Ltd." /></label>
-              <label className="field">Attention<input value={q.to_attn ?? ""} onChange={(e) => set("to_attn", e.target.value)} placeholder="The Managing Director / Plant Head" /></label>
-              <label className="field">GSTIN<input value={q.to_gstin ?? ""} maxLength={15} onChange={(e) => set("to_gstin", e.target.value.toUpperCase())} /></label>
-              <label className="field full">Address<input value={q.to_address ?? ""} onChange={(e) => set("to_address", e.target.value)} /></label>
-              <label className="field">Email<input value={q.to_email ?? ""} onChange={(e) => set("to_email", e.target.value)} /></label>
-              <label className="field">Phone<input value={q.to_phone ?? ""} onChange={(e) => set("to_phone", e.target.value)} /></label>
-            </div>
-          </div>
+    <div className="qb invoice-layout">
+      <style>{`
+        .qdoc input,.qdoc textarea,.qdoc select{border:1px dashed transparent;background:transparent;border-radius:6px;padding:3px 6px;font:inherit;color:inherit;width:100%;min-width:0;box-shadow:none}
+        .qdoc input:hover,.qdoc textarea:hover,.qdoc select:hover{border-color:#d8c08a}
+        .qdoc input:focus,.qdoc textarea:focus,.qdoc select:focus{border-color:var(--kmr-gold,#C9A24B);background:#fffdf6;outline:none}
+        .qdoc textarea{resize:vertical;line-height:1.5}
+        .qdoc .qtitle{text-align:center;font-size:1.35rem;font-weight:800;letter-spacing:.08em;color:#0b1f45;margin:4px 0 2px}
+        .qdoc .qtitle::after{content:"";display:block;width:56px;height:3px;background:#C9A24B;margin:6px auto 0;border-radius:2px}
+        .qdoc .qref{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:var(--surface-2,#f4f6fb);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:14px 0}
+        .qdoc .qref small{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+        .qdoc .qref b,.qdoc .qref input{font-weight:600;color:#0b1f45}
+        .qdoc .qto{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:4px 16px}
+        .qdoc .qsubject{display:flex;align-items:center;gap:8px;background:#0b1f45;color:#fff;border-left:4px solid #C9A24B;border-radius:4px;padding:6px 10px;margin:12px 0}
+        .qdoc .qsubject input{color:#fff;font-weight:700}.qdoc .qsubject input::placeholder{color:#ffffff99}
+        .qdoc h4{font-size:13px;font-weight:800;color:#0b1f45;margin:16px 0 6px;letter-spacing:.02em}
+        .qdoc h4::after{content:"";display:block;width:30px;height:2px;background:#C9A24B;margin-top:4px}
+        .qdoc .invoice-lines input,.qdoc .invoice-lines select,.qdoc .invoice-lines textarea{padding:2px 4px}
+        .qdoc .qprice{min-width:820px}.qdoc .qprice select{min-width:128px}.qdoc .qprice td:nth-child(2){min-width:240px}
+        .qdoc .qprice td{vertical-align:top}
+        .qdoc .qdraft{width:max-content;margin:6px 0 -6px auto;border:3px solid var(--muted);color:var(--muted);border-radius:8px;padding:1px 12px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;font-size:13px;transform:rotate(-6deg);opacity:.75}
+        .qdoc .num input{text-align:right}
+        .qdoc .rowtools{white-space:nowrap}.qdoc .rowtools button{border:0;background:none;cursor:pointer;color:var(--muted);padding:2px 3px}
+        .qdoc .addrow{margin-top:6px}
+        .qdoc .qgrand{background:#0b1f45;color:#fff}.qdoc .qgrand th{color:#C9A24B!important}.qdoc .qgrand td{color:#fff!important}
+        .qpanel .chips{display:flex;flex-wrap:wrap;gap:6px}.qpanel .chips button{border:1px solid var(--border);background:var(--surface);border-radius:999px;padding:5px 10px;font-size:12.5px;cursor:pointer}
+        .qpanel .chips button.on{border-color:var(--ok);color:var(--ok)}
+        .qpanel .tot{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13.5px}.qpanel .tot b{text-align:right}
+        .qpanel .grand{background:#0b1f45;color:#fff;border-radius:10px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-top:8px}.qpanel .grand b{font-size:18px}
+        @media(max-width:1100px){.qb.invoice-layout .qpanel{order:-1}}
+        @media(max-width:700px){.qdoc .qref{grid-template-columns:1fr 1fr}.qdoc .qto{grid-template-columns:1fr}.qdoc .invoice-lines .hide-sm{display:none}}
+      `}</style>
 
-          <div className="card">
-            <h2>Apps &amp; costing</h2>
-            <p className="muted" style={{ marginTop: -4 }}>Add an app: its subscription (from the price list), its scope and the costing items marked <b>auto</b> are filled in. Then change quantities, months or rates as needed.</p>
-            <div className="chips">{products.map((pr) => {
-              const m = pr.prices.find((x) => x.period === "month"), y = pr.prices.find((x) => x.period === "year");
-              return <span key={pr.code} style={{ display: "inline-flex", gap: 4 }}>
-                <button type="button" className={quoted.has(pr.code) ? "on" : ""} onClick={() => addApp(pr.code, "year")} title={y ? `${inr(y.unit_amount)} / ${pr.seat_label.replace(/s$/, "")} / year` : "No yearly price"}>{quoted.has(pr.code) ? "✓ " : "+ "}{pr.name}{y ? ` · ${inr(y.unit_amount)}/yr` : ""}</button>
-                {m && <button type="button" onClick={() => addApp(pr.code, "month")} title="Monthly billing">monthly</button>}
-              </span>;
-            })}</div>
-            <div className="row" style={{ marginTop: 12, gap: 8 }}>
-              <select defaultValue="" onChange={(e) => { if (e.target.value) addCost(e.target.value); e.target.value = ""; }} style={{ maxWidth: 420 }}>
-                <option value="">+ Add from the costing catalogue…</option>
-                {costs.filter((c) => c.active).map((c) => <option key={c.id} value={c.id}>{c.name} — {inr(c.amount)} {BASIS[c.basis].label.toLowerCase()}{c.product_code ? ` (${products.find((x) => x.code === c.product_code)?.name ?? c.product_code})` : ""}</option>)}
-              </select>
-              <button type="button" className="btn secondary small" onClick={() => set("lines", [...q.lines, { particulars: "", detail: "", basis: "one_time", qty: 1, rate: 0, months: 12 }])}>+ Blank line</button>
-            </div>
-            <div className="tablewrap" style={{ marginTop: 12 }}><table>
-              <thead><tr><th style={{ width: 28 }}>#</th><th>Particulars</th><th style={{ width: 150 }}>Basis</th><th style={{ width: 80 }}>Qty</th><th style={{ width: 80 }}>Months</th><th style={{ width: 110 }}>Rate ₹</th><th style={{ width: 120, textAlign: "right" }}>Amount ₹</th><th style={{ width: 70 }} /></tr></thead>
-              <tbody>{q.lines.length ? q.lines.map((l, i) => (
-                <tr key={i}>
-                  <td>{i + 1}</td>
-                  <td><input value={l.particulars} onChange={(e) => setLine(i, { particulars: e.target.value })} placeholder="What is supplied" style={{ width: "100%", fontWeight: 600 }} />
-                    <input value={l.detail ?? ""} onChange={(e) => setLine(i, { detail: e.target.value })} placeholder="Detail line (optional)" style={{ width: "100%", marginTop: 4, fontSize: 12 }} /></td>
-                  <td><select value={l.basis} onChange={(e) => setLine(i, { basis: e.target.value as Basis })} style={{ width: "100%" }}>{Object.entries(BASIS).map(([k, b]) => <option key={k} value={k}>{b.label}</option>)}</select>
-                    <small className="muted">{basisText(l, seat(l.product_code))}</small></td>
-                  <td><input {...NUM} value={l.qty} onChange={(e) => setLine(i, { qty: Number(e.target.value) || 0 })} /></td>
-                  <td>{BASIS[l.basis].months ? <input {...NUM} value={l.months ?? 12} onChange={(e) => setLine(i, { months: Number(e.target.value) || 1 })} /> : <small className="muted">—</small>}</td>
-                  <td><input {...NUM} value={l.rate} onChange={(e) => setLine(i, { rate: Number(e.target.value) || 0 })} /></td>
-                  <td style={{ textAlign: "right", whiteSpace: "nowrap" }}><b>{inr(lineAmount(l), false)}</b></td>
-                  <td style={{ whiteSpace: "nowrap" }}>
-                    <button type="button" className="icon" title="Move up" onClick={() => set("lines", move(q.lines, i, -1))}>↑</button>
-                    <button type="button" className="icon" title="Move down" onClick={() => set("lines", move(q.lines, i, 1))}>↓</button>
-                    <button type="button" className="icon" title="Remove" style={{ color: "var(--danger)" }} onClick={() => set("lines", q.lines.filter((_, k) => k !== i))}>✕</button>
-                  </td>
-                </tr>)) : <tr><td colSpan={8} className="muted" style={{ textAlign: "center", padding: 16 }}>Add an app or a costing item above.</td></tr>}</tbody>
-            </table></div>
-          </div>
-
-          <div className="card">
-            <h2>Subject &amp; scope</h2>
-            <div className="formgrid">
-              <label className="field full">Subject *<input value={q.subject} onChange={(e) => set("subject", e.target.value)} /></label>
-              <label className="field full">Opening paragraph<textarea rows={3} value={q.intro ?? ""} onChange={(e) => set("intro", e.target.value)} /></label>
-            </div>
-            <div className="tablewrap" style={{ marginTop: 8 }}><table>
-              <thead><tr><th style={{ width: 28 }}>#</th><th style={{ width: "32%" }}>Module</th><th>Included capability</th><th style={{ width: 70 }} /></tr></thead>
-              <tbody>{q.scope.map((s, i) => (
-                <tr key={i}><td>{i + 1}</td>
-                  <td><input value={s.module} onChange={(e) => setScope(i, { module: e.target.value })} style={{ width: "100%", fontWeight: 600 }} /></td>
-                  <td><textarea rows={2} value={s.capability} onChange={(e) => setScope(i, { capability: e.target.value })} style={{ width: "100%" }} /></td>
-                  <td style={{ whiteSpace: "nowrap" }}><button type="button" className="icon" onClick={() => set("scope", move(q.scope, i, -1))}>↑</button><button type="button" className="icon" onClick={() => set("scope", move(q.scope, i, 1))}>↓</button><button type="button" className="icon" style={{ color: "var(--danger)" }} onClick={() => set("scope", q.scope.filter((_, k) => k !== i))}>✕</button></td>
-                </tr>))}</tbody>
-            </table></div>
-            <button type="button" className="btn secondary small" style={{ marginTop: 8 }} onClick={() => set("scope", [...q.scope, { module: "", capability: "" }])}>+ Scope row</button>
-          </div>
-
-          <div className="card">
-            <h2>Includes &amp; terms</h2>
-            <div className="formgrid">
-              <label className="field full">The subscription includes — one per line<textarea rows={5} value={q.includes ?? ""} onChange={(e) => set("includes", e.target.value)} /></label>
-              <label className="field full">Commercial terms &amp; conditions — one per line<textarea rows={9} value={q.terms ?? ""} onChange={(e) => set("terms", e.target.value)} /></label>
-              <label className="field full">Internal note (not printed)<input value={q.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
-            </div>
-          </div>
+      {/* ---------------- the quotation, edited directly on the letterhead ---------------- */}
+      <article className="invoice on-letterhead qdoc">
+        <div className="lh-band lh-top" style={{ backgroundImage: `url("${paper.letterhead}")` }} role="img" aria-label={`${paper.company} letterhead`} />
+        <div className="qtitle">QUOTATION</div>
+        {draft && <div className="qdraft">Draft</div>}
+        <div className="qref">
+          <div><small>Quotation no.</small><b className="mono">{initial?.number ?? "— (given on save)"}</b></div>
+          <div><small>Date</small><input type="date" value={q.quote_date} onChange={(e) => set("quote_date", e.target.value)} aria-label="Quotation date" /></div>
+          <div><small>Valid until</small><input type="date" value={q.valid_until ?? ""} onChange={(e) => set("valid_until", e.target.value)} aria-label="Valid until" /></div>
+          <div><small>Currency</small><b>INR (₹)</b></div>
         </div>
 
-        <div className="sticky">
-          <div className="card">
-            <h2>{initial?.number ?? "New quotation"}</h2>
-            <div className="side2">
-              <label className="field">Date<input type="date" value={q.quote_date} onChange={(e) => set("quote_date", e.target.value)} /></label>
-              <label className="field">Valid until<input type="date" value={q.valid_until ?? ""} onChange={(e) => set("valid_until", e.target.value)} /></label>
-              <label className="field">Discount %<input {...NUM} value={q.discount_pct} onChange={(e) => set("discount_pct", Number(e.target.value) || 0)} /></label>
-              <label className="field">GST %<input {...NUM} value={q.gst_rate} onChange={(e) => set("gst_rate", Number(e.target.value) || 0)} /></label>
-            </div>
-            <div className="tot" style={{ marginTop: 12 }}>
-              <span>Recurring (subscriptions)</span><b>{inr(q.lines.filter((l) => /per_(user_)?(month|year)/.test(l.basis)).reduce((a, l) => a + lineAmount(l), 0))}</b>
-              <span>One-time &amp; services</span><b>{inr(q.lines.filter((l) => !/per_(user_)?(month|year)/.test(l.basis)).reduce((a, l) => a + lineAmount(l), 0))}</b>
-              <span>Sub-total</span><b>{inr(t.subtotal)}</b>
-              {t.discount > 0 && <><span>Discount ({q.discount_pct}%)</span><b style={{ color: "var(--danger)" }}>− {inr(t.discount)}</b></>}
-              <span>GST @ {q.gst_rate}%</span><b>{inr(t.gst)}</b>
-            </div>
-            <div className="grand"><span>Grand total</span><b>{inr(t.total)}</b></div>
-            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>{inWords(t.total)}</p>
-            {msg.error && <div className="alert danger" style={{ marginTop: 10 }}>{msg.error}</div>}
-            {msg.ok && <div className="alert ok" style={{ marginTop: 10 }}>{msg.ok}</div>}
-            <div className="stack" style={{ marginTop: 12, gap: 8, display: "grid" }}>
-              <button type="button" className="btn" disabled={busy} onClick={() => save(true)}>{busy ? "Saving…" : "Save & open PDF"}</button>
-              <button type="button" className="btn secondary" disabled={busy} onClick={() => save(false)}>Save</button>
+        <div className="invoice-label">To</div>
+        <div className="qto">
+          <input value={q.to_name} onChange={(e) => set("to_name", e.target.value)} placeholder="M/s. Company name *" style={{ fontWeight: 700, fontSize: 15, color: "#0b1f45" }} aria-label="Company name" />
+          <input value={q.to_gstin ?? ""} maxLength={15} onChange={(e) => set("to_gstin", e.target.value.toUpperCase())} placeholder="GSTIN" aria-label="GSTIN" className="mono" />
+          <input value={q.to_attn ?? ""} onChange={(e) => set("to_attn", e.target.value)} placeholder="Attn: name / designation" aria-label="Attention" />
+          <input value={q.to_email ?? ""} onChange={(e) => set("to_email", e.target.value)} placeholder="Email" aria-label="Email" />
+          <input value={q.to_address ?? ""} onChange={(e) => set("to_address", e.target.value)} placeholder="Address" aria-label="Address" />
+          <input value={q.to_phone ?? ""} onChange={(e) => set("to_phone", e.target.value)} placeholder="Phone" aria-label="Phone" />
+        </div>
+
+        <div className="qsubject"><b style={{ whiteSpace: "nowrap" }}>SUBJECT:</b><input value={q.subject} onChange={(e) => set("subject", e.target.value)} placeholder="What this quotation is for *" aria-label="Subject" /></div>
+        <p style={{ margin: "4px 0" }}>Dear Sir / Madam,</p>
+        <textarea rows={3} value={q.intro ?? ""} onChange={(e) => set("intro", e.target.value)} placeholder="Opening paragraph" aria-label="Opening paragraph" />
+
+        <h4>1. SCOPE OF SUPPLY</h4>
+        <div className="invoice-scroll"><table className="invoice-lines">
+          <thead><tr><th style={{ width: 28 }}>#</th><th style={{ width: "32%" }}>Module</th><th>Included capability</th><th style={{ width: 64 }} /></tr></thead>
+          <tbody>{q.scope.length ? q.scope.map((s0, i) => (
+            <tr key={i}><td>{i + 1}</td>
+              <td><input value={s0.module} onChange={(e) => setScope(i, { module: e.target.value })} style={{ fontWeight: 600 }} aria-label="Module" /></td>
+              <td><textarea rows={2} value={s0.capability} onChange={(e) => setScope(i, { capability: e.target.value })} aria-label="Included capability" /></td>
+              <td className="rowtools"><button type="button" title="Up" onClick={() => set("scope", move(q.scope, i, -1))}>↑</button><button type="button" title="Down" onClick={() => set("scope", move(q.scope, i, 1))}>↓</button><button type="button" title="Remove" style={{ color: "var(--danger)" }} onClick={() => set("scope", q.scope.filter((_, k) => k !== i))}>✕</button></td>
+            </tr>)) : <tr><td colSpan={4} className="muted" style={{ textAlign: "center" }}>Add an app from the panel — its scope fills in here.</td></tr>}</tbody>
+        </table></div>
+        <button type="button" className="btn ghost small addrow" onClick={() => set("scope", [...q.scope, { module: "", capability: "" }])}>+ Scope row</button>
+
+        <h4>2. COMMERCIAL PROPOSAL</h4>
+        <div className="invoice-scroll"><table className="invoice-lines qprice">
+          <thead><tr><th style={{ width: 28 }}>#</th><th>Particulars</th><th style={{ width: 150 }}>Basis</th><th className="num" style={{ width: 70 }}>Qty</th><th className="num hide-sm" style={{ width: 66 }}>Months</th><th className="num" style={{ width: 100 }}>Rate ₹</th><th className="num" style={{ width: 108 }}>Amount ₹</th><th style={{ width: 64 }} /></tr></thead>
+          <tbody>{q.lines.length ? q.lines.map((l, i) => (
+            <tr key={i}>
+              <td>{i + 1}</td>
+              <td><input value={l.particulars} onChange={(e) => setLine(i, { particulars: e.target.value })} placeholder="What is supplied" style={{ fontWeight: 600, minWidth: 160 }} aria-label="Particulars" />
+                <input value={l.detail ?? ""} onChange={(e) => setLine(i, { detail: e.target.value })} placeholder="detail line (optional)" style={{ fontSize: 12, color: "var(--muted)" }} aria-label="Detail" /></td>
+              <td><select value={l.basis} onChange={(e) => setLine(i, { basis: e.target.value as Basis })} aria-label="Basis">{Object.entries(BASIS).map(([k, b]) => <option key={k} value={k}>{b.label}</option>)}</select>
+                <small className="muted">{basisText(l, seat(l.product_code))}</small></td>
+              <td className="num"><input {...NUM} value={l.qty} onChange={(e) => setLine(i, { qty: Number(e.target.value) || 0 })} aria-label="Quantity" /></td>
+              <td className="num hide-sm">{BASIS[l.basis].months ? <input {...NUM} value={l.months ?? 12} onChange={(e) => setLine(i, { months: Number(e.target.value) || 1 })} aria-label="Months" /> : <span className="muted">—</span>}</td>
+              <td className="num"><input {...NUM} value={l.rate} onChange={(e) => setLine(i, { rate: Number(e.target.value) || 0 })} aria-label="Rate" /></td>
+              <td className="num"><b>{inr(lineAmount(l), false)}</b></td>
+              <td className="rowtools"><button type="button" title="Up" onClick={() => set("lines", move(q.lines, i, -1))}>↑</button><button type="button" title="Down" onClick={() => set("lines", move(q.lines, i, 1))}>↓</button><button type="button" title="Remove" style={{ color: "var(--danger)" }} onClick={() => set("lines", q.lines.filter((_, k) => k !== i))}>✕</button></td>
+            </tr>)) : <tr><td colSpan={8} className="muted" style={{ textAlign: "center", padding: 14 }}>Add an app or a costing item from the panel.</td></tr>}</tbody>
+        </table></div>
+        <button type="button" className="btn ghost small addrow" onClick={() => set("lines", [...q.lines, { particulars: "", detail: "", basis: "one_time", qty: 1, rate: 0, months: 12 }])}>+ Blank line</button>
+
+        <section className="invoice-bottom">
+          <div className="invoice-words"><div className="invoice-label">Amount in words</div><div>{inWords(t.total)}</div></div>
+          <table className="invoice-totals"><tbody>
+            <tr><th>Sub-total</th><td>{inr(t.subtotal)}</td></tr>
+            {t.discount > 0 && <><tr><th>Less: discount @ {q.discount_pct}%</th><td>− {inr(t.discount)}</td></tr><tr><th>Total before GST</th><td>{inr(t.taxable)}</td></tr></>}
+            <tr><th>GST @ {q.gst_rate}%</th><td>{inr(t.gst)}</td></tr>
+            <tr className="grand qgrand"><th>GRAND TOTAL</th><td>{inr(t.total)}</td></tr>
+          </tbody></table>
+        </section>
+
+        <h4>3. THE SUBSCRIPTION INCLUDES <small className="muted" style={{ fontWeight: 400 }}>— one per line</small></h4>
+        <textarea rows={5} value={q.includes ?? ""} onChange={(e) => set("includes", e.target.value)} aria-label="The subscription includes" />
+        <h4>4. COMMERCIAL TERMS &amp; CONDITIONS <small className="muted" style={{ fontWeight: 400 }}>— one per line</small></h4>
+        <textarea rows={8} value={q.terms ?? ""} onChange={(e) => set("terms", e.target.value)} aria-label="Terms and conditions" />
+
+        <footer className="invoice-foot">
+          <span className="invoice-foot-note">Customer acceptance is printed beside our signatory on the PDF.</span>
+          <div className="invoice-sign-wrap">
+            {paper.seal && <img src={paper.seal} alt="Company seal" className="invoice-seal" />}
+            <div className="invoice-sign">
+              <div>For {paper.company}</div>
+              <div className="invoice-sig-area">{paper.signature && <img src={paper.signature} alt="Signature" className="invoice-signature" />}</div>
+              {paper.signatory && <div className="invoice-sign-name">{paper.signatory}</div>}
+              <div className="muted" style={{ fontSize: 11.5 }}>Authorised Signatory</div>
             </div>
           </div>
+        </footer>
+        <div className="lh-band lh-bottom" style={{ backgroundImage: `url("${paper.letterhead}")` }} aria-hidden="true" />
+      </article>
+
+      {/* ---------------- the panel, like the draft-invoice panel ---------------- */}
+      <aside className="stack qpanel">
+        <div className="card">
+          <h2>{initial?.number ?? "New quotation"}</h2>
+          <label className="field">Against an enquiry
+            <select value={q.lead_id ?? ""} onChange={(e) => pickLead(e.target.value)}>
+              <option value="">— none: draft manually —</option>
+              {leads.map((l) => <option key={l.id} value={l.id}>{new Date(l.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short" })} · {l.company || l.name} · {l.product_name || BL[l.business] || l.business}{l.status === "quoted" ? " (quoted)" : ""}</option>)}
+            </select>
+            {leadNow?.message && <span className="help" style={{ whiteSpace: "pre-line" }}>“{leadNow.message.slice(0, 220)}{leadNow.message.length > 220 ? "…" : ""}”</span>}
+          </label>
+          <label className="field" style={{ marginTop: 8 }}>Existing customer
+            <select value={q.customer_id ?? ""} onChange={(e) => pickCustomer(e.target.value)}><option value="">— a new prospect —</option>{customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+          </label>
         </div>
-      </div>
+
+        <div className="card">
+          <h2>Add apps &amp; costing</h2>
+          <p className="muted" style={{ fontSize: 12.5, marginTop: -4 }}>An app adds its yearly subscription, scope and the costing items marked auto. “monthly” bills it per month instead.</p>
+          <div className="chips">{products.map((pr) => {
+            const m = pr.prices.find((x) => x.period === "month"), y = pr.prices.find((x) => x.period === "year");
+            return <span key={pr.code} style={{ display: "inline-flex", gap: 4 }}>
+              <button type="button" className={quoted.has(pr.code) ? "on" : ""} onClick={() => addApp(pr.code, "year")}>{quoted.has(pr.code) ? "✓ " : "+ "}{pr.name}{y ? ` · ${inr(y.unit_amount)}/yr` : ""}</button>
+              {m && <button type="button" onClick={() => addApp(pr.code, "month")}>monthly</button>}
+            </span>;
+          })}</div>
+          <select defaultValue="" onChange={(e) => { if (e.target.value) addCost(e.target.value); e.target.value = ""; }} style={{ marginTop: 10, width: "100%" }}>
+            <option value="">+ Add from the costing catalogue…</option>
+            {costs.filter((c) => c.active).map((c) => <option key={c.id} value={c.id}>{c.name} — {inr(c.amount)} {BASIS[c.basis].label.toLowerCase()}</option>)}
+          </select>
+        </div>
+
+        <div className="card">
+          <h2>Totals</h2>
+          <div className="formgrid" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)" }}>
+            <label className="field">Discount %<input {...NUM} value={q.discount_pct} onChange={(e) => set("discount_pct", Number(e.target.value) || 0)} /></label>
+            <label className="field">GST %<input {...NUM} value={q.gst_rate} onChange={(e) => set("gst_rate", Number(e.target.value) || 0)} /></label>
+          </div>
+          <div className="tot" style={{ marginTop: 10 }}>
+            <span>Recurring (subscriptions)</span><b>{inr(recurring)}</b>
+            <span>One-time &amp; services</span><b>{inr(t.subtotal - recurring)}</b>
+            {t.discount > 0 && <><span>Discount</span><b style={{ color: "var(--danger)" }}>− {inr(t.discount)}</b></>}
+            <span>GST</span><b>{inr(t.gst)}</b>
+          </div>
+          <div className="grand"><span>Grand total</span><b>{inr(t.total)}</b></div>
+          <label className="field" style={{ marginTop: 10 }}>Internal note (not printed)<input value={q.notes ?? ""} onChange={(e) => set("notes", e.target.value)} /></label>
+          {msg.error && <div className="alert danger" style={{ marginTop: 10 }}>{msg.error}</div>}
+          {msg.ok && <div className="alert ok" style={{ marginTop: 10 }}>{msg.ok}</div>}
+          <div style={{ display: "grid", gap: 8, marginTop: 12 }}>
+            <button type="button" className="btn" disabled={busy} onClick={() => save(true)}>{busy ? "Saving…" : "Save & open PDF"}</button>
+            <button type="button" className="btn secondary" disabled={busy} onClick={() => save(false)}>Save</button>
+          </div>
+          <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>The PDF is printed on the letterhead with the seal and signature{draft ? ", marked DRAFT until you mark it sent" : ""}.</p>
+        </div>
+        {children}
+      </aside>
     </div>
   );
 }

@@ -11,7 +11,7 @@ export type QuoteDoc = {
   seat_label?: (code?: string | null) => string;
 };
 
-/** Quotation on the letterhead; drafts carry a DRAFT watermark and no seal / signature until they are sent. */
+/** Quotation on the letterhead; drafts carry a DRAFT watermark (with the seal and signature, like invoices). */
 export async function quotePdf(q: QuoteDoc, letterhead?: Uint8Array | null, art?: SignArt): Promise<Uint8Array> {
   const company = q.seller.trade_name || "KMR Group of Companies";
   const draft = !q.status || q.status === "draft";
@@ -55,6 +55,6 @@ export async function quotePdf(q: QuoteDoc, letterhead?: Uint8Array | null, art?
   if (lines(q.includes).length) { d.heading(`${n++}. THE SUBSCRIPTION INCLUDES`); d.bullets(lines(q.includes)); d.y -= 6; }
   if (lines(q.terms).length) { d.heading(`${n++}. COMMERCIAL TERMS & CONDITIONS`); d.bullets(lines(q.terms), true); d.y -= 6; }
 
-  await d.signBlock({ company, name: q.seller.signatory_name, title: q.seller.signatory_title, art: draft ? undefined : art, acceptance: true });
+  await d.signBlock({ company, name: q.seller.signatory_name, title: q.seller.signatory_title, art, acceptance: true });
   return d.finish({ ref: q.number ?? "Draft quotation", note: "Confidential commercial proposal", watermark: draft ? "DRAFT" : null });
 }

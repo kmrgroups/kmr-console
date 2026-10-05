@@ -126,16 +126,15 @@ export function InvoiceDoc({ inv, lines, seller, buyer, logoUrl, sealUrl, signat
       )}
       <footer className="invoice-foot">
         <span className="invoice-foot-note">{sealUrl || signatureUrl ? "This is a computer-generated invoice." : "This is a computer-generated invoice and needs no signature."}</span>
-        <div className="invoice-sign">
-          <div>For {sellerName}</div>
-          {(sealUrl || signatureUrl) && (
-            <div className="invoice-sign-art">
-              {sealUrl && <img src={sealUrl} alt="Seal" className="invoice-seal" />}
-              {signatureUrl && <img src={signatureUrl} alt="Signature" className="invoice-signature" />}
-            </div>
-          )}
-          {seller.signatory_name && <div className="invoice-sign-name">{seller.signatory_name}{seller.signatory_title ? `, ${seller.signatory_title}` : ""}</div>}
-          <div className="muted" style={{ fontSize: 11.5 }}>Authorised Signatory</div>
+        <div className="invoice-sign-wrap">
+          {/* the seal stands beside the signatory area; the signature is inside it, above the name */}
+          {sealUrl && <img src={sealUrl} alt="Company seal" className="invoice-seal" />}
+          <div className="invoice-sign">
+            <div>For {sellerName}</div>
+            <div className="invoice-sig-area">{signatureUrl && <img src={signatureUrl} alt="Signature" className="invoice-signature" />}</div>
+            {seller.signatory_name && <div className="invoice-sign-name">{seller.signatory_name}{seller.signatory_title ? `, ${seller.signatory_title}` : ""}</div>}
+            <div className="muted" style={{ fontSize: 11.5 }}>Authorised Signatory</div>
+          </div>
         </div>
       </footer>
       {letterheadUrl && <div className="lh-band lh-bottom" style={{ backgroundImage: `url("${letterheadUrl}")` }} aria-hidden="true" />}

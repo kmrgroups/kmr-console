@@ -55,7 +55,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
   const month = today.slice(0, 7);
 
   return (
-    <AppShell staff={staff} active="/billing">
+    <AppShell staff={staff} active={tab === "quotes" ? "/billing?tab=quotes" : "/billing"}>
       <div className="pagehead"><div><h1>Prices &amp; invoices</h1><p>Quotations with detailed costing (PDF on your letterhead), invoices, the price list and costing catalogue, and seller details.</p></div>
         <a className="btn" href={p("/quotes/new")}>+ New quotation</a></div>
 

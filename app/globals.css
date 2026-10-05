@@ -453,11 +453,8 @@ body:has(.kmr-login) .powered-by a { color: var(--kmr-gold-2); }
 .invoice-foot { align-items: flex-end; }
 .invoice-sign { text-align: right; min-width: 220px; color: var(--text); font-size: 12.5px; }
 .invoice-sign > div:first-child { font-weight: 600; }
-.invoice-sign-art { display: flex; align-items: center; justify-content: flex-end; gap: 16px; margin: 6px 0 4px; min-height: 84px; }   /* seal and signature side by side, never on top of each other */
-.invoice-seal { height: 84px; width: auto; flex: none; opacity: 0.92; }
-.invoice-signature { height: 50px; max-width: 180px; width: auto; object-fit: contain; flex: none; }
 .invoice-sign-name { font-weight: 600; }
-@media (max-width: 700px) { .invoice-foot { flex-direction: column; align-items: stretch; } .invoice-sign { text-align: left; } .invoice-sign-art { justify-content: flex-start; } }
+@media (max-width: 700px) { .invoice-foot { flex-direction: column; align-items: stretch; } .invoice-sign { text-align: left; } .invoice-sign-wrap { justify-content: flex-start; } }
 
 /* ---------- Website CMS ---------- */
 .cms { display: grid; grid-template-columns: 232px minmax(0, 1fr); gap: 24px; align-items: start; }
@@ -543,3 +540,11 @@ tr.hidden-row td:last-child { opacity: 1; }
 .invoice.on-letterhead .invoice-stamp { top: auto; margin-top: -4px; }
 @media (max-width: 700px) { .lh-band { margin: 0 -16px; } }
 @media print { .lh-band { margin: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* signature block: the seal beside the signatory area; the signature inside it, sitting on the line above the name */
+.invoice-sign-wrap { display: flex; align-items: flex-end; justify-content: flex-end; gap: 18px; flex-wrap: wrap; }
+.invoice-seal { height: 96px; width: auto; flex: none; opacity: 0.92; }
+.invoice-sign { min-width: 220px; }
+.invoice-sig-area { height: 58px; display: flex; align-items: flex-end; justify-content: flex-end; border-bottom: 1px solid var(--border); margin: 6px 0 4px; }
+.invoice-signature { max-height: 52px; max-width: 200px; width: auto; object-fit: contain; display: block; }
+@media (max-width: 700px) { .invoice-sig-area { justify-content: flex-start; } .invoice-seal { height: 84px; } }

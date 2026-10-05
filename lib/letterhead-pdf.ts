@@ -146,34 +146,34 @@ export class LetterheadDoc {
   }
 
   /**
-   * The signature block: "For <company>", then the SEAL on the left and the SIGNATURE beside it on the right —
-   * never on top of each other — then the signatory's name. `right` = the block sits on the right half.
+   * The signature block. The SIGNATURE sits inside the signatory area, on the line above the signatory's name;
+   * the SEAL stands beside the area (to its left), never on top of the signature.
+   * acceptance = quotation layout: our signatory area (with the seal beside it) on the left, the customer's on the right.
    */
   async signBlock(o: { company: string; name?: string | null; title?: string | null; art?: SignArt; left?: string; acceptance?: boolean }) {
     const seal = await this.image(o.art?.seal), sig = await this.image(o.art?.signature);
-    const half = (X1 - X0 - 20) / 2, h = 118;
-    this.ensure(h + 12); this.y -= 8;
-    const boxes: { x: number; title: string; ours: boolean }[] = o.acceptance
-      ? [{ x: X0, title: `For ${o.company}`.toUpperCase(), ours: true }, { x: X0 + half + 20, title: "CUSTOMER ACCEPTANCE", ours: false }]
-      : [{ x: X0 + half + 20, title: `For ${o.company}`, ours: true }];
-    if (!o.acceptance && o.left) this.wrap(o.left, this.reg, 8, half).forEach((l, i) => this.text(l, X0, this.y - 60 - i * 11, this.reg, 8, MUTED));
-    for (const b of boxes) {
-      this.page.drawRectangle({ x: b.x, y: this.y - h, width: half, height: h, borderColor: LINE, borderWidth: 0.8, color: b.ours ? GOLDBG : WHITE });
-      this.text(b.title, b.x + 10, this.y - 16, this.bold, 8.6, NAVY);
-      const artTop = this.y - 24, artH = 58;
-      if (b.ours) {
-        // seal: left part of the box; signature: the space to its right
-        let sx = b.x + 10;
-        if (seal) { const s = artH / seal.height; this.page.drawImage(seal, { x: sx, y: artTop - artH, width: seal.width * s, height: artH, opacity: 0.92 }); sx += seal.width * s + 12; }
-        if (sig) {
-          const maxW = b.x + half - 10 - sx, maxH = 40, s = Math.min(maxW / sig.width, maxH / sig.height);
-          this.page.drawImage(sig, { x: sx, y: artTop - artH + (artH - sig.height * s) / 2 - 4, width: sig.width * s, height: sig.height * s });
-        }
+    const half = (X1 - X0 - 20) / 2, h = 104, sealH = 74, sealGap = 12;
+    const sealW = seal ? (sealH / seal.height) * seal.width : 0;
+    this.ensure(h + 14); this.y -= 8;
+    const top = this.y;
+    // our signatory area: the right half for invoices, the left half (after the seal) for quotations
+    const oursX = o.acceptance ? X0 + (seal ? sealW + sealGap : 0) : X0 + half + 20, oursW = o.acceptance ? half - (seal ? sealW + sealGap : 0) : half;
+    if (seal) this.page.drawImage(seal, { x: oursX - sealGap - sealW, y: top - 14 - sealH, width: sealW, height: sealH, opacity: 0.92 });
+    if (!o.acceptance && o.left) this.wrap(o.left, this.reg, 8, half - (seal ? sealW + 2 * sealGap : 0)).forEach((l, i) => this.text(l, X0, top - 60 - i * 11, this.reg, 8, MUTED));
+    const box = (x: number, w: number, title: string, ours: boolean) => {
+      this.page.drawRectangle({ x, y: top - h, width: w, height: h, borderColor: LINE, borderWidth: 0.8, color: ours ? GOLDBG : WHITE });
+      this.text(title, x + 10, top - 16, this.bold, 8.6, NAVY);
+      const lineY = top - h + 30;
+      if (ours && sig) {                                   // the signature rests on the signatory line
+        const maxW = w - 20, maxH = 44, sc = Math.min(maxW / sig.width, maxH / sig.height), sw = sig.width * sc, sh = sig.height * sc;
+        this.page.drawImage(sig, { x: x + 10, y: lineY + 2, width: sw, height: sh });
       }
-      this.page.drawLine({ start: { x: b.x + 10, y: this.y - h + 30 }, end: { x: b.x + half - 10, y: this.y - h + 30 }, thickness: 0.6, color: MUTED });
-      if (b.ours && o.name) this.text(`${o.name}${o.title ? `, ${o.title}` : ""}`, b.x + 10, this.y - h + 18, this.med, 8.4, INK);
-      this.text(b.ours ? "Authorised signatory" : "Authorised signatory · name / designation", b.x + 10, this.y - h + 7, this.reg, 7.4, MUTED);
-    }
+      this.page.drawLine({ start: { x: x + 10, y: lineY }, end: { x: x + w - 10, y: lineY }, thickness: 0.6, color: MUTED });
+      if (ours && o.name) this.text(`${o.name}${o.title ? `, ${o.title}` : ""}`, x + 10, top - h + 18, this.med, 8.4, INK);
+      this.text(ours ? "Authorised signatory" : "Authorised signatory · name / designation", x + 10, top - h + 7, this.reg, 7.4, MUTED);
+    };
+    box(oursX, oursW, o.acceptance ? `For ${o.company}`.toUpperCase() : `For ${o.company}`, true);
+    if (o.acceptance) box(X0 + half + 20, half, "CUSTOMER ACCEPTANCE", false);
     this.y -= h + 10;
   }
 
