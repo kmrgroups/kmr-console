@@ -132,7 +132,7 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
   });
   await step("Sales Flow, Calibration Hub, APQP, PPAP", async () => {
     const { data, error } = await d.rpc("demo_refresh", { p_cid: cust.id, p_full: false }); if (error) throw new Error(error.message);   // 0049: switches the four company-level apps on and adds their sample
-    return `on, with sample data (${Object.entries((data ?? {}) as Record<string, number>).filter(([k]) => ["sales", "calib", "apqp", "ppap"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")})`;
+    return `on, with sample data (${Object.entries((data ?? {}) as Record<string, number>).filter(([k]) => ["sales", "calib", "apqp", "ppap", "rmp"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")})`;
   });
   return { steps, password };
 }
