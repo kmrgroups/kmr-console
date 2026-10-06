@@ -5,6 +5,7 @@ import { assertManager } from "@/lib/auth";
 import { setFlash } from "@/lib/flash";
 import type { ActionState } from "@/lib/action-state";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { deleteCustomers } from "@/lib/customer-delete";
 import { DEMO, FLUSH_PARTS, flushPlatform, loadDemoEverywhere, removeDemoEverywhere, resetDemoLoginPassword, resetDemoWorkspace, restoreSettings, saveFullBackup } from "@/lib/test-data";
 
@@ -120,6 +121,20 @@ export async function removeTestCustomers(_: ActionState, form: FormData): Promi
     revalidatePath("/", "layout");
     const sk = r.skipped.length ? ` Not removed: ${r.skipped.map((x) => `${x.name} (${x.why})`).join("; ")}` : "";
     await setFlash({ ok: `Removed ${r.done.length} ${r.done.length === 1 ? "company" : "companies"}${r.done.length ? `: ${r.done.join(", ")}` : ""}. Backup ${r.backup}.${sk}` });
+  } catch (e) { return fail(e); }
+  redirect("/test-data");
+}
+
+/** Owner only: switch between Testing mode (test invoices can be deleted) and Live (invoices and payments are locked). */
+export async function setMode(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await owner();
+    const live = form.get("live") === "1";
+    if (live && String(form.get("confirm") ?? "").trim() !== "GO LIVE") return { error: "Type GO LIVE to confirm." };
+    const { error } = await createAdminClient().from("platform_settings").upsert({ key: "mode", value: { live }, updated_at: new Date().toISOString() });
+    if (error) return { error: error.message };
+    revalidatePath("/", "layout");
+    await setFlash({ ok: live ? "Live mode on: invoices and payments are now locked." : "Testing mode on: test invoices can be deleted." });
   } catch (e) { return fail(e); }
   redirect("/test-data");
 }

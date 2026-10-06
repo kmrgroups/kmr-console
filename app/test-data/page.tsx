@@ -5,9 +5,9 @@ import { Empty } from "@/components/ui";
 import { p } from "@/lib/base-path";
 import { DEMO, FLUSH_PARTS, demoStatus, listFullBackups } from "@/lib/test-data";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { checkCustomerDelete } from "@/lib/customer-delete";
+import { checkCustomerDelete, isTestingMode } from "@/lib/customer-delete";
 import { createClient } from "@/lib/supabase/server";
-import { cleanOut, loadDemo, purgeAllSample, purgeSample, removeDemo, removeTestCustomers, resetDemo, resetDemoPassword, takeFullBackup, uploadSettings } from "./actions";
+import { cleanOut, loadDemo, purgeAllSample, purgeSample, removeDemo, removeTestCustomers, setMode, resetDemo, resetDemoPassword, takeFullBackup, uploadSettings } from "./actions";
 
 export const metadata = { title: "Test data" };
 export const dynamic = "force-dynamic";
@@ -32,6 +32,7 @@ export default async function TestDataPage() {
   const report = (rep.data ?? []) as { name: string; slug: string; code: string | null; kind: string; counts: Record<string, number>; total: number }[];
   const realCos = report.filter((r) => r.kind !== "demo"), dirty = realCos.filter((r) => r.total > 0), demos = report.filter((r) => r.kind === "demo" && r.slug === DEMO.slug);
   const { data: purged } = await sb.from("sample_purge_log").select("customer_name,purged_at,counts").order("purged_at", { ascending: false }).limit(5);
+  const testing = await isTestingMode();
   const KEEP = ["C0009", "C0010"]; // ESBEE Precision Industries, Kavia Engineering: real customers, never pre-ticked
   const { data: allCos } = await createAdminClient().from("customers").select("id,name,code,kind,status").neq("kind", "demo").order("code");
   const cand = await Promise.all(((allCos ?? []) as { id: string; name: string; code: string | null; kind: string | null; status: string }[]).map(async (c) => ({ c, chk: await checkCustomerDelete(c.id) })));
@@ -67,10 +68,26 @@ export default async function TestDataPage() {
         {!!purged?.length && <p className="muted" style={{ fontSize: 12.5, marginBottom: 0 }}>Last clean-ups: {purged.map((x) => `${x.customer_name} (${new Date(x.purged_at).toLocaleDateString("en-IN")})`).join(" · ")}. Copies are kept in the database table <span className="mono">console.sample_purge_log</span>.</p>}
       </div>
 
+      {/* Testing / Live lock */}
+      <div className="card" style={{ borderLeft: `4px solid ${testing ? "var(--warn,#f59e0b)" : "var(--ok,#16a34a)"}` }}>
+        <h2>Testing mode / Live lock</h2>
+        {testing ? (
+          <>
+            <p className="muted" style={{ marginTop: 0 }}><b>Testing mode is ON.</b> Test invoices and payments can be deleted together with their customer. When you deploy for real customers, switch to Live: invoices and payments are then locked and can never be deleted.</p>
+            <ActionForm action={setMode} submitLabel="Go live (lock invoices)" variant="secondary" hidden={{ live: "1" }}><label className="field" style={{ maxWidth: 320 }}>Type GO LIVE to confirm<input name="confirm" autoComplete="off" placeholder="GO LIVE" /></label></ActionForm>
+          </>
+        ) : (
+          <>
+            <p className="muted" style={{ marginTop: 0 }}><b>Live mode is ON.</b> Invoices and payments are locked.</p>
+            <ActionForm action={setMode} submitLabel="Back to testing mode" variant="secondary" hidden={{ live: "0" }} confirm="Allow test invoices to be deleted again?" />
+          </>
+        )}
+      </div>
+
       {/* Remove test customers */}
       <div className="card" style={{ borderColor: "var(--danger)" }}>
         <h2>Remove test customers</h2>
-        <p className="muted" style={{ marginTop: 0 }}>Tick the companies that were created only for testing. One full backup is saved first. Companies with issued invoices or payments, and KMR’s own company, cannot be removed here. The demo workspace is not listed.</p>
+        <p className="muted" style={{ marginTop: 0 }}>Tick the companies that were created only for testing. One full backup is saved first. {testing ? "Testing mode is on, so test invoices and payments are deleted with the company." : "Live mode is on: companies with issued invoices or payments are locked."} KMR’s own company cannot be removed here. The demo workspace is not listed.</p>
         <ActionForm action={removeTestCustomers} submitLabel="Remove ticked companies" variant="danger" pendingLabel="Backing up, then removing…" confirm="Permanently remove the ticked companies and their data (a full backup is saved first)?">
           <div className="tablewrap"><table>
             <thead><tr><th></th><th>Company</th><th>Status</th><th>Can be removed?</th></tr></thead>

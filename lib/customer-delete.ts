@@ -10,6 +10,14 @@ import { saveFullBackup } from "@/lib/test-data";
  *  • KMR's own company and "internal" companies are never deleted;
  *  • a full backup is saved before anything is removed.
  */
+/** Testing mode (default): test invoices and payments may be deleted with their customer. "Go live" locks them for good-practice tax record keeping. */
+export async function isTestingMode(): Promise<boolean> {
+  try {
+    const { data } = await createAdminClient().from("platform_settings").select("value").eq("key", "mode").maybeSingle();
+    return (data?.value as { live?: boolean } | null)?.live !== true;
+  } catch { return true; }
+}
+
 export type DeleteInfo = {
   customer: { id: string; name: string; code: string | null; slug: string | null; kind: string | null } | null;
   blockers: string[];
@@ -20,6 +28,7 @@ export type DeleteInfo = {
 
 export async function checkCustomerDelete(id: string): Promise<DeleteInfo> {
   const d = createAdminClient();
+  const testing = await isTestingMode();
   const { data: c } = await d.from("customers").select("id,name,code,slug,kind").eq("id", id).maybeSingle();
   if (!c) return { customer: null, blockers: ["This company no longer exists."], drafts: 0, workspaces: 0, members: 0 };
   const blockers: string[] = [];
@@ -28,8 +37,8 @@ export async function checkCustomerDelete(id: string): Promise<DeleteInfo> {
   const { data: invs } = await d.from("invoices").select("id,status").eq("customer_id", id);
   const all = (invs ?? []) as { id: string; status: string }[];
   const kept = all.filter((i) => i.status !== "draft");
-  if (kept.length) blockers.push(`It has ${kept.length} issued, paid or cancelled invoice${kept.length > 1 ? "s" : ""}. Invoices are tax records and must be kept — set the company to Inactive instead.`);
-  if (all.length) {
+  if (!testing && kept.length) blockers.push(`It has ${kept.length} issued, paid or cancelled invoice${kept.length > 1 ? "s" : ""}. Invoices are tax records and must be kept — set the company to Inactive instead.`);
+  if (!testing && all.length) {
     const { count } = await d.from("payments").select("id", { count: "exact", head: true }).in("invoice_id", all.map((i) => i.id));
     if (count) blockers.push(`It has ${count} recorded payment${count > 1 ? "s" : ""}, which must be kept.`);
   }
@@ -69,13 +78,17 @@ export async function deleteCustomer(id: string, typed: string, opts: { skipConf
   const emails = new Set(((mem ?? []) as { email: string }[]).map((m) => m.email.toLowerCase()));
 
   // 2. draft invoices (not yet tax records)
-  const { data: drafts } = await d.from("invoices").select("id").eq("customer_id", id).eq("status", "draft");
+  const testing = await isTestingMode();
+  let q = d.from("invoices").select("id").eq("customer_id", id);
+  if (!testing) q = q.eq("status", "draft");
+  const { data: drafts } = await q;
   const dids = ((drafts ?? []) as { id: string }[]).map((x) => x.id);
   if (dids.length) {
+    if (testing) { const pr = await d.from("payments").delete().in("invoice_id", dids); if (pr.error) throw new Error(`Could not remove the payments: ${pr.error.message}`); }
     await d.from("invoice_lines").delete().in("invoice_id", dids);
     const r = await d.from("invoices").delete().in("id", dids);
     if (r.error) throw new Error(`Could not remove the draft invoices: ${r.error.message}`);
-    steps.push({ part: "Draft invoices", ok: true, note: `${dids.length} removed` });
+    steps.push({ part: testing ? "Test invoices" : "Draft invoices", ok: true, note: `${dids.length} removed` });
   }
 
   // 3. the company's workspaces in the apps
