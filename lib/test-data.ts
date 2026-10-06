@@ -137,6 +137,17 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
   return { steps, password };
 }
 
+/** The demo login's password is shown only once when the demo is set up; this gives it a new one (shown once again). */
+export async function resetDemoLoginPassword(): Promise<string> {
+  const d = db();
+  const login = await ensureLogin(DEMO.email, DEMO.person);
+  const password = tempPassword();
+  const { error } = await d.auth.admin.updateUserById(login.id, { password });
+  if (error) throw new Error(`Could not set the new password: ${error.message}`);
+  try { await d.schema("hrm").from("app_users").update({ must_change_password: false }).eq("id", login.id); } catch { /* HRM not set up for the demo */ }
+  return password;
+}
+
 /** Reload the demo workspace's sample data from scratch (also done every night). */
 export async function resetDemoWorkspace(): Promise<unknown> {
   const { data, error } = await db().rpc("demo_refresh_all"); if (error) throw new Error(error.message);

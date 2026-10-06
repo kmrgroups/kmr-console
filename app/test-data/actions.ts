@@ -5,7 +5,7 @@ import { assertManager } from "@/lib/auth";
 import { setFlash } from "@/lib/flash";
 import type { ActionState } from "@/lib/action-state";
 import { createClient } from "@/lib/supabase/server";
-import { DEMO, FLUSH_PARTS, flushPlatform, loadDemoEverywhere, removeDemoEverywhere, resetDemoWorkspace, restoreSettings, saveFullBackup } from "@/lib/test-data";
+import { DEMO, FLUSH_PARTS, flushPlatform, loadDemoEverywhere, removeDemoEverywhere, resetDemoLoginPassword, resetDemoWorkspace, restoreSettings, saveFullBackup } from "@/lib/test-data";
 
 const owner = async () => { const s = await assertManager(); if (s.role !== "owner") throw new Error("Only the owner can use Test data."); return s; };
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
@@ -49,6 +49,15 @@ export async function resetDemo(_: ActionState): Promise<ActionState> {
     revalidatePath("/test-data");
     return { ok: "Demo workspace reset: its sample data was reloaded." };
   } catch (e) { return fail(e); }
+}
+
+export async function resetDemoPassword(_: ActionState): Promise<ActionState> {
+  try {
+    await owner();
+    const password = await resetDemoLoginPassword();
+    await setFlash({ ok: `New demo login password — email ${DEMO.email} · password ${password} (shown only now — write it down). Sign in at www.kmr-groups.com/it/app/${DEMO.slug}` });
+  } catch (e) { return fail(e); }
+  redirect("/test-data");
 }
 
 export async function removeDemo(_: ActionState): Promise<ActionState> {
