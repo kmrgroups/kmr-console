@@ -15,8 +15,9 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   if (status) query = query.eq("status", status);
   if (q) { const s = q.replace(/[%,()]/g, " ").trim(); query = query.or(`name.ilike.%${s}%,code.ilike.%${s}%,contact_email.ilike.%${s}%`); }
   // KMR demo workspaces are not customers: hidden unless asked for (before migration 0049 there is no "kind", so nothing is hidden)
-  let { data, error } = demo ? await query : await query.neq("kind", "demo");
-  if (error) ({ data } = await query);
+  // "Show demo workspaces" shows ONLY demo workspaces; the normal view shows only real customers
+  let { data, error } = demo ? await query.eq("kind", "demo") : await query.neq("kind", "demo");
+  if (error) ({ data } = demo ? { data: [] as NonNullable<typeof data> } : await query);
   return (
     <AppShell staff={staff} active="/customers">
       <div className="pagehead"><div><h1>Customers</h1><p>Companies using, piloting or interested in KMR products.</p></div>
@@ -25,7 +26,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
         <input name="q" defaultValue={q} placeholder="Search name, code or email" />
         <select name="status" defaultValue={status}><option value="">All statuses</option>{["lead", "pilot", "active", "inactive"].map((s) => <option key={s}>{s}</option>)}</select>
         <button className="btn secondary small">Search</button>
-        <a className="btn ghost small" href={p(demo ? "/customers" : "/customers?demo=1")}>{demo ? "Hide demo workspaces" : "Show demo workspaces"}</a>
+        <a className="btn ghost small" href={p(demo ? "/customers" : "/customers?demo=1")}>{demo ? "Back to real customers" : "Show demo workspaces"}</a>
       </form>
       <div className="card" style={{ padding: 0 }}>
         {data?.length ? (
@@ -41,7 +42,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
                 <td>{fmtDate(c.created_at)}</td>
               </tr>))}</tbody>
           </table></div>
-        ) : <Empty>{q || status ? "No customers match." : "No customers yet. Add the first one."}</Empty>}
+        ) : <Empty>{q || status ? "No customers match." : demo ? "No demo workspace yet. Set it up under Test data." : "No customers yet. Add the first one."}</Empty>}
       </div>
     </AppShell>
   );

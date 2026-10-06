@@ -5,6 +5,7 @@ import { assertManager } from "@/lib/auth";
 import { setFlash } from "@/lib/flash";
 import type { ActionState } from "@/lib/action-state";
 import { createClient } from "@/lib/supabase/server";
+import { deleteCustomers } from "@/lib/customer-delete";
 import { DEMO, FLUSH_PARTS, flushPlatform, loadDemoEverywhere, removeDemoEverywhere, resetDemoLoginPassword, resetDemoWorkspace, restoreSettings, saveFullBackup } from "@/lib/test-data";
 
 const owner = async () => { const s = await assertManager(); if (s.role !== "owner") throw new Error("Only the owner can use Test data."); return s; };
@@ -104,6 +105,21 @@ export async function cleanOut(_: ActionState, form: FormData): Promise<ActionSt
     revalidatePath("/", "layout");
     const said = Object.entries(result).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(" · ");
     await setFlash({ ok: `Cleaned out. ${said}. A full backup taken just before is listed below (${backup.split("/").pop()}).` });
+  } catch (e) { return fail(e); }
+  redirect("/test-data");
+}
+
+/** Owner only: remove the ticked test customers (blocked ones are skipped and reported). */
+export async function removeTestCustomers(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await owner();
+    if (String(form.get("confirm") ?? "").trim() !== "DELETE CUSTOMERS") return { error: "Type DELETE CUSTOMERS to confirm." };
+    const ids = form.getAll("ids").map(String).filter(Boolean);
+    if (!ids.length) return { error: "Tick at least one company." };
+    const r = await deleteCustomers(ids);
+    revalidatePath("/", "layout");
+    const sk = r.skipped.length ? ` Not removed: ${r.skipped.map((x) => `${x.name} (${x.why})`).join("; ")}` : "";
+    await setFlash({ ok: `Removed ${r.done.length} ${r.done.length === 1 ? "company" : "companies"}${r.done.length ? `: ${r.done.join(", ")}` : ""}. Backup ${r.backup}.${sk}` });
   } catch (e) { return fail(e); }
   redirect("/test-data");
 }

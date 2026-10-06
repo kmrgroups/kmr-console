@@ -50,18 +50,20 @@ export async function checkCustomerDelete(id: string): Promise<DeleteInfo> {
 
 export type DeleteStep = { part: string; ok: boolean; note: string };
 
-export async function deleteCustomer(id: string, typed: string): Promise<DeleteStep[]> {
+export async function deleteCustomer(id: string, typed: string, opts: { skipConfirm?: boolean; skipBackup?: boolean } = {}): Promise<DeleteStep[]> {
   const info = await checkCustomerDelete(id);
   const c = info.customer;
   if (!c) throw new Error("This company no longer exists.");
   if (info.blockers.length) throw new Error(info.blockers[0]);
   const t = typed.trim().toLowerCase();
-  if (!t || (t !== c.name.trim().toLowerCase() && t !== (c.code ?? "").toLowerCase())) throw new Error("The name you typed does not match. Type the company name exactly to confirm.");
+  if (!opts.skipConfirm && (!t || (t !== c.name.trim().toLowerCase() && t !== (c.code ?? "").toLowerCase()))) throw new Error("The name you typed does not match. Type the company name exactly to confirm.");
 
   const d = createAdminClient(), steps: DeleteStep[] = [];
   // 1. a copy first — if this fails nothing is deleted
-  const bk = await saveFullBackup(`before-delete-${c.code ?? c.slug ?? "customer"}`);
-  steps.push({ part: "Backup", ok: true, note: `full backup saved (${Math.round(bk.bytes / 1024)} KB)` });
+  if (!opts.skipBackup) {
+    const bk = await saveFullBackup(`before-delete-${c.code ?? c.slug ?? "customer"}`);
+    steps.push({ part: "Backup", ok: true, note: `full backup saved (${Math.round(bk.bytes / 1024)} KB)` });
+  }
 
   const { data: mem } = await d.from("customer_members").select("email").eq("customer_id", id);
   const emails = new Set(((mem ?? []) as { email: string }[]).map((m) => m.email.toLowerCase()));
@@ -103,4 +105,19 @@ export async function deleteCustomer(id: string, typed: string): Promise<DeleteS
   }
   steps.push({ part: "Logins", ok: true, note: gone ? `${gone} unused login${gone > 1 ? "s" : ""} removed` : "none to remove" });
   return steps;
+}
+
+/** Remove several test customers in one go: one full backup, then each company in turn. Blocked ones are skipped and reported. */
+export async function deleteCustomers(ids: string[]): Promise<{ done: string[]; skipped: { name: string; why: string }[]; backup: string }> {
+  const done: string[] = [], skipped: { name: string; why: string }[] = [];
+  const checks = await Promise.all(ids.map((i) => checkCustomerDelete(i)));
+  const ok = checks.filter((c) => c.customer && !c.blockers.length);
+  for (const c of checks) if (c.customer && c.blockers.length) skipped.push({ name: c.customer.name, why: c.blockers[0] });
+  if (!ok.length) return { done, skipped, backup: "none needed" };
+  const bk = await saveFullBackup(`before-delete-${ok.length}-customers`);
+  for (const c of ok) {
+    try { await deleteCustomer(c.customer!.id, "", { skipConfirm: true, skipBackup: true }); done.push(c.customer!.name); }
+    catch (e) { skipped.push({ name: c.customer!.name, why: (e as Error).message }); }
+  }
+  return { done, skipped, backup: `${Math.round(bk.bytes / 1024)} KB` };
 }

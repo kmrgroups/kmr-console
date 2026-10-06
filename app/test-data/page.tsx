@@ -4,8 +4,10 @@ import { ActionForm } from "@/components/ActionForm";
 import { Empty } from "@/components/ui";
 import { p } from "@/lib/base-path";
 import { DEMO, FLUSH_PARTS, demoStatus, listFullBackups } from "@/lib/test-data";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { checkCustomerDelete } from "@/lib/customer-delete";
 import { createClient } from "@/lib/supabase/server";
-import { cleanOut, loadDemo, purgeAllSample, purgeSample, removeDemo, resetDemo, resetDemoPassword, takeFullBackup, uploadSettings } from "./actions";
+import { cleanOut, loadDemo, purgeAllSample, purgeSample, removeDemo, removeTestCustomers, resetDemo, resetDemoPassword, takeFullBackup, uploadSettings } from "./actions";
 
 export const metadata = { title: "Test data" };
 export const dynamic = "force-dynamic";
@@ -30,6 +32,9 @@ export default async function TestDataPage() {
   const report = (rep.data ?? []) as { name: string; slug: string; code: string | null; kind: string; counts: Record<string, number>; total: number }[];
   const realCos = report.filter((r) => r.kind !== "demo"), dirty = realCos.filter((r) => r.total > 0), demos = report.filter((r) => r.kind === "demo" && r.slug === DEMO.slug);
   const { data: purged } = await sb.from("sample_purge_log").select("customer_name,purged_at,counts").order("purged_at", { ascending: false }).limit(5);
+  const KEEP = ["C0009", "C0010"]; // ESBEE Precision Industries, Kavia Engineering: real customers, never pre-ticked
+  const { data: allCos } = await createAdminClient().from("customers").select("id,name,code,kind,status").neq("kind", "demo").order("code");
+  const cand = await Promise.all(((allCos ?? []) as { id: string; name: string; code: string | null; kind: string | null; status: string }[]).map(async (c) => ({ c, chk: await checkCustomerDelete(c.id) })));
   const said = (c: Record<string, number>) => Object.entries(c).filter(([, v]) => v > 0).map(([k, v]) => `${k} ${v}`).join(" · ");
   return (
     <AppShell staff={staff} active="/test-data">
@@ -60,6 +65,25 @@ export default async function TestDataPage() {
           </>
         )}
         {!!purged?.length && <p className="muted" style={{ fontSize: 12.5, marginBottom: 0 }}>Last clean-ups: {purged.map((x) => `${x.customer_name} (${new Date(x.purged_at).toLocaleDateString("en-IN")})`).join(" · ")}. Copies are kept in the database table <span className="mono">console.sample_purge_log</span>.</p>}
+      </div>
+
+      {/* Remove test customers */}
+      <div className="card" style={{ borderColor: "var(--danger)" }}>
+        <h2>Remove test customers</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Tick the companies that were created only for testing. One full backup is saved first. Companies with issued invoices or payments, and KMR’s own company, cannot be removed here. The demo workspace is not listed.</p>
+        <ActionForm action={removeTestCustomers} submitLabel="Remove ticked companies" variant="danger" pendingLabel="Backing up, then removing…" confirm="Permanently remove the ticked companies and their data (a full backup is saved first)?">
+          <div className="tablewrap"><table>
+            <thead><tr><th></th><th>Company</th><th>Status</th><th>Can be removed?</th></tr></thead>
+            <tbody>{cand.map(({ c, chk }) => (
+              <tr key={c.id}>
+                <td>{chk.blockers.length ? null : <input type="checkbox" name="ids" value={c.id} defaultChecked={!KEEP.includes(c.code ?? "")} />}</td>
+                <td><b>{c.name}</b> <small className="muted mono">{c.code}</small></td>
+                <td>{c.status}</td>
+                <td>{chk.blockers.length ? <span className="badge warn" title={chk.blockers[0]}>No — {chk.blockers[0].split(".")[0]}</span> : KEEP.includes(c.code ?? "") ? <span className="badge ok">Yes (kept by default)</span> : <span className="badge ok">Yes</span>}</td>
+              </tr>))}</tbody>
+          </table></div>
+          <label className="field" style={{ maxWidth: 320, marginTop: 10 }}>Type DELETE CUSTOMERS to confirm<input name="confirm" autoComplete="off" placeholder="DELETE CUSTOMERS" required /></label>
+        </ActionForm>
       </div>
 
       <div className="card">
