@@ -13,6 +13,8 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { enableHrm, enableTool, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
+import { checkCustomerDelete } from "@/lib/customer-delete";
+import { deleteCustomerAction } from "./delete-action";
 
 export const metadata = { title: "Customer" };
 
@@ -29,6 +31,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     supabase.from("licences").select("*").eq("customer_id", id),
   ]);
   if (!c) notFound();
+  const isOwner = staff.role === "owner";
+  const del = isOwner ? await checkCustomerDelete(c.id) : null;
   const ids = (licences ?? []).map((l) => l.id);
   const { data: events } = ids.length
     ? await supabase.from("licence_events").select("licence_id,action,detail,created_at").in("licence_id", ids).order("created_at", { ascending: false }).limit(30)
@@ -251,6 +255,26 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           ) : <p className="muted">No licences yet.</p>}
         </div>
       </div>
+
+      {isOwner && del && (
+        <div className="card" style={{ borderLeft: "4px solid var(--danger,#dc2626)" }}>
+          <h2>Delete this customer</h2>
+          {del.blockers.length ? (
+            <>
+              <p className="muted" style={{ marginTop: 0 }}>This company cannot be deleted:</p>
+              <ul>{del.blockers.map((b) => <li key={b}>{b}</li>)}</ul>
+              <p className="muted" style={{ fontSize: 13 }}>To stop them using the apps without losing any records, set the status to <b>Inactive</b> under Company details above.</p>
+            </>
+          ) : (
+            <>
+              <p className="muted" style={{ marginTop: 0 }}>Permanently removes <b>{c.name}</b> with its licences, its users list, its Operations Master data and its workspaces in the apps ({del.workspaces} workspace{del.workspaces === 1 ? "" : "s"}, {del.members} user{del.members === 1 ? "" : "s"}{del.drafts ? `, ${del.drafts} draft invoice${del.drafts === 1 ? "" : "s"}` : ""}). A full backup is saved first. Support tickets and enquiries stay, without the link to this company. This cannot be undone from the Console.</p>
+              <ActionForm action={deleteCustomerAction} submitLabel="Delete this customer" variant="danger" hidden={{ id: c.id }} confirm={`Delete ${c.name} permanently? A backup is saved first, but this cannot be undone from the Console.`}>
+                <label className="field">Type the company name to confirm<input name="confirm" placeholder={c.name} autoComplete="off" /></label>
+              </ActionForm>
+            </>
+          )}
+        </div>
+      )}
     </AppShell>
   );
 }
