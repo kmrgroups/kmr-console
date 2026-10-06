@@ -430,6 +430,7 @@ begin
     'shifts', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'shifts' and r.active), '[]'),
     'bom', coalesce((select jsonb_agg(jsonb_build_object('code', r.code) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'bom' and r.active), '[]'),
     'routes', coalesce((select jsonb_object_agg(r.code, console.mmd_route(cid, r.code)) from console.ops_records r where r.customer_id = cid and r.kind = 'parts' and r.active), '{}'),
+    'plant', (select r.data from console.ops_records r where r.customer_id = cid and r.kind = 'plant_standards' and r.active order by r.code limit 1),
     'has_rmp', exists (select 1 from console.licences where customer_id = cid and product_code = 'rmp'),
     'today', (now() at time zone 'Asia/Kolkata')::date, 'now', now());
 end $$;
@@ -456,7 +457,7 @@ begin
         select d.id, d.dc_no, d.qty, d.received_qty, d.status, d.dispatch_at, d.expected_date, d.supplier_code, d.supplier_name, d.op_name, d.vehicle, s.rs_no, s.part_code, s.part_name, s.customer_name
           from console.mmd_dcs d join console.mmd_route_sheets s on s.id = d.rs_id where d.customer_id = cid and (d.status in ('open', 'part') or d.dispatch_at >= since)) x), '[]'),
     'entries', coalesce((select jsonb_agg(x order by x.entry_at desc) from (
-        select e.id, e.kind, e.seq, e.op_name, e.machine, e.ok_qty, e.rej_qty, e.rew_qty, e.entry_at, e.shift, e.operator, e.engineer, e.note, e.status, e.void_reason, s.rs_no, s.part_code, s.part_name,
+        select e.id, e.kind, e.seq, e.op_name, e.machine, nullif(s.ops -> (e.seq - 1) ->> 'ct_sec', '')::numeric ct_sec, e.ok_qty, e.rej_qty, e.rew_qty, e.entry_at, e.shift, e.operator, e.engineer, e.note, e.status, e.void_reason, s.rs_no, s.part_code, s.part_name,
                (select string_agg(t.tag_no, ', ' order by t.tag_no) from console.mmd_tags t where t.entry_id = e.id) out_tags
           from console.mmd_entries e join console.mmd_route_sheets s on s.id = e.rs_id where e.customer_id = cid and e.entry_at >= since order by e.entry_at desc limit 600) x), '[]'),
     'defects', coalesce((select jsonb_agg(to_jsonb(q) - 'customer_id' order by q.entry_at desc) from console.mmd_defects q where q.customer_id = cid and q.entry_at >= since and not q.void), '[]'),
