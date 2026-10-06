@@ -100,6 +100,8 @@ create table if not exists console.mmd_loss (
   rs_id uuid, part_code text, op_name text, remark text, operator text,
   status text not null default 'ok' check (status in ('ok', 'void')), void_reason text,
   sample boolean not null default false, created_by text, created_at timestamptz not null default now());
+-- a loss booked from a closed Maintenance breakdown carries the breakdown number (0059)
+alter table console.mmd_loss add column if not exists ref text;
 create index if not exists mmd_tags_open on console.mmd_tags (customer_id, status, loc);
 create index if not exists mmd_tags_rs on console.mmd_tags (rs_id);
 create index if not exists mmd_entries_rs on console.mmd_entries (rs_id, seq);
@@ -537,6 +539,7 @@ declare cid uuid := console.qp_edit(p_slug, 'mmd');
 begin
   perform console.require_feature(p_slug, 'mmd', 'mmd.loss-hours-d-codes');
   if coalesce(trim(p_reason), '') = '' then raise exception 'Give the reason for voiding the entry.'; end if;
+  if exists (select 1 from console.mmd_loss where id = p_id and customer_id = cid and ref is not null) then raise exception 'This loss came from a Maintenance breakdown — void the breakdown in the Maintenance app.'; end if;
   update console.mmd_loss set status = 'void', void_reason = trim(p_reason) where id = p_id and customer_id = cid;
 end $$;
 

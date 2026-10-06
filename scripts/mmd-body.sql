@@ -100,6 +100,8 @@ create table if not exists console.mmd_loss (
   rs_id uuid, part_code text, op_name text, remark text, operator text,
   status text not null default 'ok' check (status in ('ok', 'void')), void_reason text,
   sample boolean not null default false, created_by text, created_at timestamptz not null default now());
+-- a loss booked from a closed Maintenance breakdown carries the breakdown number (0059)
+alter table console.mmd_loss add column if not exists ref text;
 create index if not exists mmd_tags_open on console.mmd_tags (customer_id, status, loc);
 create index if not exists mmd_tags_rs on console.mmd_tags (rs_id);
 create index if not exists mmd_entries_rs on console.mmd_entries (rs_id, seq);

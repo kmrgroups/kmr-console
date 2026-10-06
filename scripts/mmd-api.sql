@@ -119,6 +119,7 @@ declare cid uuid := console.qp_edit(p_slug, 'mmd');
 begin
   perform console.require_feature(p_slug, 'mmd', 'mmd.loss-hours-d-codes');
   if coalesce(trim(p_reason), '') = '' then raise exception 'Give the reason for voiding the entry.'; end if;
+  if exists (select 1 from console.mmd_loss where id = p_id and customer_id = cid and ref is not null) then raise exception 'This loss came from a Maintenance breakdown — void the breakdown in the Maintenance app.'; end if;
   update console.mmd_loss set status = 'void', void_reason = trim(p_reason) where id = p_id and customer_id = cid;
 end $$;
 
