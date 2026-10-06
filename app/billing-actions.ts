@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { ActionState } from "@/lib/action-state";
 import { setFlash } from "@/lib/flash";
+import { isTestingMode } from "@/lib/customer-delete";
 import { mailInvoiceIssued, mailPaymentReceived, mailPaymentRejected } from "@/lib/notify";
 
 const fail = (e: unknown): ActionState => ({ error: (e as Error).message });
@@ -267,4 +268,36 @@ export async function deleteFeature(form: FormData) {
   const supabase = await createClient();
   await supabase.from("app_features").delete().eq("id", String(form.get("id")));
   revalidatePath("/billing");
+}
+
+// ---------- edit a draft line / delete an invoice ----------
+export async function updateInvoiceLine(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("invoice_id"));
+    await rpc("update_invoice_line", { p_invoice: id, p_line: Number(form.get("line_id")), p_description: form.get("description"), p_qty: Number(form.get("qty")), p_unit_amount: Number(form.get("unit_amount")) });
+    revalidatePath(`/invoices/${id}`);
+    return { ok: "Line updated." };
+  } catch (e) { return fail(e); }
+}
+
+/** Delete an invoice. A draft can always go. An issued / paid / cancelled invoice is a tax record: it can be deleted only in Testing mode (Test data page). */
+export async function deleteInvoice(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("invoice_id"));
+    const d = createAdminClient();
+    const { data: inv } = await d.from("invoices").select("id,status,number").eq("id", id).maybeSingle();
+    if (!inv) return { error: "This invoice no longer exists." };
+    if (inv.status !== "draft") {
+      if (!(await isTestingMode())) return { error: "Live mode is on: issued invoices are tax records and cannot be deleted. Cancel it instead (its number stays in the series)." };
+      const p = await d.from("payments").delete().eq("invoice_id", id); if (p.error) return { error: p.error.message };
+    }
+    await d.from("invoice_lines").delete().eq("invoice_id", id);
+    const r = await d.from("invoices").delete().eq("id", id);
+    if (r.error) return { error: r.error.message };
+    revalidatePath("/billing");
+    await setFlash({ ok: `Invoice ${inv.number ?? "draft"} deleted.` });
+  } catch (e) { return fail(e); }
+  redirect("/billing?tab=invoices");
 }

@@ -6,12 +6,13 @@ import { Empty, fmtDate, one } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
 import { p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
-import { deleteFeature, deletePrice, removeBillingImage, saveFeature, saveBillingSettings, savePrice, uploadBillingImage } from "@/app/billing-actions";
+import { deleteFeature, deleteInvoice, deletePrice, removeBillingImage, saveFeature, saveBillingSettings, savePrice, uploadBillingImage } from "@/app/billing-actions";
 import { billingImageUrls } from "@/lib/billing-files";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { deleteCostItem, saveCostItem, saveQuoteSettings } from "@/app/quote-actions";
+import { deleteCostItem, deleteQuote, saveCostItem, saveQuoteSettings } from "@/app/quote-actions";
 import { BASIS, inr } from "@/lib/quote";
 import type { Feature } from "@/lib/features";
+import { isTestingMode } from "@/lib/customer-delete";
 
 const TABS = [["quotes", "1 · Quotations"], ["invoices", "2 · Invoices"], ["features", "Prices"], ["seller", "Settings"]] as const;
 const HELP: Record<string, string> = {
@@ -45,6 +46,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
   ]);
   const { data: featRows, error: featErr } = await supabase.from("app_features").select("*").order("product_code").order("sort_order").order("name");
   const features = (featRows ?? []) as Feature[];
+  const testing = await isTestingMode();
   const { data: reported } = await supabase.from("payments").select("invoice_id").eq("status", "reported");
   const toVerify = new Set((reported ?? []).map((r) => r.invoice_id));
   if (!s) {
@@ -101,7 +103,11 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
                   <td>{fmtDate(q.quote_date)}</td><td>{fmtDate(q.valid_until)}</td>
                   <td style={{ textAlign: "right", whiteSpace: "nowrap" }}><b>{inr(q.total)}</b></td>
                   <td><span className={`badge ${lapsed ? "warn" : QUOTE_TONE[q.status]}`}>{lapsed ? "lapsed" : q.status}</span></td>
-                  <td style={{ whiteSpace: "nowrap" }}><a className="btn secondary small" href={p(`/api/quotes/${q.id}/pdf`)} target="_blank" rel="noopener">PDF</a></td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <a className="btn secondary small" href={p(`/quotes/${q.id}`)}>Edit</a>{" "}
+                    <a className="btn ghost small" href={p(`/api/quotes/${q.id}/pdf`)} target="_blank" rel="noopener">PDF</a>
+                    {manager && <details style={{ display: "inline-block", marginLeft: 4 }}><summary className="btn ghost small" style={{ color: "var(--danger)" }}>Delete</summary><div className="editpop" style={{ width: 300 }}><p style={{ marginTop: 0 }}>Delete quotation <b>{q.number}</b>? This cannot be undone.</p><ActionForm action={deleteQuote} submitLabel="Yes, delete" variant="danger" hidden={{ id: q.id }} /></div></details>}
+                  </td>
                 </tr>);
             })}</tbody>
           </table></div>
@@ -125,7 +131,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
         <h2>Invoices</h2>
         {inv.length ? (
           <div className="tablewrap"><table>
-            <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Due</th><th style={{ textAlign: "right" }}>Total</th><th>Status</th></tr></thead>
+            <thead><tr><th>Invoice</th><th>Customer</th><th>Date</th><th>Due</th><th style={{ textAlign: "right" }}>Total</th><th>Status</th><th /></tr></thead>
             <tbody>{inv.map((i) => {
               const c = one(i.customer as unknown as { id: string; name: string; code: string } | null);
               const late = i.status === "issued" && i.due_date && i.due_date < today;
@@ -137,6 +143,10 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
                   <td>{i.status === "issued" ? <span style={{ color: late ? "var(--danger)" : undefined }}>{fmtDate(i.due_date)}</span> : "—"}</td>
                   <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{fmtMoney(i.total, i.currency)}</td>
                   <td><span className={`badge ${late ? "danger" : INVOICE_TONE[i.status]}`}>{late ? "overdue" : i.status}</span>{i.status === "issued" && toVerify.has(i.id) && <span className="badge warn" style={{ marginLeft: 6 }}>payment to verify</span>}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <a className="btn secondary small" href={p(`/invoices/${i.id}`)}>{i.status === "draft" ? "Edit" : "Open"}</a>
+                    {manager && (i.status === "draft" || testing) && <details style={{ display: "inline-block", marginLeft: 4 }}><summary className="btn ghost small" style={{ color: "var(--danger)" }}>Delete</summary><div className="editpop" style={{ width: 320 }}><p style={{ marginTop: 0 }}>Delete {i.status === "draft" ? "this draft" : <>invoice <b>{i.number}</b> and its payments</>}? This cannot be undone.{i.status !== "draft" && <><br /><small className="muted">Allowed because Testing mode is on.</small></>}</p><ActionForm action={deleteInvoice} submitLabel="Yes, delete" variant="danger" hidden={{ invoice_id: i.id }} /></div></details>}
+                  </td>
                 </tr>);
             })}</tbody>
           </table></div>

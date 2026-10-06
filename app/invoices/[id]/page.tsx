@@ -12,7 +12,8 @@ import { BASE_PATH, p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
 import { platformBrand } from "@/lib/brand";
 import { billingImageUrls } from "@/lib/billing-files";
-import { addInvoiceLine, cancelInvoice, confirmPayment, discardInvoice, issueInvoice, markInvoicePaid, rejectPayment, removeInvoiceLine } from "@/app/billing-actions";
+import { isTestingMode } from "@/lib/customer-delete";
+import { addInvoiceLine, cancelInvoice, confirmPayment, discardInvoice, issueInvoice, markInvoicePaid, rejectPayment, removeInvoiceLine, updateInvoiceLine, deleteInvoice } from "@/app/billing-actions";
 
 const METHOD: Record<string, string> = { neft: "NEFT", rtgs: "RTGS", imps: "IMPS", upi: "UPI", cheque: "Cheque", other: "Other" };
 
@@ -33,6 +34,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     platformBrand(),
   ]);
   const draft = inv.status === "draft";
+  const testing = await isTestingMode();
   // Drafts show today's seller and customer details; issued invoices show what was frozen on them
   const seller: Party = draft ? { ...(s ?? {}), state_code: s?.state_code ?? s?.gstin?.slice(0, 2) } : inv.seller;
   const buyer: Party = draft && c ? { code: c.code, name: c.legal_name || c.name, tax_id: c.tax_id, address: c.address, city: c.city, state: c.state, postal_code: c.postal_code, country: c.country, contact_name: c.contact_name, contact_email: c.contact_email } : inv.buyer;
@@ -71,15 +73,33 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               </details>
               {(lines ?? []).length > 0 && (
                 <div style={{ marginTop: 12 }}>
-                  <small className="muted">Remove a line</small>
+                  <small className="muted">Edit or remove a line</small>
                   {(lines ?? []).map((l) => (
-                    <form key={l.id} action={removeInvoiceLine} className="spread" style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
-                      <input type="hidden" name="invoice_id" value={inv.id} /><input type="hidden" name="line_id" value={l.id} />
-                      <span style={{ flex: 1 }}>{l.description}</span><button className="btn secondary small">Remove</button>
-                    </form>))}
+                    <div key={l.id} style={{ padding: "6px 0", borderBottom: "1px solid var(--border)", fontSize: 13 }}>
+                      <div className="spread" style={{ gap: 6 }}>
+                        <span style={{ flex: 1 }}>{l.description}<br /><small className="muted">{Number(l.qty)} × {fmtMoney(l.unit_amount, inv.currency)}</small></span>
+                        <details style={{ display: "inline-block" }}><summary className="btn secondary small">Edit</summary>
+                          <div className="editpop" style={{ width: 340 }}>
+                            <ActionForm action={updateInvoiceLine} submitLabel="Save line" hidden={{ invoice_id: inv.id, line_id: String(l.id) }}>
+                              <label className="field">Description<input name="description" defaultValue={l.description} required /></label>
+                              <div className="row"><label className="field" style={{ flex: 1 }}>Qty<input name="qty" inputMode="decimal" defaultValue={String(Number(l.qty))} required /></label>
+                                <label className="field" style={{ flex: 2 }}>Rate ({inv.currency})<input name="unit_amount" inputMode="decimal" defaultValue={String(Number(l.unit_amount))} required /></label></div>
+                            </ActionForm>
+                          </div></details>
+                        <form action={removeInvoiceLine}><input type="hidden" name="invoice_id" value={inv.id} /><input type="hidden" name="line_id" value={l.id} /><button className="btn ghost small">Remove</button></form>
+                      </div>
+                    </div>))}
                 </div>
               )}
               <div style={{ marginTop: 14 }}><ActionForm action={discardInvoice} submitLabel="Discard draft" variant="danger" hidden={{ invoice_id: inv.id, customer_id: inv.customer_id }} confirm="Delete this draft?" /></div>
+            </div>
+          )}
+
+          {!draft && manager && testing && (
+            <div className="card" style={{ borderColor: "var(--danger)" }}>
+              <h2>Delete this invoice</h2>
+              <p className="muted" style={{ fontSize: 13 }}>Testing mode is on, so a test invoice can be deleted with its payments. Once you go live this is locked — cancel instead.</p>
+              <ActionForm action={deleteInvoice} submitLabel="Delete invoice" variant="danger" hidden={{ invoice_id: inv.id }} confirm={`Delete invoice ${inv.number}? This cannot be undone.`} />
             </div>
           )}
 
