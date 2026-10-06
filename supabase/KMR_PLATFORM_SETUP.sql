@@ -13510,6 +13510,11 @@ do $$ begin
   if to_regprocedure('public.cp_my_role(uuid)') is null then raise exception 'Run 0010_capacity.sql first.'; end if;
 end $$;
 
+-- ---------- Operations Master: new lists (bill of material, loss codes, defect codes, shifts) ----------
+alter table console.ops_records drop constraint if exists ops_records_kind_check;
+alter table console.ops_records add constraint ops_records_kind_check check (kind in ('parts','customers','suppliers','machines','gauges','tools',
+  'consumables','raw_materials','rate_contracts','cycle_times','cft','documents','plant_standards','bom','loss_codes','defect_codes','shifts'));
+
 -- ---------- the product ----------
 insert into console.products (code, name, description, app_path, seat_label, current_version, sort_order) values
   ('rmp', 'Raw Material Planning', 'What to buy, how much and by when: parts to start from the Capacity Planner turned into raw material, net of stock and open orders, per supplier', '/it/rmp.html', 'users', '1.0.0', 90)
@@ -13601,6 +13606,7 @@ begin
              where b.org_id = borg and coalesce(b.part_no, '') <> '' order by b.part_no, b.updated_at desc) q;
   end if;
   return jsonb_build_object(
+    'bom_master', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name, 'data', r.data) order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'bom' and r.active), '[]'),
     'drawings', dr, 'settings', coalesce((select data from console.rmp_settings where customer_id = cid), '{}'),
     'parts', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'parts' and r.active), '[]'),
     'materials', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'raw_materials' and r.active), '[]'),
@@ -13626,6 +13632,38 @@ begin
   insert into console.rmp_settings (customer_id, data, updated_by) values (cid, clean, lower(coalesce(auth.jwt() ->> 'email', '')))
   on conflict (customer_id) do update set data = excluded.data, updated_at = now(), updated_by = excluded.updated_by;
 end $$;
+
+-- ---------- review and approval: the figure moves to the Operations Master (bill of material list; the part's material) ----------
+create or replace function public.kmr_rmp_approve(p_slug text, p_rows jsonb) returns integer
+language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.qp_edit(p_slug, 'rmp'); r jsonb; n int := 0; me text := lower(coalesce(auth.jwt() ->> 'email', '')); pc text; mc text; kg numeric; pname text; prev jsonb; rev int;
+        today text := to_char((now() at time zone 'Asia/Kolkata')::date, 'YYYY-MM-DD');
+begin
+  for r in select * from jsonb_array_elements(coalesce(p_rows, '[]')) loop
+    pc := trim(coalesce(r ->> 'part_code', '')); mc := trim(coalesce(r ->> 'material_code', ''));
+    select name into pname from console.ops_records where customer_id = cid and kind = 'parts' and code = pc;
+    if not found then raise exception 'Part % is not in Operations Master › Parts.', pc; end if;
+    if not exists (select 1 from console.ops_records where customer_id = cid and kind = 'raw_materials' and code = mc) then raise exception 'Material % is not in Operations Master › Raw material.', mc; end if;
+    kg := nullif(r ->> 'kg', '')::numeric;
+    if kg is null or kg <= 0 then raise exception 'Enter the kg per part for %.', pc; end if;
+    select data into prev from console.ops_records where customer_id = cid and kind = 'bom' and code = pc || '/' || mc;
+    rev := coalesce(nullif(prev ->> 'revision', '')::int, 0) + 1;
+    insert into console.ops_records (customer_id, kind, code, name, data, active, updated_by)
+    values (cid, 'bom', pc || '/' || mc, coalesce(pname, ''), jsonb_strip_nulls(jsonb_build_object('part_no', pc, 'material', mc, 'form', nullif(r ->> 'form', ''), 'size', nullif(r ->> 'size', ''),
+              'blank_kg', round(kg, 4), 'calc_kg', nullif(r ->> 'calc_kg', '')::numeric, 'finished_kg', nullif(r ->> 'finished_kg', '')::numeric, 'cut_mm', nullif(r ->> 'cut_mm', '')::numeric,
+              'pcs_per_bar', nullif(r ->> 'pcs_per_bar', '')::numeric, 'drawing_rev', nullif(r ->> 'drawing_rev', ''), 'basis', nullif(left(r ->> 'basis', 400), ''),
+              'status', 'Approved', 'revision', rev::text, 'approved_by', me, 'approved_on', today)), true, me)
+    on conflict (customer_id, kind, code) do update set name = excluded.name, data = excluded.data, active = true, updated_at = now(), updated_by = me;
+    update console.ops_records set data = data || jsonb_build_object('material', mc), updated_at = now(), updated_by = me
+     where customer_id = cid and kind = 'parts' and code = pc and (coalesce(data ->> 'material', '') = '' or coalesce(r ->> 'set_part_material', '') = 'true');
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+create or replace function public.kmr_rmp_unapprove(p_slug text, p_part text, p_material text) returns void
+language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.qp_edit(p_slug, 'rmp');
+begin delete from console.ops_records where customer_id = cid and kind = 'bom' and code = trim(p_part) || '/' || trim(p_material); end $$;
 
 -- ---------- bill of material ----------
 create or replace function public.kmr_rmp_bom_save(p_slug text, p jsonb) returns uuid
