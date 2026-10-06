@@ -5,7 +5,7 @@ import { Empty } from "@/components/ui";
 import { p } from "@/lib/base-path";
 import { DEMO, FLUSH_PARTS, demoStatus, listFullBackups } from "@/lib/test-data";
 import { createClient } from "@/lib/supabase/server";
-import { cleanOut, loadDemo, purgeAllSample, purgeSample, removeDemo, resetDemo, takeFullBackup, uploadSettings } from "./actions";
+import { cleanOut, loadDemo, purgeAllSample, purgeSample, removeDemo, resetDemo, resetDemoPassword, takeFullBackup, uploadSettings } from "./actions";
 
 export const metadata = { title: "Test data" };
 export const dynamic = "force-dynamic";
@@ -68,7 +68,7 @@ export default async function TestDataPage() {
         {loaded ? (
           <>
             <p>✓ The demo workspace is set up{demos[0] ? <>. Sample records now: <b>{demos[0].total}</b> <small className="muted">({said(demos[0].counts)})</small></> : "."}</p>
-            <ActionForm action={resetDemo} submitLabel="Reset demo data now" variant="secondary" />
+            <div className="row" style={{ gap: 10, flexWrap: "wrap" }}><ActionForm action={resetDemo} submitLabel="Reset demo data now" variant="secondary" /><ActionForm action={resetDemoPassword} submitLabel="Reset the demo login password" variant="secondary" confirm="Give the demo login a new password? The old one stops working. The new one is shown once." /></div>
           </>
         ) : (
           <>
