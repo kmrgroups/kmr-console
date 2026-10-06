@@ -548,3 +548,15 @@ tr.hidden-row td:last-child { opacity: 1; }
 .invoice-sig-area { height: 58px; display: flex; align-items: flex-end; justify-content: flex-end; border-bottom: 1px solid var(--border); margin: 6px 0 4px; }
 .invoice-signature { max-height: 52px; max-width: 200px; width: auto; object-fit: contain; display: block; }
 @media (max-width: 700px) { .invoice-sig-area { justify-content: flex-start; } .invoice-seal { height: 84px; } }
+
+.editpop .pop-close { float: right; border: 0; background: var(--surface-2, #f1f3f8); color: var(--muted); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 12.5px; cursor: pointer; margin: -4px -4px 6px 8px; }
+.editpop .pop-close:hover { color: var(--danger, #dc2626); }
+details > summary.btn { list-style: none; cursor: pointer; display: inline-block; }
+details > summary.btn::-webkit-details-marker { display: none; }
+details[open] > summary.btn::after { content: " ▴"; }
+
+details.app-acc > summary { cursor: pointer; padding: 2px 0; list-style: none; }
+details.app-acc > summary::-webkit-details-marker { display: none; }
+details.app-acc > summary::before { content: "▸ "; color: var(--muted); }
+details.app-acc[open] > summary::before { content: "▾ "; }
+details.app-acc[open] > summary { margin-bottom: 8px; }

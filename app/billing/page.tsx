@@ -13,7 +13,13 @@ import { deleteCostItem, saveCostItem, saveQuoteSettings } from "@/app/quote-act
 import { BASIS, inr } from "@/lib/quote";
 import type { Feature } from "@/lib/features";
 
-const TABS = [["quotes", "Quotations"], ["invoices", "Invoices"], ["features", "Apps & features"], ["costing", "Price list & costing"], ["seller", "Seller & letterhead"]] as const;
+const TABS = [["quotes", "1 · Quotations"], ["invoices", "2 · Invoices"], ["features", "Prices"], ["seller", "Settings"]] as const;
+const HELP: Record<string, string> = {
+  quotes: "Offer a customer apps and features. The price adds up from the features you tick. Download the PDF on your letterhead.",
+  invoices: "Bill a customer for the apps and features they bought. Invoices are created from the customer’s page (Create invoice). When one is paid, the customer gets exactly the features on it.",
+  features: "Set the price of every feature of every app, plus extra services such as set-up, training and hosting. Everything else on this screen is built from these prices.",
+  seller: "Your company details, bank account, seal and signature, and the wording printed on quotations and invoices.",
+};
 const QUOTE_TONE: Record<string, string> = { draft: "", sent: "info", accepted: "ok", declined: "danger", expired: "warn" };
 type Cost = { id: string; product_code: string | null; name: string; detail: string | null; basis: keyof typeof BASIS; amount: number; default_qty: number; include_by_default: boolean; sort_order: number; active: boolean };
 
@@ -22,7 +28,8 @@ export const metadata = { title: "Prices & invoices" };
 type Price = { id: string; product_code: string; period: string; currency: string; unit_amount: number; min_seats: number; active: boolean; note: string | null };
 
 export default async function Billing({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const tab = (await searchParams).tab ?? "quotes";
+  const rawTab = (await searchParams).tab ?? "quotes";
+  const tab = rawTab === "costing" ? "features" : rawTab;
   const staff = await requireStaff();
   const manager = isManager(staff);
   const supabase = await createClient();
@@ -59,18 +66,19 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
 
   return (
     <AppShell staff={staff} active={tab === "quotes" ? "/billing?tab=quotes" : "/billing"}>
-      <div className="pagehead"><div><h1>Prices &amp; invoices</h1><p>Quotations with detailed costing (PDF on your letterhead), invoices, the apps with the price of every feature, the costing catalogue, and seller details.</p></div>
+      <div className="pagehead"><div><h1>Prices &amp; invoices</h1><p>Set prices once, quote, invoice — the customer gets only what they paid for.</p></div>
         <a className="btn" href={p("/quotes/new")}>+ New quotation</a></div>
 
       <nav className="tabs" style={{ marginTop: 6 }}>{TABS.map(([k, l]) => <a key={k} href={p(`/billing?tab=${k}`)} className={tab === k ? "active" : ""}>{l}</a>)}</nav>
+      <p className="muted" style={{ margin: "8px 0 0" }}>{HELP[tab]}</p>
 
-      <div className="grid four">
+      {tab === "invoices" && <div className="grid four" style={{ marginTop: 12 }}>
         <div className="card stat"><div className="label">Waiting for payment</div><div className="value" style={{ fontSize: 20 }}>{sum(due)}</div><div className="hint">{due.length} issued invoice{due.length === 1 ? "" : "s"}</div></div>
         <div className="card stat"><div className="label">Overdue</div><div className="value" style={{ fontSize: 20, color: overdue.length ? "var(--danger)" : undefined }}>{overdue.length ? sum(overdue) : "None"}</div><div className="hint">Past the due date</div></div>
         <div className="card stat"><div className="label">Paid this month</div><div className="value" style={{ fontSize: 20, color: "var(--ok)" }}>{sum(inv.filter((i) => i.status === "paid" && (i.issue_date ?? "").slice(0, 7) === month))}</div><div className="hint">Invoices dated this month</div></div>
         <div className="card stat"><div className="label">Payments to verify</div><div className="value" style={{ fontSize: 20, color: toVerify.size ? "var(--warn)" : undefined }}>{toVerify.size || "None"}</div>
-          <div className="hint">{toVerify.size ? "Customers reported a payment — check your bank statement" : s.bank_account_no ? `Paid into ${s.bank_name ?? "bank"} a/c …${String(s.bank_account_no).slice(-4)}` : "Add your bank account below"}</div></div>
-      </div>
+          <div className="hint">{toVerify.size ? "Customers reported a payment — check your bank statement" : s.bank_account_no ? `Paid into ${s.bank_name ?? "bank"} a/c …${String(s.bank_account_no).slice(-4)}` : "Add your bank account under Settings"}</div></div>
+      </div>}
 
       {tab === "quotes" && <>
       <div className="grid four" style={{ marginTop: 16 }}>
@@ -141,15 +149,15 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
         <p className="muted" style={{ marginTop: -4 }}>Every app is a set of <b>features</b>, each with its own price per user (per employee for the HRM). A quotation or invoice picks the app, then its features, and the price is the <b>sum of the features chosen</b>. <b>Core</b> features are always included. An app&apos;s full price in the price list follows its features automatically. Every new app you add starts with a <b>Core platform</b> feature to price, so upcoming apps work the same way. All prices are in ₹, before GST; the yearly price is normally ten months of the monthly one (two months free), and you can change both.</p>
         {featErr && <div className="alert warn">This needs the database update <b>0050_app_features.sql</b>. Run it in Supabase → SQL Editor, then refresh. ({featErr.message})</div>}
       </div>
-      {!featErr && (products ?? []).filter((x) => x.code !== "console").map((pr) => {
+      {!featErr && (products ?? []).filter((x) => x.code !== "console").map((pr, idx) => {
         const fs = features.filter((f) => f.product_code === pr.code), live = fs.filter((f) => f.active);
         const sm = live.reduce((a, f) => a + Number(f.price_month), 0), sy = live.reduce((a, f) => a + Number(f.price_year), 0);
         const unpriced = live.length > 0 && sm === 0;
         const per = seatLabel[pr.code]?.replace(/s$/, "") ?? "user";
         return (
-          <div className="card" key={pr.code}>
-            <div className="spread"><h2 style={{ margin: 0 }}>{pr.name}</h2>
-              <span><span className="badge ok">Full app {inr(sm)}/{per}/month · {inr(sy)}/{per}/year</span></span></div>
+          <details className="card app-acc" key={pr.code} open={idx === 0 || unpriced}>
+            <summary><span className="spread" style={{ display: "inline-flex", width: "calc(100% - 20px)", verticalAlign: "middle" }}><b style={{ fontSize: 16 }}>{pr.name} <small className="muted" style={{ fontWeight: 400 }}>· {live.length} feature{live.length === 1 ? "" : "s"}</small></b>
+              <span className={`badge ${unpriced ? "warn" : "ok"}`}>{unpriced ? "price not set" : `Full app ${inr(sm)} / ${per} / month · ${inr(sy)} / year`}</span></span></summary>
             {unpriced && <div className="alert warn" style={{ marginTop: 10 }}>No price set yet. Open <b>Edit</b> on the core feature (or add features below) and set the prices — until then this app cannot be quoted at a price.</div>}
             {fs.length ? (
               <div className="tablewrap" style={{ marginTop: 10 }}><table>
@@ -170,13 +178,14 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
               </table></div>
             ) : <Empty>No features yet{manager ? " — add the first one below." : "."}</Empty>}
             {manager && <details style={{ marginTop: 12 }}><summary className="btn small">+ Add a feature to {pr.name}</summary><div style={{ marginTop: 10 }}><FeatureForm code={pr.code} /></div></details>}
-          </div>);
+          </details>);
       })}
       </>}
 
-      {tab === "costing" && <>
-      <div className="card" style={{ marginTop: 16 }}>
-        <h2>Price list</h2>
+      {tab === "features" && <>
+      <details className="card app-acc">
+        <summary><b style={{ fontSize: 16 }}>Advanced: price list for other currencies and minimum users</b></summary>
+        <h2 style={{ display: "none" }}>Price list</h2>
         <p className="muted" style={{ marginTop: -4 }}><b>INR prices follow the features</b> (see Apps &amp; features) — change a feature, not this line. Use this list for other currencies and for the minimum billed. A price per user (per employee for the HRM) for each billing period and currency. <b>Minimum</b> is the fewest billed, however few are used. Customers are invoiced in their own currency, so add a price in every currency you sell in.</p>
         {prices?.length ? (
           <div className="tablewrap"><table>
@@ -210,12 +219,12 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
             </div>
           </div>
         )}
-      </div>
+      </details>
 
 
       <div className="card">
-        <h2>Costing catalogue</h2>
-        <p className="muted" style={{ marginTop: -4 }}>Everything a quotation is built from besides the per-user subscription: implementation, data migration, training, customisation days, on-site visits, AMC, devices, labels… Items marked <b>auto</b> are added when their app (or any app, for general items) is quoted. All amounts before GST.</p>
+        <h2>Extra services &amp; hosting</h2>
+        <p className="muted" style={{ marginTop: -4 }}>Everything besides the app features: data migration, training, on-site visits, support (AMC), devices, labels and <b>cloud hosting &amp; database (Vercel + Supabase)</b>. Add any of them to a quotation or an invoice. Items marked <b>auto</b> are added to every quotation. All amounts before GST.</p>
         {(costs as Cost[] | null)?.length ? (
           <div className="tablewrap"><table>
             <thead><tr><th>Item</th><th>For</th><th>Basis</th><th style={{ textAlign: "right" }}>Rate</th><th style={{ textAlign: "right" }}>Default qty</th><th>Auto</th><th>Status</th>{manager && <th />}</tr></thead>

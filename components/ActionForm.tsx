@@ -26,6 +26,8 @@ export function ActionForm({
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (resetOnSuccess && state.ok) ref.current?.reset();
+    // a form inside a popup / panel closes it once it has saved
+    if (state.ok) { const d = ref.current?.closest("details"); if (d) setTimeout(() => { d.open = false; }, 900); }
   }, [state, resetOnSuccess]);
 
   return (

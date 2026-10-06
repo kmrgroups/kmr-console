@@ -99,6 +99,17 @@ export async function createInvoice(_: ActionState, form: FormData): Promise<Act
     const items = form.getAll("product").map(String).map((code) => ({ product_code: code, seats: Number(form.get(`seats_${code}`) || 0), features: form.getAll(`feat_${code}`).map(String).filter(Boolean) }));
     if (!items.length) return { error: "Tick at least one product to bill." };
     id = await rpc("create_invoice", { p_customer: customer, p_period: form.get("period"), p_from: form.get("from") || null, p_items: items, p_notes: form.get("notes") || null });
+    // extra services ticked on the form (hosting, training, support…) become lines on the draft
+    const extras = form.getAll("extra").map(String).filter(Boolean);
+    if (extras.length) {
+      const supabase = await createClient();
+      const { data: items } = await supabase.from("cost_items").select("id,name,basis,amount,default_qty").in("id", extras);
+      const months = form.get("period") === "year" ? 12 : 1;
+      for (const x of (items ?? []) as { name: string; basis: string; amount: number; default_qty: number }[]) {
+        const mult = x.basis === "per_month" || x.basis === "per_user_month" ? months : 1;
+        await rpc("add_invoice_line", { p_invoice: id, p_description: mult > 1 ? `${x.name} (${mult} months)` : x.name, p_qty: Number(x.default_qty) * mult, p_unit_amount: Number(x.amount) });
+      }
+    }
     await setFlash({ ok: "Draft invoice created. Check it, add any extra line, then Issue." });
   } catch (e) { return fail(e); }
   redirect(`/invoices/${id}`);

@@ -6,7 +6,10 @@ import { inr } from "@/lib/quote";
 export type InvProduct = { code: string; name: string; seat_label: string; seats: number; on: boolean; minSeats: number; flat: { month: number | null; year: number | null }; features: Feature[] };
 
 /** Invoice form rows: tick an app, tick its features, and the price per user is the sum — the same flow as the quotation. */
-export function InvoiceProducts({ products, currency, defaultFrom }: { products: InvProduct[]; currency: string; defaultFrom: string }) {
+export type InvExtra = { id: string; name: string; detail: string | null; basis: string; amount: number; default_qty: number; product_code: string | null };
+
+export function InvoiceProducts({ products, currency, defaultFrom, extras = [] }: { products: InvProduct[]; currency: string; defaultFrom: string; extras?: InvExtra[] }) {
+  const [xs, setXs] = useState<Set<string>>(new Set());
   const [period, setPeriod] = useState<"month" | "year">("year");
   const [on, setOn] = useState<Record<string, boolean>>(() => Object.fromEntries(products.map((x) => [x.code, x.on])));
   const [seats, setSeats] = useState<Record<string, number>>(() => Object.fromEntries(products.map((x) => [x.code, x.seats])));
@@ -51,6 +54,17 @@ export function InvoiceProducts({ products, currency, defaultFrom }: { products:
             </div>);
         })}
       </div>
+      {currency === "INR" && extras.length > 0 && (
+        <details style={{ marginTop: 10 }}>
+          <summary style={{ cursor: "pointer", fontWeight: 600 }}>Add extra services (hosting, training, support…) {xs.size ? `· ${xs.size} added` : ""}</summary>
+          <div style={{ display: "grid", gap: 4, margin: "8px 0 0 4px" }}>{extras.map((x) => {
+            const months = period === "year" ? 12 : 1, mult = x.basis === "per_month" ? months : x.basis === "per_user_month" ? months : 1;
+            const amt = x.amount * x.default_qty * mult; if (xs.has(x.id)) total += amt;
+            return <label key={x.id} style={{ display: "flex", gap: 8, fontSize: 13, alignItems: "flex-start" }}>
+              <input type="checkbox" name="extra" value={x.id} checked={xs.has(x.id)} onChange={(e) => { const c = new Set(xs); if (e.target.checked) c.add(x.id); else c.delete(x.id); setXs(c); }} />
+              <span style={{ flex: 1 }}>{x.name}{x.detail && <><br /><small className="muted">{x.detail}</small></>}</span><span style={{ whiteSpace: "nowrap" }}>{inr(amt)}</span></label>;
+          })}</div>
+        </details>)}
       <p className="muted" style={{ margin: "8px 0 0", fontSize: 13 }}>Subtotal before GST: <b>{inr(total)}</b> — the invoice shows one line per feature.</p>
     </>
   );

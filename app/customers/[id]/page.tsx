@@ -11,16 +11,16 @@ import { CUSTOMER_TONE, INVOICE_TONE, LICENCE_TONE, addDays, effectiveStatus, to
 import { fmtMoney } from "@/lib/money";
 import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
-import { InvoiceProducts } from "@/components/InvoiceProducts";
+import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { enableHrm, enableTool, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { deleteCustomerAction } from "./delete-action";
 
 export const metadata = { title: "Customer" };
 
-type Licence = { id: string; product_code: string; status: string; starts_on: string; valid_until: string | null; seats: number | null; product_ref: string | null; product_slug: string | null; notes: string | null };
+type Licence = { features?: string[] | null; id: string; product_code: string; status: string; starts_on: string; valid_until: string | null; seats: number | null; product_ref: string | null; product_slug: string | null; notes: string | null };
 
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -53,6 +53,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   }
   const toolUse: Record<string, { users: number; items: number }> = {};
   for (const l of (licences ?? []) as Licence[]) if (isTool(l.product_code) && l.product_ref) toolUse[l.product_code] = await toolUsage(l.product_code, l.product_ref);
+  const { data: extras } = await supabase.from("cost_items").select("id,name,detail,basis,amount,default_qty,product_code").eq("active", true).in("basis", ["one_time", "per_month", "per_year", "per_unit", "per_day"]).order("sort_order");
   const { data: feats } = await supabase.from("app_features").select("*").eq("active", true).order("sort_order").order("name");   // empty until 0050 is run
   const [{ data: invoices }, { data: prices }] = await Promise.all([
     supabase.from("invoices").select("id,number,status,currency,total,issue_date,due_date,created_at").eq("customer_id", c.id).order("created_at", { ascending: false }),
@@ -140,6 +141,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   <>
                     {l.product_slug && pr.code !== "hrm" && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Workspace <b>{l.product_slug}</b> · sign-in <a href={`${env.platformUrl}${pr.app_path}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}</a></p>}
                     {l.product_slug && pr.code === "hrm" && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Sign-in: <a href={`${env.platformUrl}${pr.app_path}${pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}{pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}</a></p>}
+                    {(() => {
+                      const fl = ((feats ?? []) as Feature[]).filter((f) => f.product_code === pr.code);
+                      if (!fl.length) return null;
+                      const have = l.features ?? null;
+                      return <p style={{ fontSize: 13, margin: "8px 0 0" }}>Features: {have ? <><b>{fl.filter((f) => have.includes(f.key ?? "")).length} of {fl.length}</b> — {fl.filter((f) => have.includes(f.key ?? "")).map((f) => f.name).join(", ") || "none"}</> : <b>all {fl.length} (not restricted)</b>}</p>;
+                    })()}
                     {manager && (
                       <details style={{ marginTop: 10 }}>
                         <summary className="btn secondary small">Change licence</summary>
@@ -151,6 +158,22 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                             <label className="field full">Notes<input name="notes" defaultValue={l.notes ?? ""} /></label>
                           </ActionForm>
                           <p className="muted" style={{ fontSize: 12.5 }}>Suspended, expired or cancelled stops the customer&apos;s access within a minute. Their data is kept.</p>
+                          {(() => {
+                            const fl = ((feats ?? []) as Feature[]).filter((f) => f.product_code === pr.code);
+                            if (!fl.length) return null;
+                            return (
+                              <div style={{ borderTop: "1px solid var(--border)", marginTop: 12, paddingTop: 12 }}>
+                                <b>Features this customer can use</b>
+                                <p className="muted" style={{ fontSize: 12.5, margin: "2px 0 8px" }}>A paid invoice switches on the features on it. You can also set them here; anything not ticked is locked in the app.</p>
+                                <ActionForm action={saveLicenceFeatures} submitLabel="Save features" hidden={{ customer_id: c.id, product_code: pr.code }}>
+                                  <label className="check" style={{ fontWeight: 400 }}><input type="radio" name="scope" value="all" defaultChecked={!l.features} /> All features (no restriction)</label>
+                                  <label className="check" style={{ fontWeight: 400 }}><input type="radio" name="scope" value="only" defaultChecked={!!l.features} /> Only the ticked features</label>
+                                  <div style={{ display: "grid", gap: 4, margin: "4px 0 4px 22px" }}>
+                                    {fl.map((f) => <label key={f.id} className="check" style={{ fontWeight: 400 }}><input type="checkbox" name="feature" value={f.key ?? ""} defaultChecked={f.is_core || !!l.features?.includes(f.key ?? "")} disabled={f.is_core} />{f.is_core && <input type="hidden" name="feature" value={f.key ?? ""} />} {f.name}{f.is_core ? " · core" : ""}</label>)}
+                                  </div>
+                                </ActionForm>
+                              </div>);
+                          })()}
                         </div>
                       </details>
                     )}
@@ -214,7 +237,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             <div style={{ marginTop: 10 }}>
               <p className="muted" style={{ fontSize: 13 }}>Pick the apps and their <b>features</b> — the price is the sum of the features chosen (whole-app price list for customers billed outside ₹). Billed in <b>{c.currency}</b>, with GST worked out from {c.country === "IN" ? <>the customer&apos;s {c.tax_id ? "GSTIN" : "state"}</> : "their country (export, no GST)"}. You get a draft to check before issuing. When it is paid, the ticked products&apos; licences renew for the period.</p>
               <ActionForm action={createInvoice} submitLabel="Create draft invoice" pendingLabel="Creating…" hidden={{ customer_id: c.id }}>
-                <InvoiceProducts currency={c.currency} defaultFrom={billFrom} products={(products ?? []).map((pr) => {
+                <InvoiceProducts currency={c.currency} defaultFrom={billFrom} extras={(extras ?? []) as InvExtra[]} products={(products ?? []).map((pr) => {
                   const l = (licences ?? []).find((x) => x.product_code === pr.code) as Licence | undefined;
                   const m = priceOf(pr.code, "month"), y = priceOf(pr.code, "year");
                   return { code: pr.code, name: pr.name, seat_label: pr.seat_label, seats: l?.seats ?? (m ?? y)?.min_seats ?? 1, on: !!l && ["trial", "pilot", "active"].includes(l.status),

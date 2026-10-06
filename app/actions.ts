@@ -85,6 +85,25 @@ export async function saveLicence(_: ActionState, form: FormData): Promise<Actio
   } catch (e) { return fail(e); }
 }
 
+/** Which features of an app the customer may use: none ticked + "all" = no restriction; otherwise only the ticked ones (core features are always kept). */
+export async function saveLicenceFeatures(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const customer = String(form.get("customer_id") ?? ""), product = String(form.get("product_code") ?? "");
+    const supabase = await createClient();
+    let features: string[] | null = null;
+    if (form.get("scope") === "only") {
+      const keys = form.getAll("feature").map(String);
+      const { data: core } = await supabase.from("app_features").select("key").eq("product_code", product).eq("is_core", true).eq("active", true);
+      features = Array.from(new Set([...keys, ...((core ?? []) as { key: string }[]).map((x) => x.key)]));
+    }
+    const { error } = await supabase.from("licences").update({ features, updated_at: new Date().toISOString() }).eq("customer_id", customer).eq("product_code", product);
+    if (error) return { error: error.message.includes("features") ? "This needs the database update 0051_feature_access.sql — run it in Supabase, then try again." : error.message };
+    revalidatePath(`/customers/${customer}`);
+    return { ok: features ? `Saved: the customer can use ${features.length} feature${features.length === 1 ? "" : "s"} of this app. The rest are locked.` : "Saved: the customer can use every feature of this app." };
+  } catch (e) { return fail(e); }
+}
+
 const hrmSchema = z.object({
   customer_id: z.string().uuid(),
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,29}$/, "Short name: 2–30 lowercase letters, digits or dashes"),

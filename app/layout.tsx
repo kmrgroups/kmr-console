@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PoweredBy } from "@/components/PoweredBy";
 import { NavProgress } from "@/components/NavProgress";
+import { PopupCloser } from "@/components/PopupCloser";
 
 import { platformBrand } from "@/lib/brand";
 
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body style={{ ["--brand" as string]: "#1F3A5F", ["--accent" as string]: "#E07A1F" }}>
         <Suspense fallback={null}><NavProgress /></Suspense>
         {children}
+        <PopupCloser />
         <PoweredBy />
       </body>
     </html>
