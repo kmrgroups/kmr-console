@@ -13565,9 +13565,12 @@ create table if not exists console.rmp_orders (
   status text not null default 'planned' check (status in ('planned', 'ordered', 'received', 'cancelled')),
   received_kg numeric, received_on date, notes text,
   sample boolean not null default false, updated_by text, created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create table if not exists console.rmp_settings (      -- allowances used to work out the raw material from the drawing: one row per company
+  customer_id uuid primary key references console.customers(id) on delete cascade, data jsonb not null default '{}',
+  updated_by text, updated_at timestamptz not null default now());
 create index if not exists rmp_orders_customer on console.rmp_orders (customer_id, status, material_code);
 create index if not exists rmp_demand_month on console.rmp_demand (customer_id, month);
-do $$ declare t text; begin foreach t in array array['rmp_bom','rmp_stock','rmp_demand','rmp_orders'] loop
+do $$ declare t text; begin foreach t in array array['rmp_bom','rmp_stock','rmp_demand','rmp_orders','rmp_settings'] loop
   execute format('alter table console.%I enable row level security', t);
   execute format('drop policy if exists %I on console.%I', t || '_staff', t);
   execute format('create policy %I on console.%I for all to authenticated using (console.is_staff()) with check (console.is_staff())', t || '_staff', t);
@@ -13582,11 +13585,23 @@ grant execute on function public.kmr_rmp_context(text) to authenticated;
 -- everything the screens need for one month, in one call
 create or replace function public.kmr_rmp_load(p_slug text, p_month text) returns jsonb
 language plpgsql stable security definer set search_path = console, public as $$
-declare cid uuid := console.qp_cid(p_slug, 'rmp'); cap boolean;
+declare cid uuid := console.qp_cid(p_slug, 'rmp'); cap boolean; borg uuid; dr jsonb := '[]';
 begin
   if p_month !~ '^\d{4}-(0[1-9]|1[0-2])$' then raise exception 'Month must look like 2026-10.'; end if;
   cap := exists (select 1 from console.licences where customer_id = cid and product_code = 'capacity' and product_ref is not null);
+  -- the ballooned drawing of each part (Balloon Inspector): largest diameter and longest linear dimension, to work the blank out from
+  borg := console.grand_ref(cid, 'balloon');
+  if borg is not null and to_regclass('public.bi_reports') is not null then
+    select coalesce(jsonb_agg(jsonb_build_object('part_code', q.part_no, 'rev', q.rev, 'od', q.od, 'len', q.len, 'items', q.n, 'updated', q.updated_at) order by q.part_no), '[]') into dr
+      from (select distinct on (b.part_no) b.part_no, b.rev, b.updated_at, x.od, x.len, x.n
+              from public.bi_reports b
+              cross join lateral (select max((i ->> 'nominal')::numeric) filter (where i ->> 'type' = 'Diameter') od, max((i ->> 'nominal')::numeric) filter (where i ->> 'type' = 'Linear') len, count(*) n
+                                    from jsonb_array_elements(case when jsonb_typeof(b.data -> 'items') = 'array' then b.data -> 'items' else '[]'::jsonb end) i
+                                   where coalesce(i ->> 'nominal', '') ~ '^[0-9]+(\.[0-9]+)?$') x
+             where b.org_id = borg and coalesce(b.part_no, '') <> '' order by b.part_no, b.updated_at desc) q;
+  end if;
   return jsonb_build_object(
+    'drawings', dr, 'settings', coalesce((select data from console.rmp_settings where customer_id = cid), '{}'),
     'parts', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'parts' and r.active), '[]'),
     'materials', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'raw_materials' and r.active), '[]'),
     'suppliers', coalesce((select jsonb_agg(jsonb_build_object('code', r.code, 'name', r.name) || r.data order by r.code) from console.ops_records r where r.customer_id = cid and r.kind = 'suppliers' and r.active), '[]'),
@@ -13600,6 +13615,17 @@ begin
     'today', (now() at time zone 'Asia/Kolkata')::date);
 end $$;
 grant execute on function public.kmr_rmp_load(text, text) to authenticated;
+
+create or replace function public.kmr_rmp_settings_save(p_slug text, p jsonb) returns void
+language plpgsql security definer set search_path = console, public as $$
+declare cid uuid := console.qp_edit(p_slug, 'rmp'); k text; clean jsonb := '{}';
+begin
+  for k in select unnest(array['density', 'face_mm', 'part_mm', 'remnant_mm', 'forge_pct', 'cast_yield_pct']) loop
+    if coalesce(p ->> k, '') ~ '^[0-9]+(\.[0-9]+)?$' then clean := clean || jsonb_build_object(k, (p ->> k)::numeric); end if;
+  end loop;
+  insert into console.rmp_settings (customer_id, data, updated_by) values (cid, clean, lower(coalesce(auth.jwt() ->> 'email', '')))
+  on conflict (customer_id) do update set data = excluded.data, updated_at = now(), updated_by = excluded.updated_by;
+end $$;
 
 -- ---------- bill of material ----------
 create or replace function public.kmr_rmp_bom_save(p_slug text, p jsonb) returns uuid
