@@ -11,6 +11,8 @@ import { CUSTOMER_TONE, INVOICE_TONE, LICENCE_TONE, addDays, effectiveStatus, to
 import { fmtMoney } from "@/lib/money";
 import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
+import { InvoiceProducts } from "@/components/InvoiceProducts";
+import type { Feature } from "@/lib/features";
 import { enableHrm, enableTool, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
@@ -51,6 +53,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   }
   const toolUse: Record<string, { users: number; items: number }> = {};
   for (const l of (licences ?? []) as Licence[]) if (isTool(l.product_code) && l.product_ref) toolUse[l.product_code] = await toolUsage(l.product_code, l.product_ref);
+  const { data: feats } = await supabase.from("app_features").select("*").eq("active", true).order("sort_order").order("name");   // empty until 0050 is run
   const [{ data: invoices }, { data: prices }] = await Promise.all([
     supabase.from("invoices").select("id,number,status,currency,total,issue_date,due_date,created_at").eq("customer_id", c.id).order("created_at", { ascending: false }),
     supabase.from("prices").select("product_code,period,currency,unit_amount,min_seats").eq("active", true).eq("currency", c.currency),
@@ -209,26 +212,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <details>
             <summary className="btn small">Create invoice</summary>
             <div style={{ marginTop: 10 }}>
-              <p className="muted" style={{ fontSize: 13 }}>Billed in <b>{c.currency}</b> from the price list, with GST worked out from {c.country === "IN" ? <>the customer&apos;s {c.tax_id ? "GSTIN" : "state"}</> : "their country (export, no GST)"}. You get a draft to check before issuing. When it is paid, the ticked products&apos; licences renew for the period.</p>
+              <p className="muted" style={{ fontSize: 13 }}>Pick the apps and their <b>features</b> — the price is the sum of the features chosen (whole-app price list for customers billed outside ₹). Billed in <b>{c.currency}</b>, with GST worked out from {c.country === "IN" ? <>the customer&apos;s {c.tax_id ? "GSTIN" : "state"}</> : "their country (export, no GST)"}. You get a draft to check before issuing. When it is paid, the ticked products&apos; licences renew for the period.</p>
               <ActionForm action={createInvoice} submitLabel="Create draft invoice" pendingLabel="Creating…" hidden={{ customer_id: c.id }}>
-                <div className="row">
-                  <label className="field" style={{ flex: 1, minWidth: 160 }}>Billing<select name="period" defaultValue="month"><option value="month">Monthly</option><option value="year">Yearly</option></select></label>
-                  <label className="field" style={{ flex: 1, minWidth: 160 }}>Period starts<input type="date" name="from" defaultValue={billFrom} required /></label>
-                </div>
-                <div className="stack" style={{ gap: 6 }}>
-                  {(products ?? []).map((pr) => {
-                    const l = (licences ?? []).find((x) => x.product_code === pr.code) as Licence | undefined;
-                    const m = priceOf(pr.code, "month"), y = priceOf(pr.code, "year");
-                    return (
-                      <div key={pr.code} className="row" style={{ border: "1px solid var(--border)", borderRadius: 8, padding: "8px 12px", justifyContent: "space-between" }}>
-                        <label style={{ display: "flex", gap: 8, alignItems: "center", flex: 1, minWidth: 200 }}>
-                          <input type="checkbox" name="product" value={pr.code} defaultChecked={!!l && ["trial", "pilot", "active"].includes(l.status)} />
-                          <span><b>{pr.name}</b><br /><small className="muted">{m ? `${fmtMoney(m.unit_amount, c.currency)}/month` : "no monthly price"} · {y ? `${fmtMoney(y.unit_amount, c.currency)}/year` : "no yearly price"} per {pr.seat_label.replace(/s$/, "")}{(m ?? y) ? `, min ${(m ?? y)!.min_seats}` : ""}</small></span>
-                        </label>
-                        <label className="row" style={{ gap: 6, fontSize: 13 }}>{pr.seat_label}<input type="number" name={`seats_${pr.code}`} min={1} defaultValue={l?.seats ?? (m ?? y)?.min_seats ?? 1} style={{ width: 90 }} /></label>
-                      </div>);
-                  })}
-                </div>
+                <InvoiceProducts currency={c.currency} defaultFrom={billFrom} products={(products ?? []).map((pr) => {
+                  const l = (licences ?? []).find((x) => x.product_code === pr.code) as Licence | undefined;
+                  const m = priceOf(pr.code, "month"), y = priceOf(pr.code, "year");
+                  return { code: pr.code, name: pr.name, seat_label: pr.seat_label, seats: l?.seats ?? (m ?? y)?.min_seats ?? 1, on: !!l && ["trial", "pilot", "active"].includes(l.status),
+                    minSeats: (m ?? y)?.min_seats ?? 1, flat: { month: m ? Number(m.unit_amount) : null, year: y ? Number(y.unit_amount) : null },
+                    features: ((feats ?? []) as Feature[]).filter((f) => f.product_code === pr.code) };
+                })} />
                 <label className="field">Note on the invoice (optional)<input name="notes" placeholder="e.g. PO 4500012345" /></label>
               </ActionForm>
             </div>

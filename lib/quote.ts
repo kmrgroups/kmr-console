@@ -21,6 +21,7 @@ export type QuoteLine = {
   rate: number;             // price per basis unit, before GST
   months?: number;          // monthly bases: how many months
   product_code?: string | null;
+  feature_id?: string | null; // set when the line is one chosen feature of an app
 };
 export type ScopeRow = { module: string; capability: string };
 

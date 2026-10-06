@@ -6,13 +6,14 @@ import { Empty, fmtDate, one } from "@/components/ui";
 import { fmtMoney } from "@/lib/money";
 import { p } from "@/lib/base-path";
 import { INVOICE_TONE } from "@/lib/view";
-import { deletePrice, removeBillingImage, saveBillingSettings, savePrice, uploadBillingImage } from "@/app/billing-actions";
+import { deleteFeature, deletePrice, removeBillingImage, saveFeature, saveBillingSettings, savePrice, uploadBillingImage } from "@/app/billing-actions";
 import { billingImageUrls } from "@/lib/billing-files";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { deleteCostItem, saveCostItem, saveQuoteSettings } from "@/app/quote-actions";
 import { BASIS, inr } from "@/lib/quote";
+import type { Feature } from "@/lib/features";
 
-const TABS = [["quotes", "Quotations"], ["invoices", "Invoices"], ["costing", "Price list & costing"], ["seller", "Seller & letterhead"]] as const;
+const TABS = [["quotes", "Quotations"], ["invoices", "Invoices"], ["features", "Apps & features"], ["costing", "Price list & costing"], ["seller", "Seller & letterhead"]] as const;
 const QUOTE_TONE: Record<string, string> = { draft: "", sent: "info", accepted: "ok", declined: "danger", expired: "warn" };
 type Cost = { id: string; product_code: string | null; name: string; detail: string | null; basis: keyof typeof BASIS; amount: number; default_qty: number; include_by_default: boolean; sort_order: number; active: boolean };
 
@@ -35,6 +36,8 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
     supabase.from("quotes").select("id,number,to_name,subject,total,status,quote_date,valid_until,created_by").order("created_at", { ascending: false }).limit(200),
     supabase.from("cost_items").select("*").order("sort_order").order("name"),
   ]);
+  const { data: featRows, error: featErr } = await supabase.from("app_features").select("*").order("product_code").order("sort_order").order("name");
+  const features = (featRows ?? []) as Feature[];
   const { data: reported } = await supabase.from("payments").select("invoice_id").eq("status", "reported");
   const toVerify = new Set((reported ?? []).map((r) => r.invoice_id));
   if (!s) {
@@ -56,7 +59,7 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
 
   return (
     <AppShell staff={staff} active={tab === "quotes" ? "/billing?tab=quotes" : "/billing"}>
-      <div className="pagehead"><div><h1>Prices &amp; invoices</h1><p>Quotations with detailed costing (PDF on your letterhead), invoices, the price list and costing catalogue, and seller details.</p></div>
+      <div className="pagehead"><div><h1>Prices &amp; invoices</h1><p>Quotations with detailed costing (PDF on your letterhead), invoices, the apps with the price of every feature, the costing catalogue, and seller details.</p></div>
         <a className="btn" href={p("/quotes/new")}>+ New quotation</a></div>
 
       <nav className="tabs" style={{ marginTop: 6 }}>{TABS.map(([k, l]) => <a key={k} href={p(`/billing?tab=${k}`)} className={tab === k ? "active" : ""}>{l}</a>)}</nav>
@@ -132,10 +135,49 @@ export default async function Billing({ searchParams }: { searchParams: Promise<
         ) : <Empty>No invoices yet. Open a customer and use <b>Create invoice</b>.</Empty>}
       </div>}
 
+      {tab === "features" && <>
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Apps &amp; features</h2>
+        <p className="muted" style={{ marginTop: -4 }}>Every app is a set of <b>features</b>, each with its own price per user (per employee for the HRM). A quotation or invoice picks the app, then its features, and the price is the <b>sum of the features chosen</b>. <b>Core</b> features are always included. An app&apos;s full price in the price list follows its features automatically. Every new app you add starts with a <b>Core platform</b> feature to price, so upcoming apps work the same way. All prices are in ₹, before GST; the yearly price is normally ten months of the monthly one (two months free), and you can change both.</p>
+        {featErr && <div className="alert warn">This needs the database update <b>0050_app_features.sql</b>. Run it in Supabase → SQL Editor, then refresh. ({featErr.message})</div>}
+      </div>
+      {!featErr && (products ?? []).filter((x) => x.code !== "console").map((pr) => {
+        const fs = features.filter((f) => f.product_code === pr.code), live = fs.filter((f) => f.active);
+        const sm = live.reduce((a, f) => a + Number(f.price_month), 0), sy = live.reduce((a, f) => a + Number(f.price_year), 0);
+        const unpriced = live.length > 0 && sm === 0;
+        const per = seatLabel[pr.code]?.replace(/s$/, "") ?? "user";
+        return (
+          <div className="card" key={pr.code}>
+            <div className="spread"><h2 style={{ margin: 0 }}>{pr.name}</h2>
+              <span><span className="badge ok">Full app {inr(sm)}/{per}/month · {inr(sy)}/{per}/year</span></span></div>
+            {unpriced && <div className="alert warn" style={{ marginTop: 10 }}>No price set yet. Open <b>Edit</b> on the core feature (or add features below) and set the prices — until then this app cannot be quoted at a price.</div>}
+            {fs.length ? (
+              <div className="tablewrap" style={{ marginTop: 10 }}><table>
+                <thead><tr><th>Feature</th><th style={{ textAlign: "right" }}>₹ / {per} / month</th><th style={{ textAlign: "right" }}>₹ / {per} / year</th><th style={{ textAlign: "right" }}>One-time set-up</th><th>Type</th><th>Status</th>{manager && <th />}</tr></thead>
+                <tbody>{fs.map((f) => (
+                  <tr key={f.id} style={f.active ? undefined : { opacity: 0.55 }}>
+                    <td><b>{f.name}</b>{f.detail && <><br /><small className="muted">{f.detail}</small></>}</td>
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{inr(f.price_month)}</td>
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{inr(f.price_year)}</td>
+                    <td style={{ textAlign: "right", whiteSpace: "nowrap" }}>{Number(f.setup_fee) ? inr(f.setup_fee) : "—"}</td>
+                    <td>{f.is_core ? <span className="badge info">Core · always</span> : <span className="badge">Optional</span>}</td>
+                    <td><span className={`badge ${f.active ? "ok" : ""}`}>{f.active ? "in use" : "paused"}</span></td>
+                    {manager && <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                      <details style={{ display: "inline-block" }}><summary className="btn secondary small">Edit</summary><div className="editpop"><FeatureForm code={pr.code} f={f} /></div></details>
+                      <form action={deleteFeature} style={{ display: "inline" }}><input type="hidden" name="id" value={f.id} /><button className="btn ghost small">Remove</button></form>
+                    </td>}
+                  </tr>))}</tbody>
+              </table></div>
+            ) : <Empty>No features yet{manager ? " — add the first one below." : "."}</Empty>}
+            {manager && <details style={{ marginTop: 12 }}><summary className="btn small">+ Add a feature to {pr.name}</summary><div style={{ marginTop: 10 }}><FeatureForm code={pr.code} /></div></details>}
+          </div>);
+      })}
+      </>}
+
       {tab === "costing" && <>
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Price list</h2>
-        <p className="muted" style={{ marginTop: -4 }}>A price per user (per employee for the HRM) for each billing period and currency. <b>Minimum</b> is the fewest billed, however few are used. Customers are invoiced in their own currency, so add a price in every currency you sell in.</p>
+        <p className="muted" style={{ marginTop: -4 }}><b>INR prices follow the features</b> (see Apps &amp; features) — change a feature, not this line. Use this list for other currencies and for the minimum billed. A price per user (per employee for the HRM) for each billing period and currency. <b>Minimum</b> is the fewest billed, however few are used. Customers are invoiced in their own currency, so add a price in every currency you sell in.</p>
         {prices?.length ? (
           <div className="tablewrap"><table>
             <thead><tr><th>Product</th><th>Billing</th><th style={{ textAlign: "right" }}>Price</th><th style={{ textAlign: "right" }}>Minimum</th><th>Note</th><th>Status</th>{manager && <th />}</tr></thead>
@@ -299,6 +341,21 @@ function CostForm({ c, products }: { c?: Cost; products: { code: string; name: s
       <label className="field">Status<select name="active" defaultValue={c?.active === false ? "off" : "on"}><option value="on">In use</option><option value="off">Paused</option></select></label>
       <label className="field checkline"><input type="checkbox" name="include_by_default" defaultChecked={!!c?.include_by_default} /> Add automatically when the app is quoted</label>
       <label className="field full">Detail (printed under the line)<input name="detail" defaultValue={c?.detail ?? ""} /></label>
+    </ActionForm>
+  );
+}
+
+function FeatureForm({ code, f }: { code: string; f?: Feature }) {
+  return (
+    <ActionForm action={saveFeature} submitLabel={f ? "Save feature" : "Add feature"} className="formgrid" hidden={{ product_code: code, ...(f ? { id: f.id } : {}) }} resetOnSuccess={!f}>
+      <label className="field">Feature name<input name="name" defaultValue={f?.name ?? ""} required placeholder="e.g. Payroll & statutory reports" /></label>
+      <label className="field">Price / user / month (₹)<input name="price_month" inputMode="decimal" defaultValue={f ? String(f.price_month) : ""} required placeholder="e.g. 150" /></label>
+      <label className="field">Price / user / year (₹)<input name="price_year" inputMode="decimal" defaultValue={f ? String(f.price_year) : ""} placeholder="blank = 10 × monthly" /></label>
+      <label className="field">One-time set-up (₹)<input name="setup_fee" inputMode="decimal" defaultValue={f ? String(f.setup_fee) : "0"} /></label>
+      <label className="field">Order<input name="sort_order" type="number" defaultValue={f?.sort_order ?? 100} /></label>
+      <label className="field">Status<select name="active" defaultValue={f?.active === false ? "off" : "on"}><option value="on">In use</option><option value="off">Paused</option></select></label>
+      <label className="field checkline"><input type="checkbox" name="is_core" defaultChecked={!!f?.is_core} /> Core — always included with the app</label>
+      <label className="field full">What it covers (shown on the quotation scope)<input name="detail" defaultValue={f?.detail ?? ""} /></label>
     </ActionForm>
   );
 }

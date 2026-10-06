@@ -95,7 +95,8 @@ export async function createInvoice(_: ActionState, form: FormData): Promise<Act
   try {
     await assertManager();
     const customer = String(form.get("customer_id") ?? "");
-    const items = form.getAll("product").map(String).map((code) => ({ product_code: code, seats: Number(form.get(`seats_${code}`) || 0) }));
+    // each ticked product carries the features chosen for it; the price is the sum of those features
+    const items = form.getAll("product").map(String).map((code) => ({ product_code: code, seats: Number(form.get(`seats_${code}`) || 0), features: form.getAll(`feat_${code}`).map(String).filter(Boolean) }));
     if (!items.length) return { error: "Tick at least one product to bill." };
     id = await rpc("create_invoice", { p_customer: customer, p_period: form.get("period"), p_from: form.get("from") || null, p_items: items, p_notes: form.get("notes") || null });
     await setFlash({ ok: "Draft invoice created. Check it, add any extra line, then Issue." });
@@ -214,5 +215,45 @@ export async function removeBillingImage(form: FormData) {
   if (kind !== "seal" && kind !== "signature" && kind !== "letterhead") return;
   const supabase = await createClient();
   await supabase.from("billing_settings").update({ [`${kind}_path`]: null, updated_at: new Date().toISOString() }).eq("id", true);
+  revalidatePath("/billing");
+}
+
+// ---------- app features and their prices (Prices & invoices › Apps & features) ----------
+const amt = (label: string) => z.string().trim().regex(/^\d+(\.\d{1,2})?$/, `${label}: enter an amount like 250 or 250.50`).transform(Number);
+const featureSchema = z.object({
+  id: z.string().uuid().optional().or(z.literal("")).transform((v) => v || undefined),
+  product_code: z.string().min(2),
+  name: z.string().trim().min(2, "Enter the feature name").max(120),
+  detail: opt(300),
+  price_month: amt("Monthly price"),
+  price_year: z.string().trim().optional().transform((v) => v || ""),
+  setup_fee: z.string().trim().optional().transform((v) => v || "0").pipe(amt("Set-up fee")),
+  sort_order: z.string().optional().transform((v) => (v ? Number(v) : 100)),
+  is_core: z.string().optional().transform((v) => v === "on"),
+  active: z.string().optional().transform((v) => v !== "off"),
+});
+
+export async function saveFeature(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const parsed = featureSchema.safeParse(Object.fromEntries(form));
+    if (!parsed.success) return { error: parsed.error.issues[0].message };
+    const { id, price_year, ...rest } = parsed.data;
+    // yearly price left blank = ten months' price (two months free)
+    const year = price_year === "" ? Math.round(rest.price_month * 10 * 100) / 100 : Number(price_year);
+    if (!Number.isFinite(year) || year < 0) return { error: "Yearly price: enter an amount like 2500." };
+    const supabase = await createClient();
+    const row = { ...rest, price_year: year, updated_at: new Date().toISOString() };
+    const { error } = id ? await supabase.from("app_features").update(row).eq("id", id) : await supabase.from("app_features").insert(row);
+    if (error) return { error: error.message.includes("duplicate") ? "This app already has a feature with that name." : error.message };
+    revalidatePath("/billing");
+    return { ok: id ? "Feature saved. The app's full price now follows its features." : "Feature added." };
+  } catch (e) { return fail(e); }
+}
+
+export async function deleteFeature(form: FormData) {
+  await assertManager();
+  const supabase = await createClient();
+  await supabase.from("app_features").delete().eq("id", String(form.get("id")));
   revalidatePath("/billing");
 }

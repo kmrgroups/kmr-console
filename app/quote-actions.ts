@@ -25,7 +25,7 @@ const quoteSchema = z.object({
   lines: z.array(z.object({
     particulars: z.string().trim().max(200), detail: z.string().trim().max(400).optional().default(""),
     basis, qty: num.min(0).max(1e7), rate: num.min(0).max(1e10), months: num.min(1).max(120).optional().default(1),
-    product_code: z.string().nullable().optional(),
+    product_code: z.string().nullable().optional(), feature_id: z.string().uuid().nullable().optional(),
   })).max(80).transform((r) => r.filter((x) => x.particulars))
     .refine((r) => r.length > 0, "Add at least one priced line"),
   includes: txt(3000), terms: txt(6000),

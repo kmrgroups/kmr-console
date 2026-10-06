@@ -3,9 +3,10 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { saveQuote } from "@/app/quote-actions";
 import { BASIS, addDays, basisText, inWords, inr, lineAmount, totals, type Basis, type QuoteInput, type QuoteLine, type ScopeRow } from "@/lib/quote";
 import { p } from "@/lib/base-path";
+import { featurePrice, type Feature } from "@/lib/features";
 
 export type Customer = { id: string; name: string; legal_name: string | null; contact_name: string | null; contact_email: string | null; contact_phone: string | null; address: string | null; city: string | null; state: string | null; postal_code: string | null; tax_id: string | null };
-export type Product = { code: string; name: string; seat_label: string; description: string | null; prices: { period: string; unit_amount: number; min_seats: number }[]; features: string[]; tagline: string | null };
+export type Product = { code: string; name: string; seat_label: string; description: string | null; prices: { period: string; unit_amount: number; min_seats: number }[]; features: string[]; featureList: Feature[]; tagline: string | null };
 export type Lead = { id: string; name: string; company: string | null; email: string | null; phone: string | null; country: string | null; business: string; product_name: string | null; quantity: string | null; message: string | null; status: string; customer_id: string | null; created_at: string };
 export type Cost = { id: string; product_code: string | null; name: string; detail: string | null; basis: Basis; amount: number; default_qty: number; include_by_default: boolean; active: boolean };
 
@@ -81,6 +82,46 @@ export function QuoteBuilder({ initial, customers, leads = [], startLead, produc
         subject: x.subject && !x.subject.startsWith("KMR Apps —") ? x.subject : `KMR Apps — ${names.join(", ")} (cloud subscription, implementation and training)`,
         intro: x.intro || "We are pleased to submit our commercial quotation for KMR Apps — cloud software built by manufacturing people for manufacturers. The scope, the detailed costing and the commercial terms are given below." };
     });
+  }
+  /* ---- feature picker: the price of an app is the sum of the features chosen ---- */
+  const [pick, setPick] = useState<{ code: string; period: "month" | "year"; users: number; chosen: Set<string> } | null>(null);
+  function openPicker(code: string, period: "month" | "year") {
+    const pr = products.find((x) => x.code === code); if (!pr) return;
+    if (!pr.featureList.length) { addApp(code, period); return; }          // before 0050: the flat per-user price
+    const have = new Set(q.lines.filter((l) => l.product_code === code && l.feature_id).map((l) => l.feature_id as string));
+    const existing = q.lines.find((l) => l.product_code === code && l.feature_id);
+    const minSeats = (pr.prices.find((x) => x.period === period) ?? pr.prices[0])?.min_seats ?? 1;
+    setPick({ code, period: existing?.basis === "per_user_year" ? "year" : existing?.basis === "per_user_month" ? "month" : period,
+      users: existing ? Number(existing.qty) || minSeats : minSeats,
+      chosen: have.size ? have : new Set(pr.featureList.map((f) => f.id)) });
+  }
+  function applyPicker() {
+    if (!pick) return;
+    const pr = products.find((x) => x.code === pick.code); if (!pr) return;
+    const fs = pr.featureList.filter((f) => f.is_core || pick.chosen.has(f.id));
+    const per = pick.period;
+    const lines = fs.map<QuoteLine>((f) => ({ product_code: pr.code, feature_id: f.id, particulars: `${pr.name} — ${f.name}`, detail: f.detail ?? "",
+      basis: per === "year" ? "per_user_year" : "per_user_month", qty: pick.users, rate: featurePrice(f, per), months: 12 }));
+    const setup = fs.reduce((a, f) => a + (Number(f.setup_fee) || 0), 0);
+    if (setup > 0) lines.push({ product_code: null, particulars: `${pr.name} — one-time set-up of the chosen features`, detail: "", basis: "one_time", qty: 1, rate: setup, months: 12 });
+    setQ((x) => {
+      // replace this app's earlier subscription lines (feature lines, its flat line and its set-up line), keep everything else
+      const kept = x.lines.filter((l) => !((l.product_code === pr.code && (l.feature_id || l.basis.startsWith("per_user"))) || l.particulars === `${pr.name} — one-time set-up of the chosen features`));
+      const at = Math.max(0, x.lines.findIndex((l) => l.product_code === pr.code && (l.feature_id || l.basis.startsWith("per_user"))));
+      const firstOneTime = kept.findIndex((l) => !l.basis.startsWith("per_user"));
+      const pos = x.lines.some((l) => l.product_code === pr.code && l.feature_id) ? Math.min(at, kept.length) : firstOneTime < 0 ? kept.length : firstOneTime;
+      const have = new Set(kept.map((l) => l.particulars));
+      const extra = x.lines.some((l) => l.product_code === pr.code && l.feature_id) ? [] : costs.filter((c) => c.active && c.include_by_default && (c.product_code === pr.code || !c.product_code) && !have.has(c.name))
+        .map<QuoteLine>((c) => ({ product_code: c.product_code, particulars: c.name, detail: c.detail ?? "", basis: c.basis, qty: Number(c.default_qty), rate: Number(c.amount), months: 12 }));
+      const out = [...kept.slice(0, pos), ...lines, ...kept.slice(pos), ...extra];
+      const scopeText = fs.map((f) => f.name).join("; ");
+      const scope = x.scope.some((s0) => s0.module === pr.name) ? x.scope.map((s0) => (s0.module === pr.name ? { ...s0, capability: scopeText } : s0)) : [...x.scope, { module: pr.name, capability: scopeText }];
+      const names = Array.from(new Set(out.filter((l) => l.basis.startsWith("per_user")).map((l) => products.find((p0) => p0.code === l.product_code)?.name).filter(Boolean)));
+      return { ...x, lines: out, scope,
+        subject: x.subject && !x.subject.startsWith("KMR Apps —") ? x.subject : `KMR Apps — ${names.join(", ")} (cloud subscription, implementation and training)`,
+        intro: x.intro || "We are pleased to submit our commercial quotation for KMR Apps — cloud software built by manufacturing people for manufacturers. The scope, the detailed costing and the commercial terms are given below." };
+    });
+    setPick(null);
   }
   function addCost(id: string) {
     const c = costs.find((x) => x.id === id); if (!c) return;
@@ -263,14 +304,40 @@ export function QuoteBuilder({ initial, customers, leads = [], startLead, produc
 
         <div className="card">
           <h2>Add apps &amp; costing</h2>
-          <p className="muted" style={{ fontSize: 12.5, marginTop: -4 }}>An app adds its yearly subscription, scope and the costing items marked auto. “monthly” bills it per month instead.</p>
+          <p className="muted" style={{ fontSize: 12.5, marginTop: -4 }}>Pick an app, then tick its features — the price is the sum of the features. Core features are always included. “monthly” bills per month instead of per year.</p>
           <div className="chips">{products.map((pr) => {
             const m = pr.prices.find((x) => x.period === "month"), y = pr.prices.find((x) => x.period === "year");
             return <span key={pr.code} style={{ display: "inline-flex", gap: 4 }}>
-              <button type="button" className={quoted.has(pr.code) ? "on" : ""} onClick={() => addApp(pr.code, "year")}>{quoted.has(pr.code) ? "✓ " : "+ "}{pr.name}{y ? ` · ${inr(y.unit_amount)}/yr` : ""}</button>
-              {m && <button type="button" onClick={() => addApp(pr.code, "month")}>monthly</button>}
+              <button type="button" className={quoted.has(pr.code) ? "on" : ""} onClick={() => openPicker(pr.code, "year")}>{quoted.has(pr.code) ? "✓ " : "+ "}{pr.name}{y ? ` · from ${inr(pr.featureList.length ? pr.featureList.filter((f) => f.is_core).reduce((a, f) => a + Number(f.price_year), 0) : y.unit_amount)}/yr` : ""}</button>
+              {m && <button type="button" onClick={() => openPicker(pr.code, "month")}>monthly</button>}
             </span>;
           })}</div>
+          {pick && (() => {
+            const pr = products.find((x) => x.code === pick.code)!;
+            const per = pick.period, sel = pr.featureList.filter((f) => f.is_core || pick.chosen.has(f.id));
+            const each = sel.reduce((a, f) => a + featurePrice(f, per), 0), setup = sel.reduce((a, f) => a + (Number(f.setup_fee) || 0), 0);
+            return <div style={{ marginTop: 12, border: "1px solid var(--kmr-gold,#C9A24B)", borderRadius: 10, padding: 12 }}>
+              <b>{pr.name} — choose features</b>
+              <div className="formgrid" style={{ gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", marginTop: 8 }}>
+                <label className="field">Billing<select value={per} onChange={(e) => setPick({ ...pick, period: e.target.value as "month" | "year" })}><option value="year">Yearly</option><option value="month">Monthly</option></select></label>
+                <label className="field">{pr.seat_label}<input {...NUM} value={pick.users} onChange={(e) => setPick({ ...pick, users: Math.max(1, Number(e.target.value) || 1) })} /></label>
+              </div>
+              <div style={{ display: "grid", gap: 6, margin: "8px 0" }}>{pr.featureList.map((f) => (
+                <label key={f.id} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13 }}>
+                  <input type="checkbox" checked={f.is_core || pick.chosen.has(f.id)} disabled={f.is_core}
+                    onChange={(e) => { const c = new Set(pick.chosen); if (e.target.checked) c.add(f.id); else c.delete(f.id); setPick({ ...pick, chosen: c }); }} />
+                  <span style={{ flex: 1 }}>{f.name}{f.is_core && <small className="muted"> · core</small>}</span>
+                  <span style={{ whiteSpace: "nowrap" }}>{inr(featurePrice(f, per))}</span>
+                </label>))}</div>
+              <div className="tot"><span>Per {pr.seat_label.replace(/s$/, "")} / {per}</span><b>{inr(each)}</b>
+                <span>× {pick.users} {pr.seat_label}</span><b>{inr(each * pick.users * (per === "month" ? 12 : 1))}<small className="muted"> {per === "month" ? "/ 12 months" : "/ year"}</small></b>
+                {setup > 0 && <><span>One-time set-up</span><b>{inr(setup)}</b></>}</div>
+              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                <button type="button" className="btn small" onClick={applyPicker}>{quoted.has(pr.code) ? "Update the quotation" : "Add to the quotation"}</button>
+                <button type="button" className="btn ghost small" onClick={() => setPick(null)}>Cancel</button>
+              </div>
+            </div>;
+          })()}
           <select defaultValue="" onChange={(e) => { if (e.target.value) addCost(e.target.value); e.target.value = ""; }} style={{ marginTop: 10, width: "100%" }}>
             <option value="">+ Add from the costing catalogue…</option>
             {costs.filter((c) => c.active).map((c) => <option key={c.id} value={c.id}>{c.name} — {inr(c.amount)} {BASIS[c.basis].label.toLowerCase()}</option>)}
