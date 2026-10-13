@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { movePlantData, addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { deleteCustomerAction } from "./delete-action";
@@ -113,6 +113,19 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               </details>);
           })}
         </div>
+        {manager && plants.length > 0 && <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+          <b style={{ fontSize: 14 }}>Move existing data into a plant</b>
+          <p className="muted" style={{ margin: "4px 0 8px", fontSize: 13 }}>Data entered before plants existed sits under the main company. Move it to one plant (switch the app on for that plant first). Capacity is copied. A plant that already has data in an app is never overwritten.</p>
+          <ActionForm action={movePlantData} submitLabel="Move data" variant="secondary" hidden={{ customer_id: c.id }} confirm="Move the selected data into this plant? It will no longer show under the main company.">
+            <select name="plant_id" required defaultValue="" style={{ maxWidth: 260 }}><option value="" disabled>Choose plant…</option>{plants.map((pl) => <option key={pl.id} value={pl.id}>{pl.plant_code} · {pl.name}</option>)}</select>
+            <div className="row" style={{ gap: 14, flexWrap: "wrap" }}>
+              <label><input type="checkbox" name="tool" value="sales" /> Sales Flow</label>
+              <label><input type="checkbox" name="tool" value="calib" /> Calibration Hub</label>
+              <label><input type="checkbox" name="tool" value="ops" /> Operations Master</label>
+              <label><input type="checkbox" name="tool" value="capacity" /> Capacity</label>
+            </div>
+          </ActionForm>
+        </div>}
         {manager && <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
           <b style={{ fontSize: 14 }}>Add a plant</b>
           <ActionForm action={addPlant} submitLabel="Add plant" hidden={{ customer_id: c.id }} className="row">
