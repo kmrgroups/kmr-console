@@ -433,3 +433,68 @@ export async function repairAccess(_: ActionState, form: FormData): Promise<Acti
     return { ok: "Access repaired: the main contact and company administrators now have access in every tool." };
   } catch (e) { return fail(e); }
 }
+
+// ---------------------------------------------------------------- Plants (0061_plants.sql)
+const PLANT_ROLES = ["viewer", "editor", "admin"];
+const MISSING_PLANTS = "Plants are not set up in the database yet. Take a backup, then in Supabase → SQL Editor run supabase/migrations/0061_plants.sql and try again.";
+
+/** Add a plant (Plant-1, Plant-2 …) to a customer. Plants are separate sets of data in every app. */
+export async function addPlant(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const parent = String(form.get("customer_id") ?? "");
+    const name = String(form.get("name") ?? "").trim().slice(0, 60);
+    const code = String(form.get("code") ?? "").trim().slice(0, 20);
+    const city = String(form.get("city") ?? "").trim().slice(0, 80);
+    if (!name || !code) return { error: "Enter the plant name and a short code, for example Plant-1 and P1." };
+    const supabase = await createClient();
+    const { error } = await supabase.rpc("create_plant", { p_parent: parent, p_name: name, p_code: code, p_city: city || null });
+    if (error) {
+      if (/create_plant/.test(error.message) && /function|schema cache/i.test(error.message)) return { error: MISSING_PLANTS };
+      return { error: /customers_plant_code_uq|duplicate/.test(error.message) ? "This customer already has a plant with that code." : error.message };
+    }
+    revalidatePath(`/customers/${parent}`);
+    return { ok: `${name} added. Open it from the list to switch on its apps and add its people.` };
+  } catch (e) { return fail(e); }
+}
+
+/** Give a person access to one plant (they see only the plants they are added to). */
+export async function savePlantMember(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const plant = String(form.get("plant_id") ?? "");
+    const email = String(form.get("email") ?? "").trim().toLowerCase();
+    const fullName = String(form.get("full_name") ?? "").trim().slice(0, 120) || null;
+    const role = String(form.get("role") ?? "viewer");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: "Enter a valid email address." };
+    if (!PLANT_ROLES.includes(role)) return { error: "Choose viewer, editor or admin." };
+    const admin = createAdminClient().schema("console");
+    const { data: pl } = await admin.from("customers").select("id,parent_id").eq("id", plant).maybeSingle();
+    if (!pl?.parent_id) return { error: "This is not a plant." };
+    const { data: lic } = await admin.from("licences").select("product_code").eq("customer_id", plant).not("product_ref", "is", null);
+    const roles: Record<string, string> = {};
+    for (const l of (lic ?? []) as { product_code: string }[]) roles[l.product_code] = l.product_code === "hrm" ? "hr_manager" : role;
+    const { data: ex } = await admin.from("customer_members").select("roles").eq("customer_id", plant).eq("email", email).maybeSingle();
+    const { error } = await admin.from("customer_members").upsert(
+      { customer_id: plant, email, full_name: fullName, is_admin: role === "admin", roles: { ...((ex?.roles as Record<string, string>) ?? {}), ...roles }, created_by: "KMR Console", updated_at: new Date().toISOString() },
+      { onConflict: "customer_id,email" });
+    if (error) return { error: error.message };
+    try { await admin.rpc("sync_member", { p_customer: plant, p_email: email }); } catch { /* tools that keep their own list pick it up on first open */ }
+    revalidatePath(`/customers/${pl.parent_id}`);
+    return { ok: `${email} can now open this plant.` };
+  } catch (e) { return fail(e); }
+}
+
+export async function removePlantMember(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const plant = String(form.get("plant_id") ?? ""), email = String(form.get("email") ?? "").toLowerCase();
+    const admin = createAdminClient().schema("console");
+    const { data: pl } = await admin.from("customers").select("parent_id").eq("id", plant).maybeSingle();
+    if (!pl?.parent_id) return { error: "This is not a plant." };
+    const { error } = await admin.from("customer_members").delete().eq("customer_id", plant).eq("email", email);
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${pl.parent_id}`);
+    return { ok: `${email} removed from this plant.` };
+  } catch (e) { return fail(e); }
+}

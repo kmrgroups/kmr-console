@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { deleteCustomerAction } from "./delete-action";
@@ -65,6 +65,18 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const priceOf = (code: string, period: string) => (prices ?? []).find((x) => x.product_code === code && x.period === period);
   const { data: members } = await supabase.from("customer_members").select("email,full_name,is_admin,roles").eq("customer_id", c.id).order("is_admin", { ascending: false }).order("email");
   const prodName: Record<string, string> = Object.fromEntries(((products ?? []) as { code: string; name: string }[]).map((x) => [x.code, x.name]));
+  // Plants (0061_plants.sql): empty / absent until that file is run
+  const isPlant = !!(c as { parent_id?: string | null }).parent_id;
+  const { data: parentRow } = isPlant ? await supabase.from("customers").select("id,name").eq("id", (c as { parent_id: string }).parent_id).maybeSingle() : { data: null };
+  const plantsRes = isPlant ? { data: null } : await supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", c.id).order("plant_code");
+  const plants = (plantsRes.data ?? []) as { id: string; name: string; plant_code: string; city: string | null; status: string }[];
+  const plantIds = plants.map((x) => x.id);
+  const [{ data: plantMembers }, { data: plantLic }] = plantIds.length
+    ? await Promise.all([
+        supabase.from("customer_members").select("customer_id,email,full_name,is_admin,roles").in("customer_id", plantIds).order("email"),
+        supabase.from("licences").select("customer_id,product_code").in("customer_id", plantIds).not("product_ref", "is", null),
+      ])
+    : [{ data: [] }, { data: [] }];
   const suggestedSlug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "company";
   const suggestedPrefix = c.name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "EMP";
 
@@ -73,6 +85,43 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       <div className="pagehead">
         <div><h1>{c.name}</h1><p><span className="mono">{c.code}</span> · {c.country} · {c.currency} · <span className={`badge ${CUSTOMER_TONE[c.status]}`}>{c.status}</span></p></div>
       </div>
+
+      {isPlant && parentRow && <div className="alert info">This is a <b>plant</b> of <a href={p(`/customers/${parentRow.id}`)}><b>{parentRow.name}</b></a>. Its apps and data are separate from the other plants. Add its people from the main company page › Plants.</div>}
+
+      {!isPlant && <div className="card">
+        <h2>Plants</h2>
+        <p className="muted" style={{ marginTop: 0 }}>For customers with more than one plant. Every plant has its own apps and data; people only see the plants you add them to. The main company's administrators see all plants and the all-plants summary.</p>
+        {plants.length === 0 && <p className="muted">No plants yet. Without plants the customer works exactly as before.</p>}
+        <div className="stack">
+          {plants.map((pl) => {
+            const people = ((plantMembers ?? []) as { customer_id: string; email: string; full_name: string | null; is_admin: boolean; roles: Record<string, string> }[]).filter((m) => m.customer_id === pl.id);
+            const tools = ((plantLic ?? []) as { customer_id: string; product_code: string }[]).filter((l) => l.customer_id === pl.id).map((l) => prodName[l.product_code] ?? l.product_code);
+            return (
+              <details key={pl.id} className="card" style={{ margin: 0 }}>
+                <summary><b>{pl.name}</b> <span className="mono">{pl.plant_code}</span>{pl.city ? ` · ${pl.city}` : ""} · <small className="muted">{tools.length ? tools.join(", ") : "no apps switched on yet"} · {people.length} {people.length === 1 ? "person" : "people"}</small></summary>
+                <p style={{ margin: "8px 0" }}><a className="btn secondary small" href={p(`/customers/${pl.id}`)}>Open plant (switch on apps, billing)</a></p>
+                {people.length > 0 && <div className="tablewrap"><table><thead><tr><th>Person</th><th>Access</th><th></th></tr></thead><tbody>
+                  {people.map((m) => (<tr key={m.email}><td><b>{m.full_name || m.email}</b><br /><small className="muted">{m.email}</small></td>
+                    <td>{m.is_admin ? <span className="badge ok">admin</span> : <span className="badge info">{Object.values(m.roles ?? {})[0] ?? "viewer"}</span>}</td>
+                    <td>{manager && <ActionForm action={removePlantMember} submitLabel="Remove" variant="secondary" hidden={{ plant_id: pl.id, email: m.email }} confirm={`Remove ${m.email} from ${pl.name}?`} />}</td></tr>))}
+                </tbody></table></div>}
+                {manager && <ActionForm action={savePlantMember} submitLabel="Add person to this plant" variant="secondary" hidden={{ plant_id: pl.id }} className="row">
+                  <input name="email" type="email" placeholder="email" required style={{ maxWidth: 220 }} />
+                  <input name="full_name" placeholder="name (optional)" style={{ maxWidth: 180 }} />
+                  <select name="role" defaultValue="viewer" style={{ maxWidth: 120 }}><option value="viewer">viewer</option><option value="editor">editor</option><option value="admin">admin</option></select>
+                </ActionForm>}
+              </details>);
+          })}
+        </div>
+        {manager && <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--border)" }}>
+          <b style={{ fontSize: 14 }}>Add a plant</b>
+          <ActionForm action={addPlant} submitLabel="Add plant" hidden={{ customer_id: c.id }} className="row">
+            <input name="name" placeholder="Plant name, e.g. Plant-1" required style={{ maxWidth: 220 }} />
+            <input name="code" placeholder="Code, e.g. P1" required style={{ maxWidth: 110 }} />
+            <input name="city" placeholder="City (optional)" style={{ maxWidth: 160 }} />
+          </ActionForm>
+        </div>}
+      </div>}
 
       <div className="card">
         <h2>Customer portal</h2>

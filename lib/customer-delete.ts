@@ -33,6 +33,10 @@ export async function checkCustomerDelete(id: string): Promise<DeleteInfo> {
   if (!c) return { customer: null, blockers: ["This company no longer exists."], drafts: 0, workspaces: 0, members: 0 };
   const blockers: string[] = [];
   if (c.kind === "internal") blockers.push("This is an internal KMR company and cannot be deleted.");
+  try {
+    const { count: plants } = await d.from("customers").select("id", { count: "exact", head: true }).eq("parent_id", id);
+    if (plants) blockers.push(`It has ${plants} plant${plants > 1 ? "s" : ""}. Delete the plants first.`);
+  } catch { /* plants not set up yet */ }
 
   const { data: invs } = await d.from("invoices").select("id,status").eq("customer_id", id);
   const all = (invs ?? []) as { id: string; status: string }[];
