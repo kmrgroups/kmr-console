@@ -472,7 +472,7 @@ export async function savePlantMember(_: ActionState, form: FormData): Promise<A
     const { data: pl } = await admin.from("customers").select("id,parent_id").eq("id", plant).maybeSingle();
     if (!pl?.parent_id) return { error: "This is not a plant." };
     const { data: lic } = await admin.from("licences").select("product_code").eq("customer_id", plant).not("product_ref", "is", null);
-    const roles: Record<string, string> = {};
+    const roles: Record<string, string> = { ops: role };   // Operations Master has no licence of its own
     for (const l of (lic ?? []) as { product_code: string }[]) roles[l.product_code] = l.product_code === "hrm" ? "hr_manager" : role;
     const { data: ex } = await admin.from("customer_members").select("roles").eq("customer_id", plant).eq("email", email).maybeSingle();
     const { error } = await admin.from("customer_members").upsert(
@@ -496,5 +496,21 @@ export async function removePlantMember(_: ActionState, form: FormData): Promise
     if (error) return { error: error.message };
     revalidatePath(`/customers/${pl.parent_id}`);
     return { ok: `${email} removed from this plant.` };
+  } catch (e) { return fail(e); }
+}
+
+/** Move the main company's existing data (Sales Flow, Calibration Hub, Operations Master; Capacity is copied) into one plant. */
+export async function movePlantData(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const parent = String(form.get("customer_id") ?? ""), plant = String(form.get("plant_id") ?? "");
+    const tools = form.getAll("tool").map(String);
+    if (!plant) return { error: "Choose the plant." };
+    if (!tools.length) return { error: "Tick at least one app." };
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("move_to_plant", { p_from: parent, p_to: plant, p_tools: tools });
+    if (error) return { error: /move_to_plant/.test(error.message) && /function|schema cache/i.test(error.message) ? "Run supabase/migrations/0062_move_to_plant.sql in Supabase › SQL Editor first, then try again." : error.message };
+    revalidatePath(`/customers/${parent}`);
+    return { ok: "Done. " + Object.entries(data as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(" · ") };
   } catch (e) { return fail(e); }
 }
