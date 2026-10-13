@@ -119,3 +119,29 @@ language sql stable security definer set search_path = console, public as $$
 $$;
 revoke all on function console.plant_overview(uuid) from public, anon;
 grant execute on function console.plant_overview(uuid) to authenticated;
+
+-- Sales Flow: one month across every plant the person may see (read-only summary for the all-plants dashboard).
+-- Each line and despatch row is tagged with its plant.
+create or replace function public.kmr_sf_month_all(p_slug text, p_month date) returns jsonb
+language plpgsql stable security definer set search_path = console, public as $$
+declare c console.customers%rowtype; m date := date_trunc('month', p_month)::date; ids uuid[];
+begin
+  select * into c from console.customers where slug = lower(p_slug);
+  if c.id is null then raise exception 'Unknown company link.'; end if;
+  if c.parent_id is not null then select * into c from console.customers where id = c.parent_id; end if;
+  select coalesce(array_agg(x.id), '{}') into ids
+    from console.customers x
+   where (x.id = c.id or x.parent_id = c.id) and console.sf_role(x.id) is not null;
+  if coalesce(array_length(ids, 1), 0) = 0 then raise exception 'You have no access to Sales Flow in any plant.'; end if;
+  return jsonb_build_object(
+    'company', c.name,
+    'plants', (select jsonb_agg(jsonb_build_object('slug', x.slug, 'code', coalesce(x.plant_code, 'Main'), 'name', x.name) order by (x.id = c.id) desc, x.plant_code)
+                 from console.customers x where x.id = any(ids)),
+    'lines', coalesce((select jsonb_agg(to_jsonb(l) - 'customer_id' || jsonb_build_object('plant_code', coalesce(x.plant_code, 'Main'), 'plant_slug', x.slug) order by x.plant_code, l.buyer_name, l.part_code)
+                         from console.sf_lines l join console.customers x on x.id = l.customer_id where l.customer_id = any(ids) and l.month = m), '[]'),
+    'despatch', coalesce((select jsonb_agg(jsonb_build_object('line_id', d.line_id, 'day', d.day, 'qty', d.qty, 'note', d.note))
+                            from console.sf_despatch d join console.sf_lines l on l.id = d.line_id
+                           where l.customer_id = any(ids) and l.month = m), '[]'));
+end $$;
+revoke all on function public.kmr_sf_month_all(text, date) from public, anon;
+grant execute on function public.kmr_sf_month_all(text, date) to authenticated;
