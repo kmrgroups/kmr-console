@@ -11,13 +11,18 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   const staff = await requireStaff();
   const { q = "", status = "", demo = "" } = await searchParams;
   const supabase = await createClient();
-  let query = supabase.from("customers").select("id,code,name,country,status,contact_name,contact_email,created_at,licences(product_code,status,valid_until)").order("name").limit(500);
+  let query = supabase.from("customers").select("id,code,name,country,status,contact_name,contact_email,created_at,parent_id,licences(product_code,status,valid_until)").order("name").limit(500);
   if (status) query = query.eq("status", status);
   if (q) { const s = q.replace(/[%,()]/g, " ").trim(); query = query.or(`name.ilike.%${s}%,code.ilike.%${s}%,contact_email.ilike.%${s}%`); }
   // KMR demo workspaces are not customers: hidden unless asked for (before migration 0049 there is no "kind", so nothing is hidden)
   // "Show demo workspaces" shows ONLY demo workspaces; the normal view shows only real customers
   let { data, error } = demo ? await query.eq("kind", "demo") : await query.neq("kind", "demo");
   if (error) ({ data } = demo ? { data: [] as NonNullable<typeof data> } : await query);
+  // Plants belong to their main company: they are managed on that company's page, not listed as customers
+  const { data: plantRows } = await supabase.from("customers").select("parent_id").not("parent_id", "is", null);
+  const plantCount: Record<string, number> = {};
+  for (const r of (plantRows ?? []) as { parent_id: string }[]) plantCount[r.parent_id] = (plantCount[r.parent_id] ?? 0) + 1;
+  data = (data ?? []).filter((c) => !(c as { parent_id?: string | null }).parent_id);
   return (
     <AppShell staff={staff} active="/customers">
       <div className="pagehead"><div><h1>Customers</h1><p>Companies using, piloting or interested in KMR products.</p></div>
@@ -34,7 +39,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
             <thead><tr><th>Customer</th><th>Country</th><th>Contact</th><th>Products</th><th>Status</th><th>Since</th></tr></thead>
             <tbody>{data.map((c) => (
               <tr key={c.id}>
-                <td><a href={p(`/customers/${c.id}`)}><b>{c.name}</b></a><br /><small className="mono muted">{c.code}</small></td>
+                <td><a href={p(`/customers/${c.id}`)}><b>{c.name}</b></a>{plantCount[c.id] ? <span className="badge info" style={{ marginLeft: 6 }}>{plantCount[c.id]} plants</span> : null}<br /><small className="mono muted">{c.code}</small></td>
                 <td>{c.country}</td>
                 <td>{c.contact_name ?? "—"}<br /><small className="muted">{c.contact_email ?? ""}</small></td>
                 <td>{(c.licences as { product_code: string; status: string; valid_until: string | null }[]).map((l) => { const st = effectiveStatus(l); return <span key={l.product_code} className={`badge ${LICENCE_TONE[st]}`} style={{ marginRight: 4 }}>{l.product_code.toUpperCase()} · {st}</span>; })}</td>
