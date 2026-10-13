@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { assertManager, assertStaff } from "@/lib/auth";
@@ -416,7 +416,7 @@ export async function saveKmrLogo(_: ActionState, form: FormData): Promise<Actio
     const logo_url = db.storage.from("kmr-public").getPublicUrl(path).data.publicUrl;
     const { error: e2 } = await db.from("platform_settings").upsert({ key: "brand", value: { logo_url }, updated_at: new Date().toISOString() });
     if (e2) return { error: e2.message };
-    revalidateTag("brand"); revalidatePath("/", "layout");
+    updateTag("brand"); revalidatePath("/", "layout");
     return { ok: "KMR logo saved. It now shows on the Console sign-in, the main screen and the browser tab." };
   } catch (e) { return fail(e); }
 }
