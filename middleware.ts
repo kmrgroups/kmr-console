@@ -29,7 +29,9 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
-  const { data: { user } } = await supabase.auth.getUser();
+  // Verifies the signed token locally (refreshing it when needed) instead of asking Supabase on every page
+  let user: boolean = false;
+  try { const { data } = await supabase.auth.getClaims(); user = !!data?.claims?.sub; } catch { user = !!(await supabase.auth.getUser()).data.user; }
   if (!user && request.nextUrl.pathname !== "/login") {
     // relative Location: stay on www.kmr-groups.com behind the website's forwarding
     return NextResponse.redirect(publicUrl(request, "/login"), 307);

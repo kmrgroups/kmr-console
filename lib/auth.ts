@@ -10,9 +10,12 @@ export const ROLE_LABELS: Record<StaffRole, string> = { owner: "Owner", admin: "
 /** The signed-in KMR staff member, or null (anyone else — customers, website editors — gets nothing here). */
 export const getStaff = cache(async (): Promise<Staff | null> => {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data } = await supabase.from("staff").select("user_id,full_name,email,role,active").eq("user_id", user.id).maybeSingle();
+  // The sign-in was already verified by the middleware for this request; read it from the token locally instead of another round trip to Supabase
+  let uid: string | null = null;
+  try { const { data } = await supabase.auth.getClaims(); uid = (data?.claims?.sub as string | undefined) ?? null; } catch { /* fall back below */ }
+  if (!uid) { const { data: { user } } = await supabase.auth.getUser(); uid = user?.id ?? null; }
+  if (!uid) return null;
+  const { data } = await supabase.from("staff").select("user_id,full_name,email,role,active").eq("user_id", uid).maybeSingle();
   return data && data.active ? (data as Staff) : null;
 });
 
