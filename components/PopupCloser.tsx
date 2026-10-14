@@ -22,7 +22,16 @@ export function PopupCloser() {
     };
     const onToggle = (e: Event) => {
       const d = e.target as HTMLDetailsElement;
-      if (!(d instanceof HTMLDetailsElement) || !d.open || !isPop(d)) return;
+      if (!(d instanceof HTMLDetailsElement) || !d.open) return;
+      if (!isPop(d)) {   // inline panel (e.g. "Change licence"): a Close button at its end so it can always be minimised
+        if (d.querySelector(":scope > summary.btn") && !d.querySelector(":scope > .kmr-closebtn")) {
+          const b = document.createElement("button");
+          b.type = "button"; b.className = "btn ghost small kmr-closebtn"; b.textContent = "Close ▴"; b.style.marginTop = "10px";
+          b.addEventListener("click", () => { d.open = false; });
+          d.append(b);
+        }
+        return;
+      }
       closeBtn(d);
       panels().forEach((o) => { if (o !== d && o.open && isPop(o)) o.open = false; });
     };
