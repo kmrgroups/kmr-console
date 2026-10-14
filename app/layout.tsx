@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import Script from "next/script";
 import { PoweredBy } from "@/components/PoweredBy";
 import { NavProgress } from "@/components/NavProgress";
 import { PopupCloser } from "@/components/PopupCloser";
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Suspense fallback={null}><NavProgress /></Suspense>
         {children}
         <PopupCloser />
+        <Script src="/kmr-text.js" strategy="afterInteractive" />
         <PoweredBy />
       </body>
     </html>
