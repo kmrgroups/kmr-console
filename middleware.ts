@@ -38,4 +38,4 @@ export async function middleware(request: NextRequest) {
   }
   return response;
 }
-export const config = { matcher: ["/((?!api/cron|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|ico|jpg|jpeg|webp)$).*)"] };
+export const config = { matcher: ["/((?!api/cron|_next/static|_next/image|favicon.ico|kmr-text.js|.*\\.(?:png|svg|ico|jpg|jpeg|webp)$).*)"] };
