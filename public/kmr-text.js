@@ -1,10 +1,63 @@
 /* KMR shared text-field helpers (every app, every screen):
+   0) Every table gets an auto-numbered "S.No" first column (follows searches/filters, restarts from 1 in each table).
    1) A number box never changes when the mouse wheel / trackpad is scrolled over it — the page scrolls instead.
    2) Spell-check is on in every text box and notes field. Double-click (or select) a word to see whether it is spelled
       correctly, the suggested spellings, and its synonyms and antonyms; click one to replace the word. */
 (function () {
   "use strict";
   if (window.__kmrText) return; window.__kmrText = 1;
+
+
+  /* ---------- 0) automatic serial numbers in every table ---------- */
+  const SKIP_T = ".heat,.invoice-lines,[data-nosno],.no-sno,.cal,.calendar";
+  const SERIAL = /^(s\.?\s*no\.?|sr\.?\s*no\.?|sl\.?\s*no\.?|serial(\s*no\.?)?)$/i;
+  const rowsOf = (sec) => Array.prototype.filter.call(sec.children, (c) => c.tagName === "TR");
+  const secs = (t) => Array.prototype.filter.call(t.children, (c) => /^(THEAD|TBODY|TFOOT)$/.test(c.tagName));
+  const span = (c) => c.colSpan || 1;
+  const hdrRow = (t) => {
+    if (t.tHead && t.tHead.rows.length) return t.tHead.rows[t.tHead.rows.length - 1];
+    const f = secs(t).concat([t]).map((s) => rowsOf(s)[0]).find(Boolean);
+    return f && f.children.length && Array.prototype.every.call(f.children, (c) => c.tagName === "TH") ? f : null;
+  };
+  const eligible = (t) => {
+    if (t.matches(SKIP_T) || t.closest(SKIP_T)) return null;
+    const h = hdrRow(t); if (!h) return null;
+    const cells = Array.prototype.filter.call(h.children, (c) => c.tagName === "TH" || c.tagName === "TD");
+    if (cells.length < 2 || cells.some((c) => c.rowSpan > 1)) return null;
+    const first = h.querySelector("[data-sno]") ? null : cells[0];
+    if (first && SERIAL.test((first.textContent || "").trim())) return null;
+    return h;
+  };
+  const sno = (t) => {
+    const h = eligible(t); if (!h) return;
+    const n = Array.prototype.reduce.call(h.children, (a, c) => a + (c.hasAttribute("data-sno") ? 0 : span(c)), 0);
+    if (!h.querySelector("[data-sno]")) { const th = document.createElement("th"); th.setAttribute("data-sno", ""); th.textContent = "S.No"; th.style.cssText = "width:52px;text-align:center;white-space:nowrap"; h.insertBefore(th, h.firstChild); }
+    let i = 0;
+    secs(t).forEach((sec) => rowsOf(sec).forEach((r) => {
+      if (r === h) return;
+      let c = r.firstElementChild && r.firstElementChild.hasAttribute("data-sno") ? r.firstElementChild : null;
+      const real = Array.prototype.filter.call(r.children, (x) => !x.hasAttribute("data-sno"));
+      if (!real.length) return;
+      const all = real.length === 1 && span(real[0]) >= n;          // "No records" / group row spanning the whole table
+      if (!c) { c = document.createElement(sec.tagName === "THEAD" ? "th" : "td"); c.setAttribute("data-sno", ""); r.insertBefore(c, r.firstChild); }
+      if (all || sec.tagName !== "TBODY") { c.textContent = ""; c.style.width = "52px"; return; }
+      const hidden = r.hidden || r.style.display === "none";
+      c.style.cssText = "text-align:center;color:#6B778A;width:52px;font-variant-numeric:tabular-nums" + (hidden ? ";display:none" : "");
+      if (!hidden) c.textContent = String(++i);
+    }));
+  };
+  const dirty = new Set(); let sched = 0, mo = null;
+  const flush = () => { sched = 0; if (mo) mo.disconnect(); dirty.forEach((t) => { try { if (t.isConnected) sno(t); } catch (e) {} }); dirty.clear(); watch(); };
+  const queue = (t) => { if (t && t.tagName === "TABLE") { dirty.add(t); if (!sched) sched = requestAnimationFrame(flush); } };
+  const tablesIn = (n) => { if (n.nodeType !== 1) return; if (n.tagName === "TABLE") queue(n); else if (n.closest && n.closest("table")) queue(n.closest("table")); if (n.querySelectorAll) n.querySelectorAll("table").forEach(queue); };
+  const watch = () => {
+    if (!mo) mo = new MutationObserver((ms) => ms.forEach((m) => { tablesIn(m.target); m.addedNodes.forEach(tablesIn); if (m.type === "attributes") tablesIn(m.target); }));
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["hidden", "style"] });
+  };
+  const startSno = () => { document.querySelectorAll("table").forEach(queue); watch(); };
+  const nextApp = !!(window.next || window.__next_f || document.getElementById("__next"));
+  const go = () => (nextApp ? setTimeout(startSno, 1200) : startSno());
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
 
   /* ---------- 1) mouse wheel must not change a number ---------- */
   const guard = (e) => { const t = e.target; if (t && t.tagName === "INPUT" && t.type === "number" && document.activeElement === t) t.blur(); };
