@@ -11,6 +11,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   const staff = await requireStaff();
   const { q = "", status = "", demo = "" } = await searchParams;
   const supabase = await createClient();
+  const plantRowsP = supabase.from("customers").select("parent_id").not("parent_id", "is", null);   // started now, read below
   let query = supabase.from("customers").select("id,code,name,country,status,contact_name,contact_email,created_at,parent_id,licences(product_code,status,valid_until)").order("name").limit(500);
   if (status) query = query.eq("status", status);
   if (q) { const s = q.replace(/[%,()]/g, " ").trim(); query = query.or(`name.ilike.%${s}%,code.ilike.%${s}%,contact_email.ilike.%${s}%`); }
@@ -19,7 +20,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   let { data, error } = demo ? await query.eq("kind", "demo") : await query.neq("kind", "demo");
   if (error) ({ data } = demo ? { data: [] as NonNullable<typeof data> } : await query);
   // Plants belong to their main company: they are managed on that company's page, not listed as customers
-  const { data: plantRows } = await supabase.from("customers").select("parent_id").not("parent_id", "is", null);
+  const { data: plantRows } = await plantRowsP;
   const plantCount: Record<string, number> = {};
   for (const r of (plantRows ?? []) as { parent_id: string }[]) plantCount[r.parent_id] = (plantCount[r.parent_id] ?? 0) + 1;
   data = (data ?? []).filter((c) => !(c as { parent_id?: string | null }).parent_id);

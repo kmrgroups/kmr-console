@@ -27,50 +27,48 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const staff = await requireStaff();
   const manager = isManager(staff);
   const supabase = await createClient();
-  const [{ data: c }, { data: products }, { data: licences }] = await Promise.all([
+  // Everything that only needs the customer id is fetched at once (one round trip instead of a dozen in a row)
+  const isOwner = staff.role === "owner";
+  const [{ data: c }, { data: products }, { data: licences }, { data: extras }, { data: feats }, { data: invoices }, { data: allPrices }, { data: members }, ownPlants, del] = await Promise.all([
     supabase.from("customers").select("*").eq("id", id).maybeSingle(),
     supabase.from("products").select("code,name,description,app_path,seat_label").eq("active", true).order("sort_order"),
     supabase.from("licences").select("*").eq("customer_id", id),
+    supabase.from("cost_items").select("id,name,detail,basis,amount,default_qty,product_code").eq("active", true).in("basis", ["one_time", "per_month", "per_year", "per_unit", "per_day"]).order("sort_order"),
+    supabase.from("app_features").select("*").eq("active", true).order("sort_order").order("name"),   // empty until 0050 is run
+    supabase.from("invoices").select("id,number,status,currency,total,issue_date,due_date,created_at").eq("customer_id", id).order("created_at", { ascending: false }),
+    supabase.from("prices").select("product_code,period,currency,unit_amount,min_seats").eq("active", true),
+    supabase.from("customer_members").select("email,full_name,is_admin,roles").eq("customer_id", id).order("is_admin", { ascending: false }).order("email"),
+    supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", id).order("plant_code"),
+    isOwner ? checkCustomerDelete(id) : Promise.resolve(null),
   ]);
   if (!c) notFound();
-  const isOwner = staff.role === "owner";
-  const del = isOwner ? await checkCustomerDelete(c.id) : null;
+  const prices = (allPrices ?? []).filter((x) => x.currency === c.currency);
   const ids = (licences ?? []).map((l) => l.id);
-  const { data: events } = ids.length
-    ? await supabase.from("licence_events").select("licence_id,action,detail,created_at").in("licence_id", ids).order("created_at", { ascending: false }).limit(30)
-    : { data: [] };
-
-  // Usage inside the HRM (read with the service key after the staff check above)
   const hrmLic = (licences ?? []).find((l) => l.product_code === "hrm") as Licence | undefined;
-  let hrmUsage: { employees: number; users: number } | null = null;
-  if (hrmLic?.product_ref) {
-    const hrm = createAdminClient().schema("hrm");
-    const [{ count: employees }, { count: users }] = await Promise.all([
-      hrm.from("employees").select("id", { count: "exact", head: true }).eq("tenant_id", hrmLic.product_ref).in("status", ["draft", "invited", "submitted", "active"]),
-      hrm.from("app_users").select("id", { count: "exact", head: true }).eq("tenant_id", hrmLic.product_ref).eq("active", true),
-    ]);
-    hrmUsage = { employees: employees ?? 0, users: users ?? 0 };
-  }
-  const toolUse: Record<string, { users: number; items: number }> = {};
-  for (const l of (licences ?? []) as Licence[]) if (isTool(l.product_code) && l.product_ref) toolUse[l.product_code] = await toolUsage(l.product_code, l.product_ref);
-  const { data: extras } = await supabase.from("cost_items").select("id,name,detail,basis,amount,default_qty,product_code").eq("active", true).in("basis", ["one_time", "per_month", "per_year", "per_unit", "per_day"]).order("sort_order");
-  const { data: feats } = await supabase.from("app_features").select("*").eq("active", true).order("sort_order").order("name");   // empty until 0050 is run
-  const [{ data: invoices }, { data: prices }] = await Promise.all([
-    supabase.from("invoices").select("id,number,status,currency,total,issue_date,due_date,created_at").eq("customer_id", c.id).order("created_at", { ascending: false }),
-    supabase.from("prices").select("product_code,period,currency,unit_amount,min_seats").eq("active", true).eq("currency", c.currency),
-  ]);
-  // A renewal starts the day after the earliest current licence ends; otherwise today
-  const ends = ((licences ?? []) as Licence[]).map((l) => l.valid_until).filter((d): d is string => !!d && d >= today()).sort();
-  const billFrom = ends.length ? addDays(ends[0], 1) : today();
-  const priceOf = (code: string, period: string) => (prices ?? []).find((x) => x.product_code === code && x.period === period);
-  const { data: members } = await supabase.from("customer_members").select("email,full_name,is_admin,roles").eq("customer_id", c.id).order("is_admin", { ascending: false }).order("email");
-  const prodName: Record<string, string> = Object.fromEntries(((products ?? []) as { code: string; name: string }[]).map((x) => [x.code, x.name]));
-  // Plants (0061_plants.sql): empty / absent until that file is run
-  const isPlant = !!(c as { parent_id?: string | null }).parent_id;
-  const { data: parentRow } = isPlant ? await supabase.from("customers").select("id,name,slug").eq("id", (c as { parent_id: string }).parent_id).maybeSingle() : { data: null };
+  const isPlant = !!(c as { parent_id?: string | null }).parent_id;   // plants: 0061_plants.sql
   const companyId = isPlant ? (c as { parent_id: string }).parent_id : c.id;
-  const plantsRes = await supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", companyId).order("plant_code");
-  const plants = (plantsRes.data ?? []) as { id: string; name: string; plant_code: string; city: string | null; status: string }[];
+  const toolUse: Record<string, { users: number; items: number }> = {};
+  let hrmUsage: { employees: number; users: number } | null = null;
+  // second round: what depends on the customer / its licences, again all at once
+  const [eventsRes, parentRes, sibRes] = await Promise.all([
+    ids.length ? supabase.from("licence_events").select("licence_id,action,detail,created_at").in("licence_id", ids).order("created_at", { ascending: false }).limit(30) : Promise.resolve({ data: [] as { licence_id: string; action: string; detail: string | null; created_at: string }[] }),
+    isPlant ? supabase.from("customers").select("id,name,slug").eq("id", companyId).maybeSingle() : Promise.resolve({ data: null }),
+    isPlant ? supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", companyId).order("plant_code") : Promise.resolve(ownPlants),
+    (async () => {
+      if (hrmLic?.product_ref) {   // usage inside the HRM (service key, after the staff check above)
+        const hrm = createAdminClient().schema("hrm");
+        const [{ count: employees }, { count: users }] = await Promise.all([
+          hrm.from("employees").select("id", { count: "exact", head: true }).eq("tenant_id", hrmLic.product_ref).in("status", ["draft", "invited", "submitted", "active"]),
+          hrm.from("app_users").select("id", { count: "exact", head: true }).eq("tenant_id", hrmLic.product_ref).eq("active", true),
+        ]);
+        hrmUsage = { employees: employees ?? 0, users: users ?? 0 };
+      }
+    })(),
+    Promise.all(((licences ?? []) as Licence[]).filter((l) => isTool(l.product_code) && l.product_ref).map(async (l) => { toolUse[l.product_code] = await toolUsage(l.product_code as "balloon" | "pd" | "capacity", l.product_ref as string); })),
+  ]);
+  const events = eventsRes.data;
+  const parentRow = parentRes.data as { id: string; name: string; slug: string } | null;
+  const plants = ((sibRes.data ?? []) as { id: string; name: string; plant_code: string; city: string | null; status: string }[]);
   const companySlug = isPlant ? parentRow?.slug : (c as { slug?: string }).slug;
   const plantIds = plants.map((x) => x.id);
   const [{ data: plantMembers }, { data: plantLic }] = plantIds.length
@@ -79,6 +77,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         supabase.from("licences").select("customer_id,product_code").in("customer_id", plantIds).not("product_ref", "is", null),
       ])
     : [{ data: [] }, { data: [] }];
+  // A renewal starts the day after the earliest current licence ends; otherwise today
+  const ends = ((licences ?? []) as Licence[]).map((l) => l.valid_until).filter((d): d is string => !!d && d >= today()).sort();
+  const billFrom = ends.length ? addDays(ends[0], 1) : today();
+  const priceOf = (code: string, period: string) => (prices ?? []).find((x) => x.product_code === code && x.period === period);
+  const prodName: Record<string, string> = Object.fromEntries(((products ?? []) as { code: string; name: string }[]).map((x) => [x.code, x.name]));
   const suggestedSlug = c.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 30) || "company";
   const suggestedPrefix = c.name.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "EMP";
 
