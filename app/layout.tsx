@@ -26,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <PopupCloser />
         <Script src="/kmr-text.js" strategy="afterInteractive" />
+        <Script src="/kmr-select.js" strategy="afterInteractive" />
         <PoweredBy />
       </body>
     </html>
