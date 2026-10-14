@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { movePlantData, addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { deleteCustomerAction } from "./delete-action";
@@ -67,9 +67,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const prodName: Record<string, string> = Object.fromEntries(((products ?? []) as { code: string; name: string }[]).map((x) => [x.code, x.name]));
   // Plants (0061_plants.sql): empty / absent until that file is run
   const isPlant = !!(c as { parent_id?: string | null }).parent_id;
-  const { data: parentRow } = isPlant ? await supabase.from("customers").select("id,name").eq("id", (c as { parent_id: string }).parent_id).maybeSingle() : { data: null };
-  const plantsRes = isPlant ? { data: null } : await supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", c.id).order("plant_code");
+  const { data: parentRow } = isPlant ? await supabase.from("customers").select("id,name,slug").eq("id", (c as { parent_id: string }).parent_id).maybeSingle() : { data: null };
+  const companyId = isPlant ? (c as { parent_id: string }).parent_id : c.id;
+  const plantsRes = await supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", companyId).order("plant_code");
   const plants = (plantsRes.data ?? []) as { id: string; name: string; plant_code: string; city: string | null; status: string }[];
+  const companySlug = isPlant ? parentRow?.slug : (c as { slug?: string }).slug;
   const plantIds = plants.map((x) => x.id);
   const [{ data: plantMembers }, { data: plantLic }] = plantIds.length
     ? await Promise.all([
@@ -86,12 +88,30 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         <div><h1>{c.name}</h1><p><span className="mono">{c.code}</span> · {c.country} · {c.currency} · <span className={`badge ${CUSTOMER_TONE[c.status]}`}>{c.status}</span></p></div>
       </div>
 
-      {isPlant && parentRow && <div className="alert info">This is a <b>plant</b> of <a href={p(`/customers/${parentRow.id}`)}><b>{parentRow.name}</b></a>. Its apps and data are separate from the other plants. Add its people from the main company page › Plants.</div>}
+      {plants.length > 0 && <div className="card" style={{ padding: "10px 14px" }}>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <b style={{ fontSize: 13 }}>Plant:</b>
+          <a className={`btn small ${!isPlant ? "" : "secondary"}`} href={p(`/customers/${companyId}`)}>Company · all plants</a>
+          {plants.map((pl) => <a key={pl.id} className={`btn small ${pl.id === c.id ? "" : "secondary"}`} href={p(`/customers/${pl.id}`)}>{pl.plant_code} · {pl.name.split(" – ").pop()}</a>)}
+        </div>
+        <small className="muted">{isPlant ? "You are managing one plant: its apps, licences, people and data are separate from the other plants." : "Select a plant to switch on its apps and manage its licences. This page holds the company details and the single customer link."}</small>
+      </div>}
+      {isPlant && parentRow && <div className="alert info">This is a <b>plant</b> of <a href={p(`/customers/${parentRow.id}`)}><b>{parentRow.name}</b></a>. People sign in with the company's single link and choose their plant: <span className="mono">{env.platformUrl}/it/app/{parentRow.slug}</span></div>}
 
       {!isPlant && <div className="card">
         <h2>Plants</h2>
         <p className="muted" style={{ marginTop: 0 }}>For customers with more than one plant. Every plant has its own apps and data; people only see the plants you add them to. The main company's administrators see all plants and the all-plants summary.</p>
         {plants.length === 0 && <p className="muted">No plants yet. Without plants the customer works exactly as before.</p>}
+        {plants.length > 0 && <>
+          <p style={{ margin: "6px 0" }}><b>One customer link for all plants:</b> <a className="mono" href={`${env.platformUrl}/it/app/${companySlug}`} target="_blank" rel="noopener">{env.platformUrl}/it/app/{companySlug}</a><br /><small className="muted">People sign in here and choose their plant. They see only the plants and apps you give them.</small></p>
+          <div className="tablewrap" style={{ margin: "10px 0" }}><table>
+            <thead><tr><th>Plant</th>{(products ?? []).filter((x) => x.code !== "hrm").map((x) => <th key={x.code}>{x.name}</th>)}<th></th></tr></thead>
+            <tbody>{plants.map((pl) => (
+              <tr key={pl.id}><td><b>{pl.plant_code}</b><br /><small className="muted">{pl.name.split(" – ").pop()}</small></td>
+                {(products ?? []).filter((x) => x.code !== "hrm").map((x) => <td key={x.code}>{((plantLic ?? []) as { customer_id: string; product_code: string }[]).some((l) => l.customer_id === pl.id && l.product_code === x.code) ? <span className="badge ok">on</span> : <small className="muted">—</small>}</td>)}
+                <td><a className="btn small" href={p(`/customers/${pl.id}`)}>Switch on apps</a></td></tr>))}
+            </tbody></table></div>
+        </>}
         <div className="stack">
           {plants.map((pl) => {
             const people = ((plantMembers ?? []) as { customer_id: string; email: string; full_name: string | null; is_admin: boolean; roles: Record<string, string> }[]).filter((m) => m.customer_id === pl.id);
@@ -100,6 +120,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               <details key={pl.id} className="card" style={{ margin: 0 }}>
                 <summary><b>{pl.name}</b> <span className="mono">{pl.plant_code}</span>{pl.city ? ` · ${pl.city}` : ""} · <small className="muted">{tools.length ? tools.join(", ") : "no apps switched on yet"} · {people.length} {people.length === 1 ? "person" : "people"}</small></summary>
                 <p style={{ margin: "8px 0" }}><a className="btn secondary small" href={p(`/customers/${pl.id}`)}>Open plant (switch on apps, billing)</a></p>
+                {manager && <ActionForm action={renamePlant} submitLabel="Rename" variant="secondary" hidden={{ plant_id: pl.id }} className="row">
+                  <input name="name" defaultValue={pl.name.split(" – ").pop()} placeholder="Plant name" required style={{ maxWidth: 220 }} />
+                  <input name="code" defaultValue={pl.plant_code} placeholder="Code" required style={{ maxWidth: 100 }} />
+                </ActionForm>}
                 {people.length > 0 && <div className="tablewrap"><table><thead><tr><th>Person</th><th>Access</th><th></th></tr></thead><tbody>
                   {people.map((m) => (<tr key={m.email}><td><b>{m.full_name || m.email}</b><br /><small className="muted">{m.email}</small></td>
                     <td>{m.is_admin ? <span className="badge ok">admin</span> : <span className="badge info">{Object.values(m.roles ?? {})[0] ?? "viewer"}</span>}</td>
@@ -136,7 +160,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         </div>}
       </div>}
 
-      <div className="card">
+      {!isPlant && <div className="card">
         <h2>Customer portal</h2>
         {!("slug" in c) && <div className="alert warn">The customer portal is not set up in the database yet. In Supabase → SQL Editor run <b>supabase/migrations/0004_portal.sql</b> (and 0005_data_tools.sql), then refresh this page.</div>}
         {("slug" in c) && <div className="grid two">
@@ -165,7 +189,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             </ActionForm>
           </div>
         </div>}
-      </div>
+      </div>}
 
       <div className="card">
         <div className="spread"><h2>Users &amp; access</h2>

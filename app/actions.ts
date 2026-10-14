@@ -480,8 +480,13 @@ export async function savePlantMember(_: ActionState, form: FormData): Promise<A
       { onConflict: "customer_id,email" });
     if (error) return { error: error.message };
     try { await admin.rpc("sync_member", { p_customer: plant, p_email: email }); } catch { /* tools that keep their own list pick it up on first open */ }
+    const login = await ensureLogin(email, fullName || email);
+    const { data: par } = await admin.from("customers").select("slug").eq("id", pl.parent_id).maybeSingle();
+    const link = `${env.platformUrl}/it/app/${par?.slug}`;
     revalidatePath(`/customers/${pl.parent_id}`);
-    return { ok: `${email} can now open this plant.` };
+    return { ok: login.password
+      ? `Added. Send ${fullName || email}: link ${link} · email ${email} · temporary password ${login.password} (shown only now). After signing in they choose their plant.`
+      : `Added. ${email} already has a KMR login; they sign in at ${link} with their existing password and choose their plant.` };
   } catch (e) { return fail(e); }
 }
 
@@ -512,5 +517,22 @@ export async function movePlantData(_: ActionState, form: FormData): Promise<Act
     if (error) return { error: /move_to_plant/.test(error.message) && /function|schema cache/i.test(error.message) ? "Run supabase/migrations/0062_move_to_plant.sql in Supabase › SQL Editor first, then try again." : error.message };
     revalidatePath(`/customers/${parent}`);
     return { ok: "Done. " + Object.entries(data as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(" · ") };
+  } catch (e) { return fail(e); }
+}
+
+/** Rename a plant (name and short code). */
+export async function renamePlant(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const plant = String(form.get("plant_id") ?? ""), name = String(form.get("name") ?? "").trim().slice(0, 60), code = String(form.get("code") ?? "").trim().slice(0, 20);
+    if (!name || !code) return { error: "Enter the plant name and code." };
+    const admin = createAdminClient().schema("console");
+    const { data: pl } = await admin.from("customers").select("parent_id").eq("id", plant).maybeSingle();
+    if (!pl?.parent_id) return { error: "This is not a plant." };
+    const { data: par } = await admin.from("customers").select("name").eq("id", pl.parent_id).single();
+    const { error } = await admin.from("customers").update({ name: `${par!.name} – ${name}`.slice(0, 120), plant_code: code, updated_at: new Date().toISOString() }).eq("id", plant);
+    if (error) return { error: /customers_plant_code_uq|duplicate/.test(error.message) ? "Another plant already uses that code." : error.message };
+    revalidatePath(`/customers/${pl.parent_id}`); revalidatePath(`/customers/${plant}`);
+    return { ok: "Plant renamed." };
   } catch (e) { return fail(e); }
 }
