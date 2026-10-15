@@ -13,9 +13,10 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
+import { ThemePicker } from "@/components/ThemePicker";
 import { deleteCustomerAction } from "./delete-action";
 
 export const metadata = { title: "Customer" };
@@ -52,7 +53,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   // second round: what depends on the customer / its licences, again all at once
   const [eventsRes, parentRes, sibRes] = await Promise.all([
     ids.length ? supabase.from("licence_events").select("licence_id,action,detail,created_at").in("licence_id", ids).order("created_at", { ascending: false }).limit(30) : Promise.resolve({ data: [] as { licence_id: string; action: string; detail: string | null; created_at: string }[] }),
-    isPlant ? supabase.from("customers").select("id,name,slug").eq("id", companyId).maybeSingle() : Promise.resolve({ data: null }),
+    isPlant ? supabase.from("customers").select("id,name,slug,portal_theme").eq("id", companyId).maybeSingle() : Promise.resolve({ data: null }),
     isPlant ? supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", companyId).order("plant_code") : Promise.resolve(ownPlants),
     (async () => {
       if (hrmLic?.product_ref) {   // usage inside the HRM (service key, after the staff check above)
@@ -162,6 +163,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           </ActionForm>
         </div>}
       </div>}
+
+      <div className="card">
+        <h2>Home screen theme</h2>
+        <p className="muted" style={{ marginTop: 0 }}>How {c.name}'s KMR Apps home screen looks. Pick a design and apply it: it changes this {isPlant ? "plant" : "customer"} only{isPlant ? "" : " (and its plants that have not chosen their own)"}, never other customers.</p>
+        {<ThemePicker action={saveCustomerTheme} id={c.id} current={(c as { portal_theme?: string | null }).portal_theme ?? null} inherited={isPlant ? ((parentRes.data as { portal_theme?: string | null } | null)?.portal_theme ?? null) : null} />}
+      </div>
 
       {!isPlant && <div className="card">
         <h2>Customer portal</h2>
