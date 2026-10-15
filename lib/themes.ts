@@ -1,0 +1,21 @@
+// Home-screen themes of the customer portal (KMR Apps). The ids match public/it/apps/portal-themes.js on the website.
+export const PORTAL_THEMES: { id: string; name: string; note: string }[] = [
+  { id: "a", name: "Launcher tiles", note: "Current look: compact tiles grouped by area." },
+  { id: "b", name: "Dark command centre", note: "Dark, glowing cards with a top bar." },
+  { id: "c", name: "List", note: "One clean row per app, with status." },
+  { id: "d", name: "Bento dashboard", note: "Large number cards for the busiest apps." },
+  { id: "e", name: "Three columns", note: "Quality, Production and People side by side." },
+  { id: "f", name: "Glass", note: "Frosted cards on a colourful background." },
+  { id: "g", name: "Desktop icons", note: "Big centred icons with a dock." },
+  { id: "h", name: "Master and detail", note: "App list on the left, preview on the right." },
+  { id: "i", name: "Poster cards", note: "Coloured header on every card." },
+  { id: "j", name: "Search first", note: "Big search, recently used, app chips." },
+  { id: "k", name: "Area tabs", note: "One tab per area of work." },
+  { id: "l", name: "Control room", note: "Dark, big live numbers." },
+  { id: "m", name: "Magazine", note: "One featured app and rows." },
+  { id: "n", name: "Part journey", note: "Apps in the order a part moves: plan to improve." },
+  { id: "o", name: "Plant floor map", note: "Apps placed in office, lab, shop floor and meeting room." },
+  { id: "p", name: "Radial hub", note: "Company at the centre, apps around it." },
+  { id: "q", name: "Today board", note: "What needs your attention, then all apps." },
+  { id: "r", name: "Spotlight", note: "Type to find any app or action." },
+];

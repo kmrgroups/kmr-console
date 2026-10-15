@@ -1,4 +1,5 @@
 "use server";
+import { PORTAL_THEMES } from "@/lib/themes";
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -353,6 +354,21 @@ export async function saveCustomerSlug(_: ActionState, form: FormData): Promise<
     if (error) return { error: /unique|duplicate/.test(error.message) ? "That link name is already used by another customer." : error.message };
     revalidatePath(`/customers/${id}`);
     return { ok: "Portal link updated. Send the new link to the customer." };
+  } catch (e) { return fail(e); }
+}
+
+/** Home-screen theme of one customer's portal. Only this customer (and its plants that have no choice of their own) is affected. */
+export async function saveCustomerTheme(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertStaff();
+    const id = String(form.get("id") ?? "");
+    const theme = String(form.get("theme") ?? "");
+    if (theme && !PORTAL_THEMES.some((t) => t.id === theme)) return { error: "Unknown theme." };
+    const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ portal_theme: theme || null }).eq("id", id);
+    if (error) return { error: /portal_theme/.test(error.message) ? "Run migration 0068_portal_theme.sql in the Supabase SQL Editor first." : error.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: theme ? `Theme applied to this customer only: ${PORTAL_THEMES.find((t) => t.id === theme)?.name}. They see it the next time the portal opens.` : "Theme cleared. This customer is back to the standard look." };
   } catch (e) { return fail(e); }
 }
 
