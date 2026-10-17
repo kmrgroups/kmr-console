@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 const APPS = [
   ["Console", "6 sample customers in India, Germany, the USA and the UAE, licences, enquiries"],
   ["Website", "sample slides, shop products, training programmes, a job opening, people and gallery photos (marked “sample”)"],
-  ["HRM", "demo company with 24 employees in two plants, a month of attendance, leave balances and pending requests"],
+  ["HRM & Payroll", "sample employees, shifts, a month of attendance (manual and biometric punches), leave and a payroll run"],
   ["Balloon Inspector", "demo workspace — open it and click “Try the sample”"],
   ["Process Documents", "demo workspace — open it and click “Try the sample”"],
   ["Capacity Planner", "demo workspace with the sample plan (12 machines, 43 operations)"],
@@ -155,7 +155,7 @@ export default async function TestDataPage() {
       <div className="card" style={{ borderColor: "var(--danger)" }}>
         <h2>3 · Clean out everything (before going live)</h2>
         <p className="muted" style={{ marginTop: 0 }}>A <b>full backup of every app is saved first</b>, automatically. Always kept: KMR staff and their logins, KMR products and prices, seller details,
-          platform settings, all website content, and KMR’s own HRM company settings.</p>
+          platform settings, all website content, and KMR’s own company settings.</p>
         <ActionForm action={cleanOut} submitLabel="Clean out now" variant="danger" pendingLabel="Backing up, then cleaning out…" confirm="This permanently removes the ticked data from every app (a full backup is saved first). Continue?">
           <div style={{ display: "grid", gap: 8, margin: "4px 0 12px" }}>
             {FLUSH_PARTS.map((f) => <label key={f.key} className="check" style={{ fontWeight: 400 }}><input type="checkbox" name={f.key} defaultChecked={f.default} /> {f.label}</label>)}

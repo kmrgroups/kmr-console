@@ -6,7 +6,7 @@ import { z } from "zod";
 import { assertManager, assertStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ensureLogin, isTool, provisionHrm, provisionWorkspace, tempPassword } from "@/lib/provision";
+import { ensureLogin, isTool, provisionWorkspace, tempPassword } from "@/lib/provision";
 import { randomUUID } from "node:crypto";
 import { env } from "@/lib/env";
 import type { ActionState } from "@/lib/action-state";
@@ -105,52 +105,6 @@ export async function saveLicenceFeatures(_: ActionState, form: FormData): Promi
   } catch (e) { return fail(e); }
 }
 
-const hrmSchema = z.object({
-  customer_id: z.string().uuid(),
-  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9][a-z0-9-]{1,29}$/, "Short name: 2–30 lowercase letters, digits or dashes"),
-  prefix: z.string().trim().toUpperCase().regex(/^[A-Z]{2,5}$/, "Employee code prefix: 2–5 letters"),
-  admin_name: z.string().trim().min(2, "Administrator's name is required").max(80),
-  admin_email: z.string().trim().toLowerCase().email("Enter the administrator's email"),
-  status: z.enum(["trial", "pilot", "active"]),
-  valid_until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).or(z.literal("")).transform((v) => v || null),
-  seats: z.string().trim().optional().transform((v) => (v ? Number(v) : null)),
-});
-
-/** Switch the HRM on for a customer: creates their company and administrator inside the HRM, and the licence. */
-export async function enableHrm(_: ActionState, form: FormData): Promise<ActionState> {
-  try {
-    await assertManager();
-    const parsed = hrmSchema.safeParse(Object.fromEntries(form));
-    if (!parsed.success) return { error: parsed.error.issues[0].message };
-    const d = parsed.data;
-    const db = createAdminClient();
-    const { data: c } = await db.from("customers").select("*").eq("id", d.customer_id).single();
-    if (!c) return { error: "Customer not found." };
-    const { data: had } = await db.from("licences").select("id").eq("customer_id", c.id).eq("product_code", "hrm").maybeSingle();
-    if (had) return { error: "This customer already has an HRM licence." };
-
-    const r = await provisionHrm({
-      customerName: c.name, legalName: c.legal_name, slug: d.slug, prefix: d.prefix,
-      adminName: d.admin_name, adminEmail: d.admin_email, phone: c.contact_phone, email: c.contact_email,
-      address: [c.address, c.city, c.state, c.postal_code].filter(Boolean).join(", ") || null,
-    });
-    const supabase = await createClient();
-    const { error } = await supabase.from("licences").insert({
-      customer_id: c.id, product_code: "hrm", status: d.status, valid_until: d.valid_until, seats: d.seats,
-      product_ref: r.tenantId, product_slug: d.slug,
-    });
-    if (error) return { error: `The HRM company was created, but the licence could not be saved: ${error.message}` };
-    if (c.status === "lead") await supabase.from("customers").update({ status: d.status === "active" ? "active" : "pilot" }).eq("id", c.id);
-    revalidatePath(`/customers/${c.id}`);
-    const url = `${env.platformUrl}/it/hrm/login?co=${d.slug}`;
-    return {
-      ok: r.password
-        ? `HRM is on. Send the administrator: sign-in ${url} · email ${d.admin_email} · temporary password ${r.password} (shown only now; they must change it at first sign-in).`
-        : `HRM is on. ${d.admin_email} already has a KMR login and uses their existing password at ${url}.`,
-    };
-  } catch (e) { return fail(e); }
-}
-
 export async function addRelease(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     await assertManager();
@@ -225,7 +179,7 @@ async function enableSales(d: { product_code: string; customer_id: string; works
   if (error) return { error: /duplicate|unique/.test(error.message) ? "This customer already has this app." : error.message };
   if (c.status === "lead") await supabase.from("customers").update({ status: d.status === "active" ? "active" : "pilot" }).eq("id", c.id);
   revalidatePath(`/customers/${c.id}`);
-  const url = `${env.platformUrl}/it/${({ calib: "calibration", apqp: "apqp", ppap: "ppap", rmp: "rmp", mmd: "mmd", mnt: "mnt", mom: "mom", cad: "cad" } as Record<string, string>)[d.product_code] ?? "sales"}.html`;
+  const url = `${env.platformUrl}/it/${({ calib: "calibration", apqp: "apqp", ppap: "ppap", rmp: "rmp", mmd: "mmd", mnt: "mnt", mom: "mom", cad: "cad", hrms: "hrm" } as Record<string, string>)[d.product_code] ?? "sales"}.html`;
   return {
     ok: login.password
       ? `Switched on. Send the administrator: sign-in ${url} · email ${d.admin_email} · temporary password ${login.password} (shown only now). They add colleagues under Administration › Users & access.`
@@ -240,7 +194,7 @@ export async function enableTool(_: ActionState, form: FormData): Promise<Action
     const parsed = toolSchema.safeParse(Object.fromEntries(form));
     if (!parsed.success) return { error: parsed.error.issues[0].message };
     const d = parsed.data;
-    if (["sales", "calib", "apqp", "ppap", "rmp", "mmd", "mnt", "mom", "cad"].includes(d.product_code)) return await enableSales(d);   // company-level apps: one per customer, access follows the user list
+    if (["sales", "calib", "apqp", "ppap", "rmp", "mmd", "mnt", "mom", "cad", "hrms"].includes(d.product_code)) return await enableSales(d);   // company-level apps: one per customer, access follows the user list
     if (!isTool(d.product_code)) return { error: "Unknown product." };
     const supabase = await createClient();
     const { data: c } = await supabase.from("customers").select("id,status").eq("id", d.customer_id).single();
@@ -489,7 +443,7 @@ export async function savePlantMember(_: ActionState, form: FormData): Promise<A
     if (!pl?.parent_id) return { error: "This is not a plant." };
     const { data: lic } = await admin.from("licences").select("product_code").eq("customer_id", plant).not("product_ref", "is", null);
     const roles: Record<string, string> = { ops: role };   // Operations Master has no licence of its own
-    for (const l of (lic ?? []) as { product_code: string }[]) roles[l.product_code] = l.product_code === "hrm" ? "hr_manager" : role;
+    for (const l of (lic ?? []) as { product_code: string }[]) roles[l.product_code] = role;
     const { data: ex } = await admin.from("customer_members").select("roles").eq("customer_id", plant).eq("email", email).maybeSingle();
     const { error } = await admin.from("customer_members").upsert(
       { customer_id: plant, email, full_name: fullName, is_admin: role === "admin", roles: { ...((ex?.roles as Record<string, string>) ?? {}), ...roles }, created_by: "KMR Console", updated_at: new Date().toISOString() },

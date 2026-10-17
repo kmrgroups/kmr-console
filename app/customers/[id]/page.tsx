@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableHrm, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -45,26 +45,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   if (!c) notFound();
   const prices = (allPrices ?? []).filter((x) => x.currency === c.currency);
   const ids = (licences ?? []).map((l) => l.id);
-  const hrmLic = (licences ?? []).find((l) => l.product_code === "hrm") as Licence | undefined;
   const isPlant = !!(c as { parent_id?: string | null }).parent_id;   // plants: 0061_plants.sql
   const companyId = isPlant ? (c as { parent_id: string }).parent_id : c.id;
   const toolUse: Record<string, { users: number; items: number }> = {};
-  let hrmUsage: { employees: number; users: number } | null = null;
   // second round: what depends on the customer / its licences, again all at once
   const [eventsRes, parentRes, sibRes] = await Promise.all([
     ids.length ? supabase.from("licence_events").select("licence_id,action,detail,created_at").in("licence_id", ids).order("created_at", { ascending: false }).limit(30) : Promise.resolve({ data: [] as { licence_id: string; action: string; detail: string | null; created_at: string }[] }),
     isPlant ? supabase.from("customers").select("id,name,slug,portal_theme").eq("id", companyId).maybeSingle() : Promise.resolve({ data: null }),
     isPlant ? supabase.from("customers").select("id,name,plant_code,city,status").eq("parent_id", companyId).order("plant_code") : Promise.resolve(ownPlants),
-    (async () => {
-      if (hrmLic?.product_ref) {   // usage inside the HRM (service key, after the staff check above)
-        const hrm = createAdminClient().schema("hrm");
-        const [{ count: employees }, { count: users }] = await Promise.all([
-          hrm.from("employees").select("id", { count: "exact", head: true }).eq("tenant_id", hrmLic.product_ref).in("status", ["draft", "invited", "submitted", "active"]),
-          hrm.from("app_users").select("id", { count: "exact", head: true }).eq("tenant_id", hrmLic.product_ref).eq("active", true),
-        ]);
-        hrmUsage = { employees: employees ?? 0, users: users ?? 0 };
-      }
-    })(),
     Promise.all(((licences ?? []) as Licence[]).filter((l) => isTool(l.product_code) && l.product_ref).map(async (l) => { toolUse[l.product_code] = await toolUsage(l.product_code as "balloon" | "pd" | "capacity", l.product_ref as string); })),
   ]);
   const events = eventsRes.data;
@@ -228,15 +216,13 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   {l && <div style={{ textAlign: "right", fontSize: 13 }}>
                     {l.valid_until ? <>Until <b>{fmtDate(l.valid_until)}</b></> : "No end date"}<br />
                     {l.seats ? <>Limit {l.seats} {pr.seat_label}</> : `Unlimited ${pr.seat_label}`}
-                    {pr.code === "hrm" && hrmUsage && <><br />Using {hrmUsage.employees} employees · {hrmUsage.users} logins</>}
                     {toolUse[pr.code] && <><br />Using {toolUse[pr.code].users} users · {toolUse[pr.code].items} {pr.code === "balloon" ? "reports" : pr.code === "pd" ? "projects" : "saved versions"}</>}
                   </div>}
                 </div>
 
                 {l && (
                   <>
-                    {l.product_slug && pr.code !== "hrm" && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Workspace <b>{l.product_slug}</b> · sign-in <a href={`${env.platformUrl}${pr.app_path}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}</a></p>}
-                    {l.product_slug && pr.code === "hrm" && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Sign-in: <a href={`${env.platformUrl}${pr.app_path}${pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}{pr.code === "hrm" ? `/login?co=${l.product_slug}` : ""}</a></p>}
+                    {l.product_slug && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Workspace <b>{l.product_slug}</b> · sign-in <a href={`${env.platformUrl}${pr.app_path}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}</a></p>}
                     {(() => {
                       const fl = ((feats ?? []) as Feature[]).filter((f) => f.product_code === pr.code);
                       if (!fl.length) return null;
@@ -276,24 +262,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                   </>
                 )}
 
-                {!l && pr.code === "hrm" && manager && (
-                  <details style={{ marginTop: 10 }}>
-                    <summary className="btn small">Switch on HRM</summary>
-                    <div style={{ marginTop: 10 }}>
-                      <p className="muted" style={{ fontSize: 13 }}>Creates the company inside the HRM with default departments, shifts and leave types, and its first administrator login.</p>
-                      <ActionForm action={enableHrm} submitLabel="Create HRM company" pendingLabel="Setting up…" className="formgrid" hidden={{ customer_id: c.id }}>
-                        <label className="field">Short name<input name="slug" defaultValue={suggestedSlug} required /><span className="help">Used in the sign-in link</span></label>
-                        <label className="field">Employee code prefix<input name="prefix" defaultValue={suggestedPrefix} maxLength={5} required /><span className="help">Codes like {suggestedPrefix}-0001</span></label>
-                        <label className="field">Administrator name<input name="admin_name" defaultValue={c.contact_name ?? ""} required /></label>
-                        <label className="field">Administrator email<input name="admin_email" type="email" defaultValue={c.contact_email ?? ""} required /></label>
-                        <label className="field">Licence<select name="status" defaultValue="trial"><option value="trial">Trial</option><option value="pilot">Pilot</option><option value="active">Active</option></select></label>
-                        <label className="field">Valid until<input type="date" name="valid_until" defaultValue={addDays(today(), 30)} /></label>
-                        <label className="field">Employee limit<input type="number" name="seats" min={1} placeholder="Unlimited" defaultValue={50} /></label>
-                      </ActionForm>
-                    </div>
-                  </details>
-                )}
-                {!l && pr.code !== "hrm" && manager && (
+                {!l && manager && (
                   <details style={{ marginTop: 10 }}>
                     <summary className="btn small">Switch on {pr.name}</summary>
                     <div style={{ marginTop: 10 }}>

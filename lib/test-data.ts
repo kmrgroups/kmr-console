@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { ensureLogin, provisionHrm, provisionWorkspace, tempPassword, type ToolCode } from "@/lib/provision";
+import { ensureLogin, provisionWorkspace, tempPassword, type ToolCode } from "@/lib/provision";
 import { loadWebsiteSample, removeWebsiteSample } from "@/lib/website-sample";
 import { env } from "@/lib/env";
 
@@ -65,15 +65,6 @@ export async function demoStatus() {
   return { demoCustomers: demoCustomers ?? 0, demo: demo as { id: string; licences: { product_code: string; product_ref: string | null }[] } | null, websiteSample: (sample ?? 0) > 0 };
 }
 
-async function hrmAttendance(tenant: string) {
-  const key = createHash("sha256").update(`kmr-internal:${env.serviceRoleKey}`).digest("hex");
-  const hrmUrl = (process.env.HRM_INTERNAL_URL || `${env.platformUrl}/it/hrm`).replace(/\/+$/, "");
-  const r = await fetch(`${hrmUrl}/api/internal/demo-attendance`, {
-    method: "POST", headers: { "content-type": "application/json", "x-kmr-key": key }, body: JSON.stringify({ tenant }), signal: AbortSignal.timeout(55_000),
-  });
-  if (!r.ok) throw new Error(`HRM replied ${r.status}`);
-}
-
 export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: string | null }> {
   const d = db(), steps: Step[] = [];
   const step = async (part: string, fn: () => Promise<string>) => {
@@ -102,21 +93,6 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
   if (pErr) throw new Error(`Could not set the demo password: ${pErr.message}`);
   await d.from("customer_members").upsert({ customer_id: cust.id, email: DEMO.email, full_name: DEMO.person, is_admin: true, roles: {}, login_owned: true, created_by: DEMO.source });
 
-  await step("HRM", async () => {
-    const r = await provisionHrm({ customerName: DEMO.name, legalName: DEMO.legal, slug: DEMO.slug, prefix: DEMO.prefix, adminName: DEMO.person, adminEmail: DEMO.email,
-      phone: "+91 90000 00000", email: DEMO.email, address: "Plot 12, Bommasandra Industrial Area, Bengaluru 560099" });
-    await d.from("licences").insert({ customer_id: cust.id, product_code: "hrm", status: "active", valid_until: null, seats: 200, product_ref: r.tenantId, product_slug: DEMO.slug, notes: DEMO.source });
-    const hrm = d.schema("hrm");
-    await hrm.from("app_users").update({ must_change_password: false }).eq("id", login.id);
-    const { data: n, error } = await hrm.rpc("demo_load", { p_tenant: r.tenantId });
-    if (error) throw new Error(error.message);
-    const pay = await hrm.rpc("demo_payroll", { p_tenant: r.tenantId });           // salaries + two loans (HRM 0005)
-    const flow = await hrm.rpc("demo_flow", { p_tenant: r.tenantId });             // hiring flow and later modules (HRM 0007)
-    const hiring = !flow.error && flow.data?.recruitment ? `, hiring flow with ${flow.data.recruitment} sample candidates` : "";
-    let att = " with a month of attendance";
-    try { await hrmAttendance(r.tenantId); } catch { att = " (attendance is filled in by the HRM's nightly job, or HRM › Attendance › Recalculate)"; }
-    return `${n} employees in two plants, leave and pending requests${att}${pay.error ? "" : ", salaries and two loans for payroll"}${hiring}`;
-  });
   for (const [code, label, ws] of [["balloon", "Balloon Inspector", "KMR Demo – Quality"], ["pd", "Process Documents", "KMR Demo – APQP"], ["capacity", "Capacity Planner", "KMR Demo – Planning"]] as [ToolCode, string, string][]) {
     await step(label, async () => {
       const id = crypto.randomUUID();
@@ -132,7 +108,7 @@ export async function loadDemoEverywhere(): Promise<{ steps: Step[]; password: s
   });
   await step("Sales Flow, Calibration Hub, APQP, PPAP", async () => {
     const { data, error } = await d.rpc("demo_refresh", { p_cid: cust.id, p_full: false }); if (error) throw new Error(error.message);   // 0049: switches the four company-level apps on and adds their sample
-    return `on, with sample data (${Object.entries((data ?? {}) as Record<string, number>).filter(([k]) => ["sales", "calib", "apqp", "ppap", "rmp", "mmd", "mnt", "mom", "cad"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")})`;
+    return `on, with sample data (${Object.entries((data ?? {}) as Record<string, number>).filter(([k]) => ["sales", "calib", "apqp", "ppap", "rmp", "mmd", "mnt", "mom", "cad", "hrms"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")})`;
   });
   return { steps, password };
 }
