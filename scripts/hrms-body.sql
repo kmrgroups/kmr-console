@@ -131,8 +131,8 @@ do $$ begin
     insert into console.hrms_legacy (customer_id, tenant_id) select l.customer_id, l.product_ref from console.licences l where l.product_code = 'hrm' and l.product_ref is not null on conflict (customer_id) do nothing;
   end if;
 end $$;
-insert into console.licences (customer_id, product_code, status, valid_until, seats, notes, product_ref, product_slug)
-select l.customer_id, 'hrms', l.status, l.valid_until, l.seats, 'Moved from the earlier HRM (0072)', l.customer_id, c.slug
+insert into console.licences (customer_id, product_code, status, starts_on, valid_until, seats, notes, product_ref, product_slug)
+select l.customer_id, 'hrms', l.status, l.starts_on, l.valid_until, l.seats, 'Moved from the earlier HRM (0072)', l.customer_id, c.slug
   from console.licences l join console.customers c on c.id = l.customer_id where l.product_code = 'hrm'
 on conflict (customer_id, product_code) do nothing;
 -- the earlier licence stays (invoices, history) but no longer points at a company inside the old HRM, so nothing reads or writes the old data any more
