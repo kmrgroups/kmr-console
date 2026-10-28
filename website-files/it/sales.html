@@ -255,7 +255,7 @@ function analysis(rows, unp, UVtxt) {
   // where to concentrate: biggest value behind schedule first
   const pri = rows.map(r => ({ ...r, f: flagsOf(r.l, r.c), bv: r.c.behind * r.l.price * fx(r.l.currency) }))
     .filter(r => r.f.some(x => x[1] !== 'x') ).sort((a, b) => b.bv - a.bv || b.c.pending - a.c.pending).slice(0, 10)
-    .map(({ l, c, f }) => `<tr><td>${clsChip(l.id)}</td><td>${esc(l.buyer_name)}<br><span class="mut">${esc(l.part_code)} · ${esc(l.part_name)}</span></td><td class="n">${fmt(c.behind)}</td><td class="n">${fmt(c.pending)}</td><td class="n">${money(c.behind * l.price, l.currency)}</td><td>${f.map(x => `<span class="fl ${x[1]}">${x[0]}</span>`).join('')}</td></tr>`).join('');
+    .map(({ l, c, f }) => `<tr><td>${clsChip(l.id)}</td><td><b>${esc(l.buyer_name)}</b></td><td><b>${esc(l.part_code)}</b><br><span class="mut">${esc(l.part_name)}</span></td><td class="n">${fmt(c.behind)}</td><td class="n">${fmt(c.pending)}</td><td class="n">${money(c.behind * l.price, l.currency)}</td><td>${f.map(x => `<span class="fl ${x[1]}">${x[0]}</span>`).join('')}</td></tr>`).join('');
   const sh = k => priced.length ? G[k].n / priced.length * 100 : 0, sv = k => tot ? G[k].val / tot * 100 : 0;
   const stack = f => ['A', 'B', 'C'].map(k => `<i class="c${k}" style="width:${f(k)}%;background:var(--c)" title="Class ${k}: ${pc(f(k))}">${f(k) >= 7 ? k + ' ' + pc(f(k)) : ''}</i>`).join('');
   return `<div class="box" style="margin-bottom:16px"><h3 style="font-size:15px;margin-bottom:8px">Sales plan analysis — where to concentrate · ${monthLabel(M)}</h3>
@@ -266,7 +266,7 @@ function analysis(rows, unp, UVtxt) {
       <div class="mut" style="font-size:12px;margin-top:8px">Share of plan value</div><div class="stack">${stack(sv)}</div>
       <div class="legend" style="margin:8px 0 0"><span>Class A = parts making the first ${CFG.ABC[0]}% of plan value</span><span>B = next ${CFG.ABC[1] - CFG.ABC[0]}%</span><span>C = last ${100 - CFG.ABC[1]}%</span></div></div>
     <div class="box" style="margin-bottom:16px"><h3>Where to concentrate now (largest value behind schedule first)</h3>
-      ${pri ? `<div class="scroll" style="max-height:46vh"><table><thead><tr><th>Class</th><th>Customer / part</th><th class="n">Should have shipped, not shipped</th><th class="n">Pending qty</th><th class="n">Value behind</th><th>Indicators</th></tr></thead><tbody>${pri}</tbody></table></div>` : '<p class="mut">Nothing is behind plan. 🎉</p>'}</div>`;
+      ${pri ? `<div class="scroll" style="max-height:46vh"><table><thead><tr><th>Class</th><th>Customer</th><th>Part No. / Part Name</th><th class="n">Should have shipped, not shipped</th><th class="n">Pending qty</th><th class="n">Value behind</th><th>Indicators</th></tr></thead><tbody>${pri}</tbody></table></div>` : '<p class="mut">Nothing is behind plan. 🎉</p>'}</div>`;
 }
 
 function renderDash() {
