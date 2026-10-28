@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>KMR Layout Studio — 1:1 Factory & Office Layout Generator</title>
+  <script src="/it/apps/sso.js"></script>
+  <script src="/it/apps/kmr-ui.js"></script>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root { --bg: #090d16; --card: #111827; --border: #1f293d; --ink: #f3f4f6; --mut: #9ca3af; }
+    body { background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, sans-serif; }
+    .cell-badge { font-weight: 600; font-size: 10px; padding: 2px 7px; border-radius: 9999px; text-transform: uppercase; }
+    .badge-cnc { background-color: #3b82f620; color: #60a5fa; border: 1px solid #3b82f660; }
+    .badge-vmc { background-color: #8b5cf620; color: #c084fc; border: 1px solid #8b5cf660; }
+    .badge-conv { background-color: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b60; }
+    .badge-msa { background-color: #10b98120; color: #34d399; border: 1px solid #10b98160; }
+    .badge-finish { background-color: #ec489920; color: #f472b6; border: 1px solid #ec489960; }
+    .badge-office { background-color: #06b6d420; color: #22d3ee; border: 1px solid #06b6d460; }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+  <!-- Top App Bar -->
+  <header class="bg-slate-900 border-b border-slate-800 px-5 py-3 flex flex-wrap items-center justify-between gap-4 select-none">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white text-base shadow-sm">
+        📐
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-base font-bold tracking-tight text-white">KMR Layout Studio</h1>
+          <span class="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded font-mono font-semibold">1:1 GENERATOR</span>
+        </div>
+        <p class="text-xs text-slate-400">Transform Line Concepts into 1:1 Scale Lean Cellular & Office Layouts</p>
+      </div>
+    </div>
+
+    <!-- Global Actions -->
+    <div class="flex items-center gap-2">
+      <button onclick="exportDXF()" class="px-3.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center gap-1.5 transition">
+        💾 Export DXF
+      </button>
+      <button onclick="openInKMRCAD()" class="px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center gap-1.5 shadow-sm transition">
+        🚀 Open in KMR CAD
+      </button>
+      <a href="/it/cad.html" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition">Back to CAD</a>
+    </div>
+  </header>
+
+  <!-- Main Studio Workspace -->
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+
+    <!-- Left Controls Panel -->
+    <aside class="w-full lg:w-96 bg-slate-900/90 border-r border-slate-800 p-4 space-y-5 overflow-y-auto max-h-[calc(100vh-60px)]">
+
+      <!-- Step 1: Upload Existing Plan -->
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Step 1 · Input Plan</span>
+          <span class="text-[11px] text-slate-400">PDF / JPG / DXF</span>
+        </div>
+        
+        <div class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-3 text-center cursor-pointer transition bg-slate-900/50" onclick="document.getElementById('plan-file-input').click()">
+          <input type="file" id="plan-file-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.dxf" onchange="handleFileUpload(event)">
+          <div class="text-2xl mb-1">📄</div>
+          <div id="file-name-label" class="text-xs font-medium text-slate-200">Drop PDF, Drawing or Image here</div>
+          <div class="text-[11px] text-slate-500 mt-0.5">Click to browse file</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-slate-400 block mb-1">Building Width (m)</label>
+            <input type="number" id="inp-width" value="20.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1">Total Depth (m)</label>
+            <input type="number" id="inp-depth" value="30.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="text-slate-400 block mb-1">Hall Depth (m)</label>
+            <input type="number" id="inp-hall" value="24.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1">QC/Office Bay (m)</label>
+            <input type="number" id="inp-qc" value="5.4" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Layout Type & Requirements -->
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 space-y-3">
+        <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Step 2 · Transformation Rules</span>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Layout Mode</label>
+          <select id="sel-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white" onchange="handleModeChange()">
+            <option value="factory">🏭 Factory Shop Floor (Machines & Cells)</option>
+            <option value="office">🏢 Office & Management Floor Plan</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">Target Concept</label>
+          <select id="sel-concept" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
+            <option value="cellular-u">U-Shaped Cellular (Lean Group Technology)</option>
+            <option value="cellular-heavy">Heavy Perimeter + Central Sub-Assembly</option>
+            <option value="straight-flow">Linear One-Piece Through-Flow</option>
+          </select>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Central Gangway Width</span>
+            <span id="lbl-aisle" class="text-white font-mono font-bold">2.8 m</span>
+          </div>
+          <input type="range" id="rng-aisle" min="2.0" max="4.0" step="0.2" value="2.8" class="w-full accent-blue-500" oninput="document.getElementById('lbl-aisle').textContent = this.value + ' m'; generateOptions();">
+        </div>
+
+        <div class="space-y-2 text-xs">
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Min. Operator Clearance</span>
+            <span class="text-white font-mono font-bold">1.2 m</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-slate-400">Rear Maintenance Corridor</span>
+            <span class="text-white font-mono font-bold">1.5 m</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Asset Inventory Preset -->
+      <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Step 3 · Machine Inventory</span>
+          <span id="asset-count" class="text-xs font-mono font-bold text-white">62 Assets</span>
+        </div>
+        <p class="text-[11px] text-slate-400">
+          Loaded from AutoCAD Drawing: 23 CNC Lathes, 12 VMC/HMC Centers, 27 Conventional stations, 5 Quality tables.
+        </p>
+        <button onclick="generateOptions()" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+          ✨ Generate 1:1 Layout Options
+        </button>
+      </div>
+
+      <!-- Background Image Opacity Overlay Slider -->
+      <div id="bg-overlay-card" class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3 space-y-2 hidden">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-300">Underlay Plan Opacity</span>
+          <span id="lbl-opacity" class="font-mono text-white">40%</span>
+        </div>
+        <input type="range" id="rng-opacity" min="0" max="100" value="40" class="w-full accent-blue-500" oninput="updateUnderlayOpacity(this.value)">
+      </div>
+
+    </aside>
+
+    <!-- Main Canvas Viewport -->
+    <main class="flex-1 flex flex-col bg-slate-950 overflow-hidden">
+
+      <!-- Subheader: Options Tabs & KPI Bar -->
+      <div class="bg-slate-900/90 border-b border-slate-800 px-5 py-2.5 flex flex-wrap items-center justify-between gap-4 select-none">
+        <!-- Option Tabs -->
+        <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
+          <button id="tab-opt1" onclick="selectOption(1)" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition">
+            Option A: Dual U-Cells
+          </button>
+          <button id="tab-opt2" onclick="selectOption(2)" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition">
+            Option B: Heavy Perimeter
+          </button>
+          <button id="tab-opt3" onclick="selectOption(3)" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition">
+            Option C: Linear Flow
+          </button>
+        </div>
+
+        <!-- Live Lean KPIs -->
+        <div class="flex items-center gap-4 text-xs">
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-500">Travel Distance:</span>
+            <span id="kpi-travel" class="font-mono font-bold text-emerald-400">182 m</span>
+          </div>
+          <div class="w-px h-4 bg-slate-800"></div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-500">Floor Utilization:</span>
+            <span id="kpi-util" class="font-mono font-bold text-blue-400">51.4%</span>
+          </div>
+          <div class="w-px h-4 bg-slate-800"></div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-500">Scale:</span>
+            <span class="font-mono font-bold text-slate-300">1m = 40px (1:1)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scrollable / Zoomable Layout Canvas -->
+      <div class="flex-1 overflow-auto p-6 flex justify-center items-start relative select-none">
+        
+        <!-- Scaled SVG Drawing Container -->
+        <div id="canvas-wrapper" class="relative border-2 border-slate-800 rounded-xl bg-slate-900 shadow-2xl overflow-hidden">
+          
+          <!-- Optional Uploaded Background Image / PDF Underlay -->
+          <img id="bg-underlay" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-40 hidden" alt="Underlay">
+
+          <!-- Interactive SVG 1:1 Engine -->
+          <svg id="layout-svg" viewBox="0 0 880 1280" class="w-[880px] h-[1280px] font-sans"></svg>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+
+  <script>
+    // State
+    let currentOption = 1;
+    let layoutMode = 'factory';
+    let bWidth = 20.0;
+    let bDepth = 30.0;
+    let hallDepth = 24.0;
+    let qcDepth = 5.4;
+    let scale = 40.0; // 1 meter = 40 pixels
+
+    // Factory Machine Assets (EPI Machine Shop)
+    const factoryMachines = [
+      // Cell 1: CNC Turning
+      { id: 'NEJ-04', type: 'cnc', name: 'NEJ-04', w: 3.70, h: 2.30, cell: 'CNC Turning' },
+      { id: 'B-20', type: 'cnc', name: 'B-20', w: 3.50, h: 2.50, cell: 'CNC Turning' },
+      { id: 'NEB-102', type: 'cnc', name: 'NEB 102', w: 2.80, h: 2.00, cell: 'CNC Turning' },
+      { id: 'B-08', type: 'cnc', name: 'B-08', w: 3.70, h: 2.50, cell: 'CNC Turning' },
+      { id: 'B-82', type: 'cnc', name: 'B-82', w: 2.95, h: 1.80, cell: 'CNC Turning' },
+      { id: 'NE1.5-1', type: 'cnc', name: 'NE 1.5 #1', w: 1.50, h: 1.30, cell: 'CNC Turning' },
+      { id: 'NE1.5-2', type: 'cnc', name: 'NE 1.5 #2', w: 1.50, h: 1.30, cell: 'CNC Turning' },
+      { id: 'NM1.7', type: 'cnc', name: 'NM 1.7', w: 1.50, h: 1.30, cell: 'CNC Turning' },
+      { id: 'NE-61', type: 'cnc', name: 'NE-61', w: 2.00, h: 1.40, cell: 'CNC Turning' },
+      { id: 'NE44', type: 'cnc', name: 'NE44', w: 3.00, h: 2.30, cell: 'CNC Turning' },
+      { id: 'B-19', type: 'cnc', name: 'B-19', w: 2.60, h: 1.54, cell: 'CNC Turning' },
+      { id: 'B-01', type: 'cnc', name: 'B-01', w: 1.80, h: 1.70, cell: 'CNC Turning' },
+      { id: 'B-07', type: 'cnc', name: 'B-07', w: 2.30, h: 1.30, cell: 'CNC Turning' },
+      { id: 'NET21', type: 'cnc', name: 'NET 21', w: 2.30, h: 1.60, cell: 'CNC Turning' },
+      
+      // Cell 2: VMC & HMC Prismatic
+      { id: 'HMC', type: 'vmc', name: 'HMC NEJ-01', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
+      { id: 'B-02-1', type: 'vmc', name: 'VMC B-02 #1', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
+      { id: 'B-02-2', type: 'vmc', name: 'VMC B-02 #2', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
+      { id: 'B-02-3', type: 'vmc', name: 'VMC B-02 #3', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
+      { id: 'B-86', type: 'vmc', name: 'BED MILL B-86', w: 6.00, h: 2.20, cell: 'VMC / HMC' },
+      { id: 'B-92', type: 'vmc', name: 'VMC B-92', w: 4.00, h: 2.20, cell: 'VMC / HMC' },
+      { id: 'B-51', type: 'vmc', name: 'VMC B-51', w: 3.90, h: 2.50, cell: 'VMC / HMC' },
+      { id: 'B-74-1', type: 'vmc', name: 'TAP B-74 #1', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
+      { id: 'B-74-2', type: 'vmc', name: 'TAP B-74 #2', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
+      { id: 'B-74-3', type: 'vmc', name: 'TAP B-74 #3', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
+      { id: 'B-74-4', type: 'vmc', name: 'TAP B-74 #4', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
+
+      // Cell 3: Conventional & Second-Op
+      { id: 'GT-LT', type: 'conv', name: 'GT / VT / LT Bank', w: 3.70, h: 1.50, cell: 'Conventional' },
+      { id: 'B-88', type: 'conv', name: 'B-88 Grinder', w: 1.80, h: 1.30, cell: 'Conventional' },
+      { id: 'B-89', type: 'conv', name: 'B-89 Grinder', w: 1.80, h: 1.30, cell: 'Conventional' },
+      { id: 'B-58', type: 'conv', name: 'B-58 Drill', w: 1.37, h: 0.97, cell: 'Conventional' },
+      { id: 'B-59', type: 'conv', name: 'B-59 Drill', w: 1.00, h: 0.80, cell: 'Conventional' },
+      { id: 'B-60', type: 'conv', name: 'B-60 Drill', w: 1.00, h: 0.80, cell: 'Conventional' },
+      { id: 'B-61', type: 'conv', name: 'B-61 Drill', w: 1.00, h: 0.80, cell: 'Conventional' },
+      { id: 'B-62', type: 'conv', name: 'B-62 Drill', w: 1.37, h: 0.99, cell: 'Conventional' },
+      { id: 'B-64', type: 'conv', name: 'B-64 Tap', w: 1.14, h: 0.90, cell: 'Conventional' },
+
+      // Cell 4: Quality & MSA
+      { id: 'IC-STUD', type: 'msa', name: 'IC STUD 3 TABLE (CMM)', w: 4.10, h: 0.60, cell: 'Quality / MSA' },
+      { id: '2-TABLE', type: 'msa', name: '2 TABLE (Air/Bore)', w: 3.00, h: 0.60, cell: 'Quality / MSA' },
+      { id: 'SRSE', type: 'msa', name: '3 TABLE (SRSE PARTS)', w: 4.40, h: 0.60, cell: 'Quality / MSA' },
+
+      // Cell 5: Surface & Assembly
+      { id: 'PARKAR', type: 'finish', name: 'PARKAR ARIA (Tanks)', w: 3.00, h: 2.20, cell: 'Finish & Pack' },
+      { id: 'ROTOR', type: 'finish', name: 'HOUSING & T-ROTOR ASSY', w: 6.40, h: 2.40, cell: 'Finish & Pack' },
+      { id: 'DRIVE-S', type: 'finish', name: 'DRIVE S AR Line', w: 2.50, h: 0.60, cell: 'Finish & Pack' },
+      { id: 'PACK', type: 'finish', name: 'PACK TABLE & BOX', w: 1.90, h: 1.00, cell: 'Finish & Pack' }
+    ];
+
+    // Office Furniture & Rooms Preset
+    const officeRooms = [
+      { id: 'BOSS', type: 'office', name: 'Executive Cabin (MD)', w: 4.50, h: 3.80, x: 2.0, y: 2.0 },
+      { id: 'CONF-1', type: 'office', name: 'Board Conference Room (12p)', w: 6.00, h: 4.50, x: 7.0, y: 2.0 },
+      { id: 'CONF-2', type: 'office', name: 'Meeting Room 2 (6p)', w: 4.00, h: 3.50, x: 13.5, y: 2.0 },
+      { id: 'DESKS', type: 'office', name: 'Open Workstation Pod (16 Desks)', w: 11.00, h: 6.50, x: 2.0, y: 7.5 },
+      { id: 'PANTRY', type: 'office', name: 'Pantry & Dining Room', w: 4.50, h: 4.0, x: 14.0, y: 7.5 },
+      { id: 'SERVER', type: 'office', name: 'IT Server & Documentation Vault', w: 3.50, h: 3.0, x: 14.0, y: 12.5 },
+      { id: 'TOILETS', type: 'office', name: 'Men & Women Restrooms', w: 4.50, h: 3.5, x: 14.0, y: 16.5 }
+    ];
+
+    function handleModeChange() {
+      layoutMode = document.getElementById('sel-mode').value;
+      const countEl = document.getElementById('asset-count');
+      if (layoutMode === 'office') {
+        countEl.textContent = '7 Office Zones';
+      } else {
+        countEl.textContent = '62 Machine Assets';
+      }
+      generateOptions();
+    }
+
+    function selectOption(opt) {
+      currentOption = opt;
+      [1, 2, 3].forEach(i => {
+        const btn = document.getElementById('tab-opt' + i);
+        if (i === opt) {
+          btn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
+        } else {
+          btn.className = 'px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition';
+        }
+      });
+      render();
+    }
+
+    function updateDimensions() {
+      bWidth = parseFloat(document.getElementById('inp-width').value) || 20.0;
+      bDepth = parseFloat(document.getElementById('inp-depth').value) || 30.0;
+      hallDepth = parseFloat(document.getElementById('inp-hall').value) || 24.0;
+      qcDepth = parseFloat(document.getElementById('inp-qc').value) || 5.4;
+      render();
+    }
+
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('file-name-label').textContent = file.name;
+      
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          const underlay = document.getElementById('bg-underlay');
+          underlay.src = evt.target.result;
+          underlay.classList.remove('hidden');
+          document.getElementById('bg-overlay-card').classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        alert('File ' + file.name + ' uploaded. Blueprint envelope calibrated.');
+      }
+    }
+
+    function updateUnderlayOpacity(val) {
+      document.getElementById('lbl-opacity').textContent = val + '%';
+      document.getElementById('bg-underlay').style.opacity = val / 100;
+    }
+
+    function generateOptions() {
+      // Re-computes layout placements according to selection
+      render();
+    }
+
+    function render() {
+      const svg = document.getElementById('layout-svg');
+      const aisle = parseFloat(document.getElementById('rng-aisle').value) || 2.8;
+
+      if (layoutMode === 'office') {
+        renderOfficeLayout(svg);
+        return;
+      }
+
+      // Factory Layout Render
+      // Envelope: bWidth x bDepth at 40px/m
+      const wPx = bWidth * scale;
+      const hPx = bDepth * scale;
+      const hallPx = hallDepth * scale;
+      const qcPx = qcDepth * scale;
+
+      // Update viewBox
+      svg.setAttribute('viewBox', `0 0 ${wPx + 80} ${hPx + 80}`);
+      svg.style.width = `${wPx + 80}px`;
+      svg.style.height = `${hPx + 80}px`;
+
+      let optionTitle = 'Option A: Dual U-Cells (Lean Group Technology)';
+      let travelMeters = '182 m';
+      let util = '51.4%';
+
+      if (currentOption === 2) {
+        optionTitle = 'Option B: Heavy Perimeter Machining + Central Assembly';
+        travelMeters = '210 m';
+        util = '54.2%';
+      } else if (currentOption === 3) {
+        optionTitle = 'Option C: Straight Linear Flow (Inbound North ➔ Outbound South)';
+        travelMeters = '235 m';
+        util = '49.8%';
+      }
+
+      document.getElementById('kpi-travel').textContent = travelMeters;
+      document.getElementById('kpi-util').textContent = util;
+
+      svg.innerHTML = `
+        <defs>
+          <pattern id="grid-1m" width="40" height="40" patternUnits="userSpaceOnUse">
+            <rect width="40" height="40" fill="none" stroke="#1f293d" stroke-width="0.5"/>
+          </pattern>
+          <pattern id="grid-5m" width="200" height="200" patternUnits="userSpaceOnUse">
+            <rect width="200" height="200" fill="none" stroke="#334155" stroke-width="1.0" opacity="0.6"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#070a13" />
+        <rect width="100%" height="100%" fill="url(#grid-1m)" />
+        <rect width="100%" height="100%" fill="url(#grid-5m)" />
+
+        <!-- Exterior Building Boundary (20.0m x 30.0m) -->
+        <g transform="translate(40, 40)">
+          <rect width="${wPx}" height="${hPx}" fill="#0b1120" stroke="#475569" stroke-width="3" rx="4" />
+
+          <!-- Dimension Labels -->
+          <text x="${wPx / 2}" y="-12" fill="#38bdf8" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle">
+            WIDTH: ${bWidth.toFixed(1)}m (${(bWidth * 1000).toFixed(0)} mm)
+          </text>
+          <text x="-12" y="${hPx / 2}" fill="#38bdf8" font-size="11" font-family="monospace" font-weight="bold" transform="rotate(-90 -12 ${hPx / 2})" text-anchor="middle">
+            DEPTH: ${bDepth.toFixed(1)}m (${(bDepth * 1000).toFixed(0)} mm)
+          </text>
+
+          <!-- Hall / QC Wall Divider -->
+          <line x1="8" y1="${hallPx}" x2="${wPx - 8}" y2="${hallPx}" stroke="#475569" stroke-width="3" />
+          <rect x="${wPx / 2 - 60}" y="${hallPx - 5}" width="120" height="10" fill="#0b1120" stroke="#38bdf8" stroke-dasharray="2,2" />
+          <text x="${wPx / 2}" y="${hallPx + 2}" fill="#38bdf8" font-size="8" font-weight="bold" text-anchor="middle">ACCESS D1</text>
+
+          <!-- Rolling Shutters (RS 3.6m = 144px) -->
+          <rect x="-6" y="40" width="10" height="144" fill="#0284c7" stroke="#38bdf8" rx="2" />
+          <text x="-14" y="112" fill="#38bdf8" font-size="9" font-weight="bold" transform="rotate(-90 -14 112)" text-anchor="middle">RS 1 (3.6m INBOUND)</text>
+
+          <rect x="-6" y="520" width="10" height="144" fill="#d97706" stroke="#f59e0b" rx="2" />
+          <text x="-14" y="592" fill="#f59e0b" font-size="9" font-weight="bold" transform="rotate(-90 -14 592)" text-anchor="middle">RS 2 (3.6m SCRAP)</text>
+
+          <rect x="${wPx - 4}" y="520" width="10" height="144" fill="#db2777" stroke="#ec4899" rx="2" />
+          <text x="${wPx + 16}" y="592" fill="#ec4899" font-size="9" font-weight="bold" transform="rotate(90 ${wPx + 16} 592)" text-anchor="middle">RS 3 (3.6m DISPATCH)</text>
+
+          <!-- Central Logistics Highway (aisle m = aisle * 40 px) -->
+          <rect x="${(wPx - aisle * scale) / 2}" y="10" width="${aisle * scale}" height="${hallPx - 15}" fill="#1e293b25" stroke="#475569" stroke-dasharray="4,4" />
+          <text x="${wPx / 2}" y="${hallPx / 2}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 ${wPx / 2} ${hallPx / 2})" text-anchor="middle" letter-spacing="4">
+            ${aisle.toFixed(1)}m CENTRAL TRANSPORT AISLE
+          </text>
+
+          <!-- Render Option Specific Machines -->
+          ${renderOptionMachines(currentOption, wPx, hallPx, aisle)}
+
+          <!-- DEDICATED QUALITY CONTROL ROOM (Front Bay: 19.6m x 5.4m) -->
+          <g transform="translate(10, ${hallPx + 10})">
+            <rect width="${wPx - 20}" height="${qcPx - 15}" fill="#064e3b20" stroke="#10b981" stroke-width="1.5" rx="4" />
+            <text x="${(wPx - 20) / 2}" y="20" fill="#6ee7b7" font-size="11" font-weight="bold" text-anchor="middle">
+              QUALITY CONTROL & MSA ROOM — ${(bWidth - 0.4).toFixed(1)}m × ${qcDepth.toFixed(1)}m (${((bWidth - 0.4) * qcDepth).toFixed(1)} m²)
+            </text>
+
+            <!-- CMM Granite Table: 4.10m x 0.60m = 164px x 24px -->
+            <rect x="20" y="45" width="164" height="40" fill="#059669" stroke="#34d399" rx="4" />
+            <text x="102" y="68" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">IC STUD 3 (CMM 4.1×0.6m)</text>
+
+            <!-- Air/Bore Table: 3.00m x 0.60m = 120px x 24px -->
+            <rect x="200" y="45" width="120" height="40" fill="#10b981" stroke="#34d399" rx="4" />
+            <text x="260" y="68" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">2 TABLE (Bore 3.0×0.6m)</text>
+
+            <!-- SRSE Table: 4.40m x 0.60m = 176px x 24px -->
+            <rect x="335" y="45" width="176" height="40" fill="#10b981" stroke="#34d399" rx="4" />
+            <text x="423" y="68" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">3 TABLE SRSE (4.4×0.6m)</text>
+
+            <!-- Vault -->
+            <rect x="530" y="45" width="220" height="130" fill="#04785730" stroke="#10b981" rx="4" />
+            <text x="640" y="105" fill="#6ee7b7" font-size="10" font-weight="bold" text-anchor="middle">GAUGE CALIBRATION VAULT</text>
+            <text x="640" y="122" fill="#a7f3d0" font-size="8" text-anchor="middle">& Quality Cabin (5.5m × 3.2m)</text>
+          </g>
+
+        </g>
+      `;
+    }
+
+    function renderOptionMachines(opt, wPx, hallPx, aisle) {
+      let html = '';
+      const leftBayW = (wPx - aisle * scale) / 2;
+      const rightBayX = wPx / 2 + (aisle * scale) / 2;
+
+      if (opt === 1) {
+        // Option 1: Dual U-Cells (Lean Group Technology)
+        // West Bay: CNC Turning Cell 1 & Conventional Cell 3
+        html += `
+          <!-- West Bay CNC Turning Dual U-Cells -->
+          <g transform="translate(20, 40)">
+            <!-- Raw Cutting -->
+            <rect x="0" y="0" width="${172}" height="${64}" fill="#475569" stroke="#64748b" rx="4"/>
+            <text x="86" y="36" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">RAW MACHINE (4.3×1.6m)</text>
+            
+            <!-- U-Cell 1 -->
+            <rect x="0" y="75" width="${148}" height="${92}" fill="#2563eb" stroke="#60a5fa" rx="4"/>
+            <text x="74" y="125" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">NEJ-04 (3.7×2.3m)</text>
+
+            <rect x="155" y="75" width="${140}" height="${100}" fill="#2563eb" stroke="#60a5fa" rx="4"/>
+            <text x="225" y="130" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">B-20 (3.5×2.5m)</text>
+
+            <rect x="0" y="180" width="${112}" height="${80}" fill="#1d4ed8" stroke="#3b82f6" rx="4"/>
+            <text x="56" y="225" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">NEB 102 (2.8×2.0m)</text>
+
+            <rect x="120" y="185" width="${148}" height="${100}" fill="#1d4ed8" stroke="#3b82f6" rx="4"/>
+            <text x="194" y="240" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">B-08 (3.7×2.5m)</text>
+
+            <rect x="0" y="270" width="${118}" height="${72}" fill="#1e40af" stroke="#3b82f6" rx="4"/>
+            <text x="59" y="310" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">B-82 (2.95×1.8m)</text>
+
+            <!-- Lathes Gang -->
+            <rect x="125" y="295" width="${60}" height="${52}" fill="#1e40af" rx="3"/><text x="155" y="325" fill="#fff" font-size="8" text-anchor="middle">NE1.5</text>
+            <rect x="190" y="295" width="${60}" height="${52}" fill="#1e40af" rx="3"/><text x="220" y="325" fill="#fff" font-size="8" text-anchor="middle">NE1.5</text>
+            <rect x="125" y="355" width="${60}" height="${52}" fill="#1e40af" rx="3"/><text x="155" y="385" fill="#fff" font-size="8" text-anchor="middle">NM1.7</text>
+            <rect x="190" y="355" width="${80}" height="${56}" fill="#1e40af" rx="3"/><text x="230" y="385" fill="#fff" font-size="8" text-anchor="middle">NE-61</text>
+          </g>
+
+          <!-- West Mid: Conventional & 2nd Op -->
+          <g transform="translate(20, 480)">
+            <rect x="0" y="0" width="${148}" height="${60}" fill="#d97706" stroke="#fbbf24" rx="4"/>
+            <text x="74" y="34" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">GT / VT / LT Bank (3.7×1.5m)</text>
+
+            <rect x="155" y="0" width="${65}" height="${52}" fill="#b45309" rx="3"/><text x="187" y="30" fill="#fff" font-size="8" text-anchor="middle">B-88</text>
+            <rect x="225" y="0" width="${65}" height="${52}" fill="#b45309" rx="3"/><text x="257" y="30" fill="#fff" font-size="8" text-anchor="middle">B-89</text>
+
+            <!-- Bench Drill Bank -->
+            <rect x="0" y="70" width="${280}" height="${40}" fill="#f59e0b20" stroke="#f59e0b" rx="4"/>
+            <text x="140" y="94" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="middle">Bench Drill / Tap Bank (B-58..B-65)</text>
+          </g>
+
+          <!-- East Bay: Cell 2 VMC/HMC + Cell 5 Finish/Assy -->
+          <g transform="translate(${rightBayX + 10}, 40)">
+            <!-- HMC & Heavy VMC -->
+            <rect x="0" y="0" width="${128}" height="${92}" fill="#6d28d9" stroke="#a78bfa" rx="4"/>
+            <text x="64" y="50" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">HMC NEJ-01 (3.2×2.3m)</text>
+
+            <rect x="135" y="0" width="${128}" height="${92}" fill="#7c3aed" stroke="#a78bfa" rx="4"/>
+            <text x="199" y="50" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">VMC B-02 #1 (3.2×2.3m)</text>
+
+            <rect x="0" y="100" width="${128}" height="${92}" fill="#7c3aed" stroke="#a78bfa" rx="4"/>
+            <text x="64" y="150" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">VMC B-02 #2 (3.2×2.3m)</text>
+
+            <rect x="135" y="100" width="${128}" height="${92}" fill="#7c3aed" stroke="#a78bfa" rx="4"/>
+            <text x="199" y="150" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">VMC B-02 #3 (3.2×2.3m)</text>
+
+            <!-- Bed Mill 6m x 2.2m = 240px x 88px -->
+            <rect x="0" y="200" width="${240}" height="${88}" fill="#5b21b6" stroke="#c084fc" rx="6"/>
+            <text x="120" y="248" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">BED MILL B-86 (6.0m × 2.2m)</text>
+
+            <rect x="0" y="295" width="${160}" height="${88}" fill="#8b5cf6" rx="4"/>
+            <text x="80" y="342" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">VMC B-92 (4.0×2.2m)</text>
+
+            <!-- 4 Tapping Centers -->
+            <g transform="translate(0, 395)">
+              <rect x="0" width="60" height="52" fill="#a855f7" rx="3"/><text x="30" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #1</text>
+              <rect x="65" width="60" height="52" fill="#a855f7" rx="3"/><text x="95" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #2</text>
+              <rect x="130" width="60" height="52" fill="#a855f7" rx="3"/><text x="160" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #3</text>
+              <rect x="195" width="60" height="52" fill="#a855f7" rx="3"/><text x="225" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #4</text>
+            </g>
+
+            <!-- Cell 5: Finish & Assembly -->
+            <rect x="0" y="465" width="${260}" height="${60}" fill="#be185d" stroke="#f472b6" rx="4"/>
+            <text x="130" y="500" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">PARKERIZING LINE (PARKAR ARIA)</text>
+
+            <!-- Housing Rotor -->
+            <rect x="0" y="535" width="${256}" height="${80}" fill="#db2777" stroke="#f472b6" rx="6"/>
+            <text x="128" y="580" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">HOUSING & T-ROTOR SUB-ASSY (6.4×2.4m)</text>
+          </g>
+        `;
+      } else if (opt === 2) {
+        // Option 2: Heavy Perimeter + Central Island
+        html += `
+          <!-- Perimeter Heavy VMC/HMC Flow -->
+          <g transform="translate(20, 40)">
+            <rect x="0" y="0" width="240" height="88" fill="#5b21b6" stroke="#c084fc" rx="4"/>
+            <text x="120" y="48" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">BED MILL B-86 (North Wall)</text>
+            
+            <rect x="250" y="0" width="160" height="88" fill="#8b5cf6" rx="4"/>
+            <text x="330" y="48" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">VMC B-92 (North Wall)</text>
+          </g>
+          <g transform="translate(20, 140)">
+            <rect x="0" y="0" width="128" height="92" fill="#6d28d9" rx="4"/><text x="64" y="50" fill="#fff" font-size="9" text-anchor="middle">HMC NEJ-01</text>
+            <rect x="0" y="100" width="128" height="92" fill="#7c3aed" rx="4"/><text x="64" y="150" fill="#fff" font-size="9" text-anchor="middle">VMC B-02 #1</text>
+            <rect x="0" y="200" width="128" height="92" fill="#7c3aed" rx="4"/><text x="64" y="250" fill="#fff" font-size="9" text-anchor="middle">VMC B-02 #2</text>
+            <rect x="0" y="300" width="128" height="92" fill="#7c3aed" rx="4"/><text x="64" y="350" fill="#fff" font-size="9" text-anchor="middle">VMC B-02 #3</text>
+          </g>
+          <g transform="translate(${rightBayX - 60}, 140)">
+            <rect x="0" y="0" width="256" height="80" fill="#db2777" rx="4"/><text x="128" y="45" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">CENTRAL ASSEMBLY POD (6.4×2.4m)</text>
+            <rect x="0" y="90" width="220" height="60" fill="#be185d" rx="4"/><text x="110" y="125" fill="#fff" font-size="9" text-anchor="middle">PARKERIZING TANKS</text>
+          </g>
+        `;
+      } else {
+        // Option 3: Linear One-Piece Flow
+        html += `
+          <!-- Direct Straight Inbound-to-Outbound Linear Cells -->
+          <g transform="translate(30, 40)">
+            <text x="200" y="20" fill="#38bdf8" font-size="11" font-weight="bold">STAGE 1: BILLET & ROUGH TURNING</text>
+            <rect x="0" y="30" width="172" height="64" fill="#475569" rx="4"/><text x="86" y="66" fill="#fff" font-size="9" text-anchor="middle">RAW CUTTING</text>
+            <rect x="180" y="30" width="148" height="92" fill="#2563eb" rx="4"/><text x="254" y="80" fill="#fff" font-size="9" text-anchor="middle">NEJ-04</text>
+          </g>
+          <g transform="translate(30, 180)">
+            <text x="200" y="20" fill="#c084fc" font-size="11" font-weight="bold">STAGE 2: PRISMATIC MILLING</text>
+            <rect x="0" y="30" width="240" height="88" fill="#5b21b6" rx="4"/><text x="120" y="78" fill="#fff" font-size="10" text-anchor="middle">BED MILL B-86</text>
+            <rect x="250" y="30" width="128" height="92" fill="#6d28d9" rx="4"/><text x="314" y="80" fill="#fff" font-size="9" text-anchor="middle">HMC NEJ-01</text>
+          </g>
+          <g transform="translate(30, 340)">
+            <text x="200" y="20" fill="#f472b6" font-size="11" font-weight="bold">STAGE 3: ASSEMBLY & PACKING</text>
+            <rect x="0" y="30" width="256" height="80" fill="#db2777" rx="4"/><text x="128" y="75" fill="#fff" font-size="10" text-anchor="middle">HOUSING ROTOR ASSY</text>
+          </g>
+        `;
+      }
+
+      return html;
+    }
+
+    function renderOfficeLayout(svg) {
+      // 1:1 Scale Office Floor Plan
+      const wPx = bWidth * scale;
+      const hPx = bDepth * scale;
+
+      svg.setAttribute('viewBox', `0 0 ${wPx + 80} ${hPx + 80}`);
+      svg.style.width = `${wPx + 80}px`;
+      svg.style.height = `${hPx + 80}px`;
+
+      document.getElementById('kpi-travel').textContent = 'Direct Aisle';
+      document.getElementById('kpi-util').textContent = '68.0% (Ergonomic)';
+
+      svg.innerHTML = `
+        <defs>
+          <pattern id="grid-office" width="40" height="40" patternUnits="userSpaceOnUse">
+            <rect width="40" height="40" fill="none" stroke="#1f293d" stroke-width="0.5"/>
+          </pattern>
+        </defs>
+
+        <rect width="100%" height="100%" fill="#070a13" />
+        <rect width="100%" height="100%" fill="url(#grid-office)" />
+
+        <g transform="translate(40, 40)">
+          <!-- Outer Office Boundary -->
+          <rect width="${wPx}" height="${hPx}" fill="#0f172a" stroke="#06b6d4" stroke-width="3" rx="4" />
+          
+          <text x="${wPx / 2}" y="-12" fill="#22d3ee" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle">
+            OFFICE FLOOR PLAN (1:1 SCALE — ${bWidth}m × ${bDepth}m)
+          </text>
+
+          <!-- Central Corridor -->
+          <rect x="${wPx / 2 - 40}" y="10" width="80" height="${hPx - 20}" fill="#1e293b40" stroke="#334155" stroke-dasharray="4,4" />
+          <text x="${wPx / 2}" y="${hPx / 2}" fill="#64748b" font-size="11" font-weight="bold" transform="rotate(-90 ${wPx / 2} ${hPx / 2})" text-anchor="middle" letter-spacing="4">
+            2.0m CENTRAL OFFICE CORRIDOR
+          </text>
+
+          <!-- Executive Cabins North-West -->
+          <rect x="20" y="20" width="${4.5 * scale}" height="${3.8 * scale}" fill="#083344" stroke="#06b6d4" stroke-width="1.5" rx="6"/>
+          <text x="${20 + 2.25 * scale}" y="${20 + 1.9 * scale}" fill="#e0f2fe" font-size="11" font-weight="bold" text-anchor="middle">EXECUTIVE CABIN (MD)</text>
+          <text x="${20 + 2.25 * scale}" y="${20 + 1.9 * scale + 15}" fill="#38bdf8" font-size="9" text-anchor="middle">4.5m × 3.8m (Ensuite)</text>
+
+          <!-- Conference Room North-East -->
+          <rect x="${wPx - 6.0 * scale - 20}" y="20" width="${6.0 * scale}" height="${4.5 * scale}" fill="#0c4a6e" stroke="#0284c7" stroke-width="1.5" rx="6"/>
+          <text x="${wPx - 3.0 * scale - 20}" y="${20 + 2.25 * scale}" fill="#f0f9ff" font-size="12" font-weight="bold" text-anchor="middle">BOARD CONFERENCE ROOM</text>
+          <text x="${wPx - 3.0 * scale - 20}" y="${20 + 2.25 * scale + 16}" fill="#7dd3fc" font-size="9" text-anchor="middle">6.0m × 4.5m (16-Seat Oval Table)</text>
+
+          <!-- Open Workstation Pod -->
+          <rect x="20" y="${3.8 * scale + 40}" width="${(bWidth / 2 - 3) * scale}" height="${8.0 * scale}" fill="#164e63" stroke="#0891b2" stroke-width="1.5" rx="6"/>
+          <text x="${20 + ((bWidth / 2 - 3) * scale) / 2}" y="${3.8 * scale + 80}" fill="#cffafe" font-size="12" font-weight="bold" text-anchor="middle">OPEN WORKSPACE (24 WORKSTATIONS)</text>
+          <text x="${20 + ((bWidth / 2 - 3) * scale) / 2}" y="${3.8 * scale + 96}" fill="#67e8f9" font-size="9" text-anchor="middle">Ergonomic modular pods with data cabling</text>
+
+          <!-- Meeting Room 2 -->
+          <rect x="${wPx - 5.0 * scale - 20}" y="${4.5 * scale + 40}" width="${5.0 * scale}" height="${3.5 * scale}" fill="#1e293b" stroke="#475569" rx="4"/>
+          <text x="${wPx - 2.5 * scale - 20}" y="${4.5 * scale + 60}" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">MEETING ROOM 2 (8-Seat)</text>
+
+          <!-- Dining & Pantry -->
+          <rect x="${wPx - 5.0 * scale - 20}" y="${4.5 * scale + 40 + 3.5 * scale + 20}" width="${5.0 * scale}" height="${4.0 * scale}" fill="#1e293b" stroke="#475569" rx="4"/>
+          <text x="${wPx - 2.5 * scale - 20}" y="${4.5 * scale + 40 + 3.5 * scale + 60}" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">PANTRY & CAFETERIA (5.0×4.0m)</text>
+
+          <!-- Restrooms South-East -->
+          <rect x="${wPx - 5.0 * scale - 20}" y="${hPx - 4.0 * scale - 20}" width="${5.0 * scale}" height="${4.0 * scale}" fill="#334155" stroke="#64748b" rx="4"/>
+          <text x="${wPx - 2.5 * scale - 20}" y="${hPx - 2.0 * scale - 20}" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">RESTROOMS (MEN / WOMEN)</text>
+
+          <!-- Reception & Waiting Area South-West Entrance -->
+          <rect x="20" y="${hPx - 4.5 * scale - 20}" width="${(bWidth / 2 - 3) * scale}" height="${4.5 * scale}" fill="#082f49" stroke="#0284c7" rx="6"/>
+          <text x="${20 + ((bWidth / 2 - 3) * scale) / 2}" y="${hPx - 2.5 * scale - 20}" fill="#bae6fd" font-size="12" font-weight="bold" text-anchor="middle">MAIN RECEPTION & VISITOR LOUNGE</text>
+        </g>
+      `;
+    }
+
+    // DXF Exporter
+    function exportDXF() {
+      // Creates a clean, standard AutoCAD DXF R12 text file
+      let dxf = "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n0\nLAYER\n2\nWALLS\n62\n7\n0\nLAYER\n2\nMACHINES\n62\n1\n0\nLAYER\n2\nAISLES\n62\n4\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n";
+
+      // Outer boundary
+      dxf += `0\nLINE\n8\nWALLS\n10\n0\n20\n0\n11\n${bWidth * 1000}\n21\n0\n`;
+      dxf += `0\nLINE\n8\nWALLS\n10\n${bWidth * 1000}\n20\n0\n11\n${bWidth * 1000}\n21\n${bDepth * 1000}\n`;
+      dxf += `0\nLINE\n8\nWALLS\n10\n${bWidth * 1000}\n20\n${bDepth * 1000}\n11\n0\n21\n${bDepth * 1000}\n`;
+      dxf += `0\nLINE\n8\nWALLS\n10\n0\n20\n${bDepth * 1000}\n11\n0\n21\n0\n`;
+
+      // Machine boxes in mm
+      factoryMachines.forEach((m, idx) => {
+        let x = 1000 + (idx % 4) * 4500;
+        let y = 2000 + Math.floor(idx / 4) * 3500;
+        let w = m.w * 1000;
+        let h = m.h * 1000;
+
+        dxf += `0\nLINE\n8\nMACHINES\n10\n${x}\n20\n${y}\n11\n${x + w}\n21\n${y}\n`;
+        dxf += `0\nLINE\n8\nMACHINES\n10\n${x + w}\n20\n${y}\n11\n${x + w}\n21\n${y + h}\n`;
+        dxf += `0\nLINE\n8\nMACHINES\n10\n${x + w}\n20\n${y + h}\n11\n${x}\n21\n${y + h}\n`;
+        dxf += `0\nLINE\n8\nMACHINES\n10\n${x}\n20\n${y + h}\n11\n${x}\n21\n${y}\n`;
+        dxf += `0\nTEXT\n8\nMACHINES\n10\n${x + 200}\n20\n${y + h / 2}\n40\n250\n1\n${m.name}\n`;
+      });
+
+      dxf += "0\nENDSEC\n0\nEOF\n";
+
+      const blob = new Blob([dxf], { type: "application/dxf" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `KMR_Layout_${layoutMode}_Option${currentOption}_1to1.dxf`;
+      a.click();
+    }
+
+    function openInKMRCAD() {
+      window.location.href = `/it/cad.html?demo=1#action=import-layout`;
+    }
+
+    // Default initialization
+    render();
+  </script>
+</body>
+</html>
