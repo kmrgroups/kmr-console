@@ -29,6 +29,13 @@ insert into console.app_features (product_code, name, detail, is_core, price_mon
   ('layout', '1:1 Layout Engine & Options Generator', '1:1 metric layout generation, line-to-cell conversion, travel distance optimization, DXF export and KMR CAD link', true, 2000, 0, 10000, 10)
 on conflict (product_code, name) do nothing;
 
+-- Grant 'layout' licence to all active customers (including Esbee Precision Industries & Demo)
+insert into console.licences (customer_id, product_code, status, valid_until, seats, notes)
+select id, 'layout', 'active', null, 25, 'KMR Apps Suite licence'
+  from console.customers
+ where status = 'active'
+on conflict (customer_id, product_code) do nothing;
+
 create table if not exists console.layout_counters (
   customer_id uuid not null references console.customers(id) on delete cascade,
   key text not null,
