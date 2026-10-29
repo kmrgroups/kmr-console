@@ -70,7 +70,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .studio .msg{background:#3b1d1d;color:#fecaca}.studio .msg.ok{background:#12301f;color:#bbf7d0}
 .studio details summary{cursor:pointer;color:#93a0bd}
 .studio .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
-.studio .head .tt{flex:1;min-width:200px}.studio .head .tt b{font-size:18px;display:block}.studio .head .tt span{color:#93a0bd;font-size:13px}
+.studio .head{margin-bottom:8px}.studio .head .tt{flex:1;min-width:140px}.studio .head .tt span{display:none}.studio .acts .btn{padding:7px 12px;font-size:13px}.studio .pill{padding:6px 12px}.studio .sbar{margin-bottom:4px}.studio .head .tt b{font-size:18px;display:block}.studio .head .tt span{color:#93a0bd;font-size:13px}
 .studio .pills{display:inline-flex;gap:4px;background:#111a2e;border:1px solid #26304d;border-radius:12px;padding:4px;flex-wrap:wrap}
 .studio .pill{border:0;background:none;color:#cbd5e1;padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;white-space:nowrap}.studio .pill.on{background:#2563eb;color:#fff}
 .studio .kb{display:flex;gap:18px;flex-wrap:wrap;align-items:center;color:#93a0bd;font-size:13px}.studio .kb b{color:#34d399;font-family:ui-monospace,monospace;font-size:15px;margin-left:4px}.studio .kb b.b2{color:#38bdf8}.studio .kb b.bad{color:#f87171}
@@ -83,6 +83,14 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .studio .below h4{margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#a78bfa}
 .studio .chip.b{--c:#0284c7}
 .studio .card{background:#131c33;border-color:#26304d;color:#e2e8f0}
+
+.tabs{position:sticky;top:var(--hh,56px);z-index:6;background:var(--bg)}
+.panel.wide{overflow:visible}
+.studio{overflow:clip}
+.studio .side{position:sticky;top:var(--stk,0px);align-self:start;max-height:calc(100vh - var(--stk,0px))}
+.studio .stk{position:sticky;top:var(--stk,0px);z-index:4;background:#0b1120;margin:-14px -14px 10px;padding:14px 14px 6px;border-bottom:1px solid #1e293b}
+.studio:fullscreen{overflow:auto;height:100vh;border-radius:0;--stk:0px}
+.studio:fullscreen .side{max-height:100vh}
 </style></head><body>
 <header><span class="clogo" id="clogo" hidden></span><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
 <div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="prj" href="#go=prj">Layouts</a><a class="tab" data-t="imp" href="#go=imp">Existing plan</a><a class="tab" data-t="stu" href="#go=stu">Studio</a><a class="tab" data-t="rep" href="#go=rep">Report</a><a class="tab" data-t="pre" href="#go=pre">Presentation</a></div>
@@ -870,12 +878,12 @@ function paintStu() {
     <div class="mut" style="margin-top:6px">Cell group = the part family or work area; machines with the same cell group are kept together as one cell.</div>
     <details style="margin-top:8px"><summary>Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off ? 'name, kind (public / open / private / service), width, depth' : 'code, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>` : ''}</div>
   </div><div class="main">
-   <div class="head"><div class="tt"><b>Layout Studio</b><span>Re-design in the same building at 1:1 scale — sizes are never changed</span></div><div class="acts"><button class="btn o" id="b_dxf">⬇ Export DXF</button><button class="btn o" id="b_pdf1">⬇ Export PDF</button><button class="btn o" id="b_cad">Open in KMR CAD</button><button class="btn" id="b_rep">Make the report →</button></div></div>
-   <div class="sbar"><div class="pills" id="otabs"></div><div class="kb" id="kp"></div></div>
+   <div class="stk"><div class="head"><div class="tt"><b>Layout Studio</b><span>Re-design in the same building at 1:1 scale — sizes are never changed</span></div><div class="acts"><button class="btn o" id="b_dxf">⬇ Export DXF</button><button class="btn o" id="b_pdf1">⬇ Export PDF</button><button class="btn o" id="b_cad">Open in KMR CAD</button><button class="btn o" id="b_full2">⛶ Full screen</button><button class="btn" id="b_rep">Make the report →</button></div></div>
+   <div class="sbar"><div class="pills" id="otabs"></div><div class="kb" id="kp"></div></div></div>
    <div class="canvas" id="cv"></div><div id="lg"></div>
    <div id="cmp"></div>
    <div class="below"><div><h4>Checks</h4><div id="ck"></div></div><div><div id="lgs"></div></div></div></div></div>`;
-  paintOpts();
+  paintOpts(); stk();
 }
 function paintOpts() {
   if (!P || !$('#otabs')) return;
@@ -970,7 +978,10 @@ async function addAction() {
 
 /* ---------- screens, events ---------- */
 const TABS = ['std', 'prj', 'imp', 'stu', 'rep', 'pre'];
-function go(t) { if (!TABS.includes(t)) t = 'std'; document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); TABS.forEach(x => $('#' + x).classList.toggle('hide', x !== t)); if (location.hash !== '#go=' + t) history.replaceState(null, '', location.pathname + location.search + '#go=' + t); if (t === 'rep') paintRep(); if (t === 'pre') paintPre(); if (t === 'std') paintStd(); }
+function stk() { const h = document.querySelector('header'), tb = document.querySelector('.tabs'), hh = h ? h.offsetHeight : 0, v = hh + (tb ? tb.offsetHeight : 0); document.documentElement.style.setProperty('--hh', hh + 'px'); document.querySelectorAll('.studio').forEach(s => { if (!document.fullscreenElement) s.style.setProperty('--stk', v + 'px'); }); }
+window.addEventListener('resize', stk);
+document.addEventListener('fullscreenchange', () => { const b = $('#b_full2'); if (b) b.textContent = document.fullscreenElement ? '✕ Exit full screen' : '⛶ Full screen'; stk(); });
+function go(t) { if (!TABS.includes(t)) t = 'std'; document.querySelector('.panel').classList.toggle('wide', t === 'stu'); document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); TABS.forEach(x => $('#' + x).classList.toggle('hide', x !== t)); if (location.hash !== '#go=' + t) history.replaceState(null, '', location.pathname + location.search + '#go=' + t); if (t === 'rep') paintRep(); if (t === 'pre') paintPre(); if (t === 'std') paintStd(); }
 function paint() { paintStd(); paintPrj(); paintImp(); paintStu(); paintRep(); paintPre(); paintHead(); }
 function route() { const n = window.KMRNav && KMRNav.pending(); go(n ? n.go : 'std'); }
 window.addEventListener('hashchange', route);
@@ -995,6 +1006,7 @@ document.addEventListener('click', async e => {
       for (const r of rows) { if (P.kind === 'office') { const w = +r[2], h = +r[3]; if (!(w > 0 && h > 0)) continue; P.items.push({ id: mkKey(), type: 'office', kind: KINDS[r[1]] ? r[1] : 'open', name: r[0], w, h }); n++; } else { const w = +r[4], h = +r[5]; if (!(w > 0 && h > 0)) continue; P.items.push({ id: r[0], name: r[1] || r[0], type: TYPES[r[2]] && r[2] !== 'office' ? r[2] : 'conv', cell: r[3] || 'Cell 1', w, h }); n++; } }
       say(n ? n + ' rows added.' : 'No rows were added. Check the column order and that sizes are numbers.', !!n); if (n) { dirty(); paintStu(); } return; }
     if (d.opt !== undefined) { P.sel = +d.opt; P.dirty = true; paintOpts(); paintHead(); return; }
+    if (t.id === 'b_full2') { const s = $('.studio'); if (document.fullscreenElement) await document.exitFullscreen(); else if (s && s.requestFullscreen) await s.requestFullscreen(); else say('This browser cannot show full screen.'); return; }
     if (t.id === 'b_dxf') { const o = OPTS[P.sel]; download(`KMR_Layout_${(P.no || 'new')}_${o.short.replace(/\W+/g, '')}_1to1.dxf`, dxf(o, P.title), 'application/dxf'); return; }
     if (t.id === 'b_cad') return openCAD();
     if (t.id === 'b_pdf1') { REPORT = REPORT || null; return printReport(true); }
