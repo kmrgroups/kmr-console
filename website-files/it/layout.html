@@ -91,6 +91,16 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .studio .stk{position:sticky;top:var(--stk,0px);z-index:4;background:#0b1120;margin:-14px -14px 10px;padding:14px 14px 6px;border-bottom:1px solid #1e293b}
 .studio:fullscreen{overflow:auto;height:100vh;border-radius:0;--stk:0px}
 .studio:fullscreen .side{max-height:100vh}
+
+.studio .ab{display:grid;grid-template-columns:170px 1fr 34px;gap:8px;align-items:center;margin:5px 0;font-size:13px}.studio .ab small{color:#93a0bd}.studio .ab .tr{height:9px;background:#1e293b;border-radius:6px;overflow:hidden}.studio .ab .tr i{display:block;height:100%;border-radius:6px}
+.studio .an{margin-top:16px;border-top:1px solid #1e293b;padding-top:12px}.studio .an h3{margin:0 0 8px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a78bfa}
+.studio .rec{background:linear-gradient(90deg,#16233f,#1b1b45);border:1px solid #3b4a7a;border-radius:14px;padding:12px 14px;margin-bottom:12px}.studio .rec b.big{font-size:17px}
+.studio .pc{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}@media(max-width:1200px){.studio .pc{grid-template-columns:1fr}}
+.studio .pc>div{border:1px solid #26304d;border-radius:12px;padding:10px 12px;background:#101a30}.studio .pc h4{margin:0 0 6px;font-size:13px}.studio .pc ul{margin:0;padding-left:18px}.studio .pc li{margin:3px 0;font-size:13px}
+.studio .pc .good h4{color:#34d399}.studio .pc .badc h4{color:#f87171}
+.studio .mx td,.studio .mx th{text-align:center}.studio .mx td:first-child,.studio .mx th:first-child{text-align:left}
+.rp .ab{display:grid;grid-template-columns:150px 1fr 30px;gap:6px;align-items:center;margin:3px 0}.rp .ab .tr{height:8px;background:#e2e8f0}.rp .ab .tr i{display:block;height:100%}
+.rp ul{margin:2px 0;padding-left:16px}
 </style></head><body>
 <header><span class="clogo" id="clogo" hidden></span><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
 <div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="prj" href="#go=prj">Layouts</a><a class="tab" data-t="imp" href="#go=imp">Existing plan</a><a class="tab" data-t="stu" href="#go=stu">Studio</a><a class="tab" data-t="rep" href="#go=rep">Report</a><a class="tab" data-t="pre" href="#go=pre">Presentation</a></div>
@@ -623,6 +633,156 @@ function dxf(o, title) {
   return '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLTYPE\n70\n1\n0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0\n0\nENDTAB\n0\nTABLE\n2\nLAYER\n70\n' + lay.length + '\n' + lay.map(l => `0\nLAYER\n2\n${l[0]}\n70\n0\n62\n${l[1]}\n6\nCONTINUOUS\n`).join('') + '0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n' + e + '0\nENDSEC\n0\nEOF\n';
 }
 
+/* ===================== layout analysis: safety, evacuation, maintenance, material movement, traceability ===================== */
+const REG_DEF = { exitDist: 30, minExit: 1.2, doorClear: 1.5, handling: 'trolley', priority: 'balanced' };
+const HANDLING = { trolley: { n: 'Hand trolley / pallet truck', need: 1.8 }, forklift: { n: 'Forklift', need: 3.0 } };
+const PRIORITY = {
+  balanced: { n: 'Balanced', w: { flow: 25, safety: 25, maint: 15, space: 10, flex: 10, trace: 15 } },
+  flow: { n: 'Shortest material flow first', w: { flow: 40, safety: 20, maint: 10, space: 10, flex: 10, trace: 10 } },
+  safety: { n: 'Safety and maintenance first', w: { flow: 15, safety: 40, maint: 20, space: 5, flex: 5, trace: 15 } },
+  flex: { n: 'Flexibility for change first', w: { flow: 20, safety: 20, maint: 15, space: 10, flex: 25, trace: 10 } },
+  trace: { n: 'Traceability first', w: { flow: 20, safety: 20, maint: 10, space: 5, flex: 5, trace: 40 } }
+};
+const CRIT = { flow: 'Material flow', safety: 'Safety and evacuation', maint: 'Maintenance access', space: 'Floor use', flex: 'Flexibility to change', trace: 'Traceability' };
+const CRIT_OFFICE = { flow: 'Walking distance', safety: 'Safety and evacuation', maint: 'Access and cleaning', space: 'Floor use', flex: 'Flexibility to change', trace: 'Privacy and zoning' };
+/* what each layout type is good and bad at: from the layout-planning literature (process / product / cellular / hybrid layouts, group technology, Muther's SLP) */
+const INFO = {
+  'cellular-u': { type: 'Cellular layout (group technology, U-cells)', flexBase: 20, traceBase: 80,
+    good: ['Machines of one part family stand together, so parts walk the shortest way and move one piece at a time.', 'Work in progress and lead time fall sharply compared with departments; set-ups are shorter.', 'One operator can run several machines in the U (multi-skilled people, balanced work).', 'A lot stays inside its cell, so batch identity and traceability are easy to keep.'],
+    bad: ['Needs stable part families; a big change in product mix means re-balancing the cells.', 'If one machine in a cell stops, the whole cell stops — preventive maintenance must be strict, and a back-up machine is needed.', 'Operators must be multi-skilled; training takes time.', 'Machines that serve many families (grinders, heat treatment) may be duplicated or left outside the cells.'], bestFor: 'Medium volume with stable part families (about 8 to 30 similar parts).' },
+  'cellular-heavy': { type: 'Cellular layout with heavy machines on the walls', flexBase: 15, traceBase: 65,
+    good: ['Heavy machines get the strongest foundation, crane reach and vibration isolation along the walls.', 'Noise, heat and cutting-fluid mist are kept to the edge; power and utility runs are short.', 'Light cells in the centre island stay open and easy to supervise.'],
+    bad: ['Machines against a wall have less rear space for maintenance and may block emergency access along the wall.', 'Parts that need both a heavy machine and a light cell travel further, so the route is often longer.', 'Tight halls may leave machines unplaced.'], bestFor: 'Plants where a few very heavy machines decide the layout (foundations, crane, vibration).' },
+  'straight-flow': { type: 'Product (line) layout', flexBase: 5, traceBase: 85,
+    good: ['Shortest material handling and simplest scheduling; flow is visible at a glance.', 'Lowest work in progress and the shortest lead time when the line is balanced.', 'A single lot path makes traceability and first-piece / last-piece checks simple.'],
+    bad: ['One stopped machine stops the whole line; it depends on very reliable machines.', 'Poor flexibility: a new product with a different route needs the line to be rebuilt.', 'A long line can split the hall, so cross-traffic and evacuation routes must cross it — keep gaps and clear crossings.', 'Only efficient when the cycle times of the machines are balanced and volume is high.'], bestFor: 'High volume of one or very few products with the same route.' },
+  'functional': { type: 'Process (functional) layout — departments', flexBase: 30, traceBase: 50,
+    good: ['Most flexible: any part can take any route, and a stopped machine can be bypassed.', 'Skills, tooling and supervision are grouped by process (all turning together, all milling together).', 'Noisy, dusty or fluid-heavy processes can be contained in one department; cranes and shared tooling are easy to serve.'],
+    bad: ['Longest routes: material handling can be 3 to 4 times that of a line for the same part.', 'High work in progress, long queues and long lead time.', 'Lots travel through many departments, so mixing and loss of identity are likely; traceability needs strict records.', 'More forklift traffic crossing the hall, so more pedestrian risk.'], bestFor: 'High variety, low volume: job shops, tool rooms, prototype and repair work.' },
+  'as-is': { type: 'Your current layout, as read from the plan', flexBase: 15, traceBase: 55,
+    good: ['Already built and running: no move cost and no production loss.', 'Known by the people who work in it.'], bad: ['Measured with the standard door positions (inbound top centre, scrap left, dispatch right); the plan file does not carry the real doors.'], bestFor: 'Baseline: every new design is compared with it.' },
+  'Public first': { type: 'Office zoning — public first', flexBase: 25, traceBase: 85, good: ['Visitors are served at the entrance and never walk past private work.', 'Quiet cabins at the back give privacy and low noise.'], bad: ['Staff in cabins at the back walk further to the entrance and to services.', 'Only one entrance: add a second emergency exit.'], bestFor: 'Offices that receive many visitors or customers.' },
+  'Cabins near entrance': { type: 'Office zoning — cabins near the entrance', flexBase: 25, traceBase: 55, good: ['Managers are close to visitors and to the entrance, so decisions are quick.'], bad: ['Visitors and private rooms share one zone, so privacy is weaker.', 'Open floor at the back is far from the entrance and the exit.'], bestFor: 'Small offices where managers meet visitors often.' },
+  'Open floor first': { type: 'Office zoning — open floor first', flexBase: 40, traceBase: 40, good: ['Open floor is easy to re-arrange as teams grow.', 'Short evacuation distance for the largest group of people.'], bad: ['Visitors walk through the working floor; privacy and noise are weaker.'], bestFor: 'Large teams that change often.' }
+};
+const infoOf = o => INFO[o.kind === 'office' ? o.short : o.key] || INFO['as-is'];
+const rg = (m) => ({ x0: m.x, y0: m.y, x1: m.x + m.w, y1: m.y + m.h });
+const hit = (a, b) => a.x0 < b.x1 - 1e-6 && b.x0 < a.x1 - 1e-6 && a.y0 < b.y1 - 1e-6 && b.y0 < a.y1 - 1e-6;
+const mdist = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+const cnt = (arr, f) => arr.filter(f).length;
+function segCross(p1, p2, p3, p4) {
+  const d = (a, b, c) => (c[1] - a[1]) * (b[0] - a[0]) - (b[1] - a[1]) * (c[0] - a[0]);
+  const d1 = d(p3, p4, p1), d2 = d(p3, p4, p2), d3 = d(p1, p2, p3), d4 = d(p1, p2, p4);
+  return d1 * d2 < -1e-9 && d3 * d4 < -1e-9;
+}
+function analyse(o, dim) {
+  const R = Object.assign({}, REG_DEF, dim || {}), G = o.G, pl = o.placed, W = G.W, D = G.D, off = o.kind === 'office';
+  const doors = off ? [{ n: 'Entrance', c: G.entrance, zone: { x0: W / 2 - 1.2, y0: D - R.doorClear, x1: W / 2 + 1.2, y1: D } }]
+    : [{ n: 'RS 1 inbound', c: G.inbound, zone: { x0: W / 2 - Math.min(1.8, G.aisle / 2), y0: 0, x1: W / 2 + Math.min(1.8, G.aisle / 2), y1: R.doorClear } },
+       { n: 'RS 2 scrap', c: G.scrap, zone: { x0: 0, y0: G.scrap[1] - 1.8, x1: R.doorClear, y1: G.scrap[1] + 1.8 } },
+       { n: 'RS 3 dispatch', c: G.dispatch, zone: { x0: W - R.doorClear, y0: G.dispatch[1] - 1.8, x1: W, y1: G.dispatch[1] + 1.8 } }];
+  /* evacuation */
+  const ev = pl.map(m => { const c = [m.x + m.w / 2, m.y + m.h / 2]; let best = null; for (const d of doors) { const x = mdist(c, d.c); if (!best || x < best.d) best = { d: x, door: d.n }; } return { m, d: best.d, door: best.door }; });
+  const over = ev.filter(e => e.d > R.exitDist + 1e-9).sort((a, b) => b.d - a.d);
+  const dmax = ev.length ? Math.max(...ev.map(e => e.d)) : 0, davg = ev.length ? ev.reduce((s, e) => s + e.d, 0) / ev.length : 0;
+  const blocked = doors.filter(d => pl.some(m => hit(rg(m), d.zone)));
+  let remote = true; for (let i = 0; i < doors.length; i++) for (let j = i + 1; j < doors.length; j++) if (mdist(doors[i].c, doors[j].c) < (W + D) / 4) remote = false;
+  const aisleW = off ? G.cw : G.aisle, aisleNeed = Math.max(R.minExit, off ? 0 : HANDLING[R.handling].need);
+  /* maintenance and operator access: a machine needs a free strip along at least one side */
+  let noOp = [], noMt = [], hem = [];
+  if (!off) {
+    const hallH = G.Hh, box = pl.map(rg);
+    const free = (b, side, depth) => {
+      let s;
+      if (side === 0) s = { x0: b.x0, x1: b.x1, y0: b.y0 - depth, y1: b.y0 }; else if (side === 1) s = { x0: b.x0, x1: b.x1, y0: b.y1, y1: b.y1 + depth };
+      else if (side === 2) s = { x0: b.x0 - depth, x1: b.x0, y0: b.y0, y1: b.y1 }; else s = { x0: b.x1, x1: b.x1 + depth, y0: b.y0, y1: b.y1 };
+      if (s.x0 < 0.05 || s.y0 < 0.05 || s.x1 > W - 0.05 || s.y1 > hallH + 0.05 && b.y1 <= hallH) return false;
+      return !box.some(o2 => o2 !== b && hit(o2, s));
+    };
+    pl.forEach((m, i) => { const b = box[i]; if (m.type === 'msa') return; const f = d => [0, 1, 2, 3].some(s => free(b, s, d)); const fo = f(R.op || G.op), fm = f(G.maint); if (!fo) noOp.push(m); if (!fm) noMt.push(m); if (!fo && !fm) hem.push(m); });
+  }
+  const mtOk = off ? 1 : (pl.length ? 1 - noMt.length / Math.max(1, cnt(pl, m => m.type !== 'msa')) : 1), opOk = off ? 1 : (pl.length ? 1 - noOp.length / Math.max(1, cnt(pl, m => m.type !== 'msa')) : 1);
+  /* material movement */
+  let cross = 0; const rt = o.route || []; for (let i = 0; i < rt.length - 1; i++) for (let j = i + 2; j < rt.length - 1; j++) if (segCross(rt[i], rt[i + 1], rt[j], rt[j + 1])) cross++;
+  const longest = o.legs && o.legs.length ? o.legs.reduce((a, b) => b.m > a.m ? b : a) : null;
+  const cx = W / 2; let sideCross = 0; if (!off && rt.length > 1) for (let i = 0; i < rt.length - 1; i++) if ((rt[i][0] - cx) * (rt[i + 1][0] - cx) < 0) sideCross++;
+  const qcLeg = o.legs ? o.legs.find(l => /Quality/.test(l.to)) : null;
+  /* privacy (office) */
+  let priv = 70; if (off) { const pv = pl.filter(m => m.kind === 'private'); if (pv.length) priv = Math.min(100, 100 * (pv.reduce((s, m) => s + mdist([m.x + m.w / 2, m.y + m.h / 2], G.entrance), 0) / pv.length) / (W / 2 + D * 0.7)); }
+  const info = infoOf(o);
+  return { R, doors, ev, over, dmax: r1(dmax), davg: r1(davg), blocked, remote, aisleW, aisleNeed, noOp, noMt, hem, mtOk, opOk, cross, longest, sideCross, qcLeg, priv, info, exits: doors.length };
+}
+/* scores 0-100 per criterion and the weighted overall, for all options at once (flow is relative to the best option) */
+function scoreAll(opts, dim) {
+  const R = Object.assign({}, REG_DEF, dim || {}), W = (PRIORITY[R.priority] || PRIORITY.balanced).w, gen = opts.filter(o => !o.noFit.length);
+  const minT = Math.min(...(gen.length ? gen : opts).map(o => o.travel).filter(x => x > 0), Infinity);
+  for (const o of opts) {
+    const a = o.an = analyse(o, dim), off = o.kind === 'office', s = {}, why = {};
+    s.flow = o.travel > 0 && isFinite(minT) ? Math.max(0, Math.min(100, 100 * minT / o.travel - a.cross * 4)) : 50;
+    const evFrac = a.ev.length ? 1 - a.over.length / a.ev.length : 1;
+    s.safety = (a.exits >= 2 ? 20 : 5) + (a.blocked.length ? 0 : 20) + 20 * evFrac + 10 * Math.max(0, 1 - a.davg / a.R.exitDist) + (a.aisleW >= a.aisleNeed ? 15 : 6) + (a.remote ? 5 : 0) + 10 * (off ? 1 : (1 - a.hem.length / Math.max(1, o.placedN)));
+    s.maint = off ? 70 : 100 * (0.5 * a.mtOk + 0.5 * a.opOk);
+    s.space = o.util >= 40 && o.util <= 70 ? 100 : o.util < 40 ? 100 * o.util / 40 : Math.max(0, 100 - (o.util - 70) * 3);
+    s.flex = Math.min(100, Math.max(0, (100 - o.util) / 60 * 70) + a.info.flexBase);
+    s.trace = off ? a.priv : Math.max(0, Math.min(100, a.info.traceBase + (a.qcLeg ? (a.qcLeg.m < 15 ? 5 : a.qcLeg.m > 25 ? -10 : 0) : 0) - a.sideCross * 2 - a.cross * 3));
+    for (const k in s) s[k] = Math.round(s[k]);
+    o.sc = s; o.hard = [];
+    if (o.noFit.length) o.hard.push(o.noFit.length + ' item(s) could not be placed');
+    if (a.blocked.length) o.hard.push('A machine stands in the clear zone of ' + a.blocked.map(d => d.n).join(', '));
+    if (a.exits < 2) o.hard.push('Only one exit — a second exit is needed');
+    let tot = 0, wt = 0; for (const k in W) { tot += W[k] * s[k]; wt += W[k]; }
+    o.total100 = Math.round(tot / wt - (o.noFit.length ? 15 : 0));
+  }
+  const cand = opts.filter(o => !o.asIs), ok = cand.filter(o => !o.hard.length).sort((x, y) => y.total100 - x.total100), best = ok[0] || cand.slice().sort((x, y) => y.total100 - x.total100)[0] || null;
+  opts.forEach(o => { o.rec = o === best; });
+  return best;
+}
+/* plain-language better things / negative things for one option, from the layout type and from the measured values */
+function findings(o, opts) {
+  const a = o.an, off = o.kind === 'office', info = a.info, asis = opts.find(x => x.asIs), pros = [], cons = [], act = [];
+  const gen = opts.filter(x => !x.asIs && !x.noFit.length), minT = Math.min(...gen.map(x => x.travel), Infinity), maxT = Math.max(...gen.map(x => x.travel), 0);
+  if (o.noFit.length) cons.push(`${o.noFit.length} item(s) do not fit: ${o.noFit.slice(0, 4).map(m => m.name).join(', ')}${o.noFit.length > 4 ? '…' : ''}.`), act.push('Make the building larger, reduce clearances or remove items, then check again.');
+  if (o.vsCurrent != null) (o.vsCurrent >= TARGETS.saving ? pros : cons).push(`Route per part is ${o.travel} m — ${Math.abs(o.vsCurrent)}% ${o.vsCurrent >= 0 ? 'shorter' : 'longer'} than your current layout (${asis.travel} m).`);
+  else if (!o.asIs && o.travel === minT && gen.length > 1) pros.push(`Shortest route of the designs: ${o.travel} m.`);
+  if (!o.asIs && o.travel === maxT && gen.length > 1) cons.push(`Longest route of the designs: ${o.travel} m.`);
+  if (a.cross) cons.push(`${a.cross} crossing${a.cross > 1 ? 's' : ''} in the material route — carts and people meet there.`), act.push('Give the crossings marked gaps and floor lines, or turn the cells so the route does not cross.');
+  if (a.longest && !off && a.longest.m > 20) cons.push(`Longest single move is ${a.longest.m} m (${a.longest.from} → ${a.longest.to}).`);
+  if (a.blocked.length) cons.push(`Machine in the clear zone of ${a.blocked.map(d => d.n).join(', ')} — the exit would be blocked.`), act.push(`Keep ${a.R.doorClear} m in front of every door free.`);
+  else pros.push(`All doors keep a clear zone of ${a.R.doorClear} m.`);
+  if (a.over.length) cons.push(`${a.over.length} ${off ? 'room' : 'machine'}${a.over.length > 1 ? 's are' : ' is'} more than ${a.R.exitDist} m from the nearest door (worst ${a.dmax} m: ${a.over[0].m.name}).`), act.push('Add an emergency exit near the far side, or move those machines closer to a door.');
+  else pros.push(`Everyone is within ${a.R.exitDist} m of a door (farthest ${a.dmax} m, average ${a.davg} m).`);
+  if (a.exits < 2) cons.push('Only one exit door — at least two exits are expected.'), act.push('Add a second exit that is far from the first.');
+  if (!a.remote) cons.push('The exits are close to each other; a fire at one could cut off both.');
+  if (a.aisleW < a.aisleNeed) cons.push(`Central aisle ${a.aisleW.toFixed(1)} m is narrower than ${a.aisleNeed.toFixed(1)} m needed for ${off ? 'safe escape' : HANDLING[a.R.handling].n.toLowerCase() + ' traffic and escape'}.`), act.push('Widen the aisle in Step 2.');
+  else pros.push(`Central aisle ${a.aisleW.toFixed(1)} m is wide enough${off ? '' : ' for ' + HANDLING[a.R.handling].n.toLowerCase() + ' and escape'}.`);
+  if (!off) {
+    if (a.noMt.length) cons.push(`${a.noMt.length} machine${a.noMt.length > 1 ? 's have' : ' has'} no side with ${o.G.maint} m free for maintenance${a.noMt.length <= 4 ? ' (' + a.noMt.map(m => m.name).join(', ') + ')' : ''}.`), act.push('Open a rear maintenance strip, or move those machines apart.');
+    else pros.push(`Every machine has a side with ${o.G.maint} m free for maintenance.`);
+    if (a.noOp.length) cons.push(`${a.noOp.length} machine${a.noOp.length > 1 ? 's have' : ' has'} no operator side with ${o.G.op} m free.`);
+    if (a.hem.length) cons.push(`${a.hem.length} machine${a.hem.length > 1 ? 's are' : ' is'} boxed in on all sides (no operator or maintenance access).`);
+    if (a.qcLeg) (a.qcLeg.m <= 15 ? pros : a.qcLeg.m > 25 ? cons : []).push(`Inspection room is ${a.qcLeg.m} m from the last machining step — ${a.qcLeg.m <= 15 ? 'quick first-piece checks and sample return.' : 'long carry for samples; lots may wait unlabelled.'}`);
+  }
+  if (o.util > TARGETS.utilMax) cons.push(`Floor use ${o.util}% is above ${TARGETS.utilMax}% — crowded, no room for staging or growth.`);
+  else if (o.util < TARGETS.utilMin) cons.push(`Floor use ${o.util}% is below ${TARGETS.utilMin}% — floor is under-used; heat, lighting and walking are spread over empty area.`);
+  else pros.push(`Floor use ${o.util}% is in the healthy band (${TARGETS.utilMin}–${TARGETS.utilMax}%).`);
+  return { pros: info.good.slice(0, 3).concat(pros), cons: info.bad.concat(cons), act, info };
+}
+/* the regulations table of one option: what was checked, against which limit, and the result */
+function regTable(o) {
+  const a = o.an, off = o.kind === 'office', rows = [];
+  rows.push(['Number of exits', 'at least 2, far apart', `${a.exits}${a.remote ? '' : ' (close together)'}`, a.exits >= 2 && a.remote, 'Factories Act 1948 s.38 (fire: means of escape); NBC 2016 Part 4; OSHA 29 CFR 1910.36']);
+  rows.push(['Distance to nearest exit', '≤ ' + a.R.exitDist + ' m (set by you)', a.dmax + ' m farthest', !a.over.length, 'NBC 2016 Part 4 travel distance by hazard class; your local Factory Rules']);
+  rows.push(['Exit doors kept clear', a.R.doorClear + ' m free in front', a.blocked.length ? a.blocked.map(d => d.n).join(', ') + ' blocked' : 'all clear', !a.blocked.length, 'Factories Act 1948 s.38 (doors, passages kept free); OSHA 1910.37']);
+  rows.push(['Escape / main aisle width', '≥ ' + a.aisleNeed.toFixed(1) + ' m', a.aisleW.toFixed(1) + ' m', a.aisleW >= a.aisleNeed, 'OSHA 1910.36: exit routes at least 0.71 m (28 in), practice 1.2 m+; Factories Act 1948 s.32 passages']);
+  if (!off) {
+    rows.push(['Operator side free', '≥ ' + o.G.op + ' m', a.noOp.length ? a.noOp.length + ' machines without' : 'all machines have one', !a.noOp.length, 'Factories Act 1948 s.21–22 (machinery safety, working space); ISO 9001 7.1.4']);
+    rows.push(['Maintenance side free', '≥ ' + o.G.maint + ' m', a.noMt.length ? a.noMt.length + ' machines without' : 'all machines have one', !a.noMt.length, 'IATF 16949 8.5.1.5 (maintenance); machine maker\'s manual']);
+    rows.push(['Pedestrian / truck separation', 'aisle ≥ ' + HANDLING[a.R.handling].need.toFixed(1) + ' m for ' + HANDLING[a.R.handling].n.toLowerCase(), a.aisleW.toFixed(1) + ' m', a.aisleW >= HANDLING[a.R.handling].need, 'OSHA 1910.176 (aisles safe clearance); marked walkways']);
+    rows.push(['Scrap kept apart from dispatch', 'separate doors', 'RS 2 scrap and RS 3 dispatch are separate', true, 'ISO 9001 8.7 / IATF 16949 8.7 (nonconforming product control)']);
+  }
+  return rows;
+}
+
 /* ======================================================= the app ======================================================= */
 const CFG = { FORMAT: { no: 'KMR/LAY/F-01', title: 'Factory & Office Layout Report', rev: '01', revDate: '2026-10-29', history: [{ rev: '01', date: '2026-10-29', note: 'First issue of this report format' }] }, STATUS: ['draft', 'review', 'approved', 'superseded'] };
 const STATUS_NAME = { draft: 'Draft', review: 'In review', approved: 'Approved', superseded: 'Superseded' }, STATUS_CLS = { draft: 'x', review: 'a', approved: 'g', superseded: 'v' };
@@ -662,11 +822,11 @@ function checkHTML(items, attr) {
   ${nom.length ? `<div style="margin-top:6px"><b>${nom.length} not found by code in the master:</b> ${nom.slice(0, 12).map(x => esc(x.m.id + ' ' + x.m.name)).join(', ')}${nom.length > 12 ? '…' : ''} — add them to the master with their length and width, or correct the code here.</div>` : ''}</div>`;
 }
 /* ---------- loading and saving ---------- */
-function fromRow(r) { const d = r.dimensions || {}; return { id: r.id, no: r.no, title: r.title, kind: r.kind, status: r.status, source_file: r.source_file || '', sample: !!r.sample, history: r.history || [], sel: Math.max(0, (r.selected_option || 1) - 1), dirty: false, dim: { width: +d.width || 20, depth: +d.depth || 30, hallDepth: +d.hallDepth || 24, qcDepth: +d.qcDepth || 5.4, aisle: +d.aisle || 2.8, opClearance: +d.opClearance || 1.2, maintClearance: +d.maintClearance || 1.5 }, items: (r.machines || []).map(m => ({ ...m, w: +m.w, h: +m.h })) }; }
+function fromRow(r) { const d = r.dimensions || {}; return { id: r.id, no: r.no, title: r.title, kind: r.kind, status: r.status, source_file: r.source_file || '', sample: !!r.sample, history: r.history || [], sel: Math.max(0, (r.selected_option || 1) - 1), dirty: false, dim: { width: +d.width || 20, depth: +d.depth || 30, hallDepth: +d.hallDepth || 24, qcDepth: +d.qcDepth || 5.4, aisle: +d.aisle || 2.8, opClearance: +d.opClearance || 1.2, maintClearance: +d.maintClearance || 1.5, exitDist: +d.exitDist || REG_DEF.exitDist, minExit: +d.minExit || REG_DEF.minExit, doorClear: +d.doorClear || REG_DEF.doorClear, handling: d.handling || REG_DEF.handling, priority: d.priority || REG_DEF.priority }, items: (r.machines || []).map(m => ({ ...m, w: +m.w, h: +m.h })) }; }
 const good = m => m.w > 0 && m.h > 0;
-function recalc() { OPTS = P ? evaluate(P.items.filter(good), P.dim, P.kind) : []; if (P && P.sel > OPTS.length - 1) P.sel = 0; }
+function recalc() { OPTS = P ? evaluate(P.items.filter(good), P.dim, P.kind) : []; if (OPTS.length) scoreAll(OPTS, P.dim); if (P && P.sel > OPTS.length - 1) P.sel = 0; }
 const curKind = () => (P && P.kind === 'office') ? 'office-ergonomic' : (OPTS[P.sel] ? OPTS[P.sel].key : 'cellular-u');
-function summary() { return OPTS.map(x => ({ name: x.name, short: x.short, key: x.key, travel: x.travel, util: x.util, saving: x.saving, grade: x.grade, placed: x.placedN, total: x.total, noFit: x.noFit.length })); }
+function summary() { return OPTS.map(x => ({ name: x.name, short: x.short, key: x.key, travel: x.travel, util: x.util, saving: x.saving, grade: x.grade, placed: x.placedN, total: x.total, noFit: x.noFit.length, score: x.total100, recommended: !!x.rec })); }
 function payload() { return { id: P.id || undefined, title: P.title, kind: P.kind, concept: curKind(), dimensions: { ...P.dim }, source_file: P.source_file || null, machines: P.items.filter(good).map(({ id, type, name, w, h, cell, kind, ax, ay, arot, mcode }) => ({ id, type, name, w, h, cell, kind, ax, ay, arot, mcode })), options: summary(), selected_option: P.sel + 1 }; }
 async function loadList() { LIST = (await api.rpc('kmr_layout_list', {})) || []; }
 async function openProject(id, noGo) { const r = await api.rpc('kmr_layout_get', { p_id: id }); P = fromRow(r); recalc(); REPORT = null; await loadActions(); paint(); if (!noGo) go('stu'); }
@@ -678,7 +838,7 @@ async function save(quiet) {
 async function newProject(kind, example) {
   if (!canEdit) { say('You can view layouts but not change them.'); return; }
   const t = ($('#np_t') || { value: '' }).value.trim() || (kind === 'office' ? 'New office floor plan' : 'New factory layout');
-  P = { id: null, no: null, title: t, kind, status: 'draft', source_file: '', history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM }, items: example ? JSON.parse(JSON.stringify(kind === 'office' ? SAMPLE_ROOMS : SAMPLE_MACHINES)) : [] };
+  P = { id: null, no: null, title: t, kind, status: 'draft', source_file: '', history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM, ...REG_DEF }, items: example ? JSON.parse(JSON.stringify(kind === 'office' ? SAMPLE_ROOMS : SAMPLE_MACHINES)) : [] };
   if (example && kind === 'factory') P.dim = { ...P.dim, width: 24, depth: 36, hallDepth: 30, qcDepth: 6 };
   recalc(); REPORT = null; ACTIONS = [];
   if (await save(true)) say('Layout ' + P.no + ' created. Add or change the machines below.', true);
@@ -847,7 +1007,7 @@ async function acceptImport() {
   const r = IM.res, kept = r.items.filter(m => m.keep && m.w > 0 && m.h > 0); if (!kept.length) { say('Keep at least one machine.'); return; }
   const msa = kept.filter(m => m.type === 'msa'), depth = r.building.h;
   const low = msa.filter(m => m.ay >= depth * .7), hall = low.length ? Math.max(depth * .5, Math.min(...low.map(m => m.ay)) - .3) : depth * .85;
-  P = { id: null, no: null, title: ($('#im_title') || {}).value || 'Re-layout', kind: 'factory', status: 'draft', source_file: IM.name, history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM, width: r.building.w, depth, hallDepth: r1(hall), qcDepth: r1(depth - hall) }, items: kept.map((m, i) => ({ id: m.id || 'M-' + (i + 1), type: m.type, name: m.name, cell: m.cell || CELL_OF[m.type], w: m.w, h: m.h, ax: m.ax, ay: m.ay, arot: false, mcode: m.mcode })) };
+  P = { id: null, no: null, title: ($('#im_title') || {}).value || 'Re-layout', kind: 'factory', status: 'draft', source_file: IM.name, history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM, ...REG_DEF, width: r.building.w, depth, hallDepth: r1(hall), qcDepth: r1(depth - hall) }, items: kept.map((m, i) => ({ id: m.id || 'M-' + (i + 1), type: m.type, name: m.name, cell: m.cell || CELL_OF[m.type], w: m.w, h: m.h, ax: m.ax, ay: m.ay, arot: false, mcode: m.mcode })) };
   recalc(); REPORT = null; ACTIONS = [];
   if (await save(true)) say(`Layout ${P.no} created from your plan: ${P.items.length} machines. Option “Current layout” shows what you have today; the other options are new designs in the same building.`, true);
   P.sel = Math.max(0, OPTS.findIndex(x => x.asIs)); paint(); go('stu');
@@ -870,7 +1030,10 @@ function paintStu() {
     ${off ? '' : `<p class="mut" style="margin:6px 0 0">Quality room depth: <b>${Math.max(0, P.dim.depth - P.dim.hallDepth).toFixed(1)} m</b> · building and machine sizes are never changed.</p>`}
     <div class="row" style="margin:10px 0 0"><button class="btn" id="b_save" ${dis}>Save</button>${P.id && canEdit ? `<select id="p_status" style="width:auto">${CFG.STATUS.map(s => `<option value="${s}" ${P.status === s ? 'selected' : ''}>${STATUS_NAME[s]}</option>`).join('')}</select><button class="btn o sm" id="b_status">Set status</button>` : ''}<a class="btn o sm" href="#go=imp">Read another plan</a></div></div>
    <div class="step"><h3>Step 2 · Transformation rules</h3><div class="${off ? 'grid2' : 'grid3'}">${off ? '' : num2('d_a', 'Central aisle (m)', 'aisle', .2)}${num2('d_o', 'Operator clearance (m)', 'opClearance', .1)}${num2('d_m', 'Maintenance corridor (m)', 'maintClearance', .1)}</div>
-    <p class="mut" style="margin:6px 0 0">Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m, maintenance ${TARGETS.maint} m. A smaller value is allowed but shows as a gap. The four designs on the right are generated from these rules.</p></div>
+    <p class="mut" style="margin:6px 0 0">Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m, maintenance ${TARGETS.maint} m. A smaller value is allowed but shows as a gap. The four designs on the right are generated from these rules.</p>
+    <h3 style="margin:14px 0 8px">Safety rules and what matters most</h3><div class="grid2">${num2('d_ed', off ? 'Farthest to a door (m)' : 'Farthest machine to a door (m)', 'exitDist', 1)}${num2('d_dc', 'Clear zone at each door (m)', 'doorClear', .1)}${num2('d_me', 'Escape route width (m)', 'minExit', .1)}${off ? '' : `<div><label for="d_hd">Material is moved by</label><select id="d_hd" data-dims="handling" ${dis}>${Object.entries(HANDLING).map(([k, v]) => `<option value="${k}" ${P.dim.handling === k ? 'selected' : ''}>${esc(v.n)}</option>`).join('')}</select></div>`}</div>
+    <div style="margin-top:8px"><label for="d_pr">The best design is the one that is strongest for</label><select id="d_pr" data-dims="priority" ${dis}>${Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}" ${P.dim.priority === k ? 'selected' : ''}>${esc(v.n)}</option>`).join('')}</select></div>
+    <p class="mut" style="margin:6px 0 0">These limits are starting values. Set them to what your local rules and your fire officer require (see the rules table under the drawing).</p></div>
    <div class="step"><h3>Step 3 · ${off ? 'Rooms and zones' : 'Machine inventory'} <small>${n} ${off ? 'rooms' : 'assets'}</small></h3>
     <div class="inv"><table class="mt"><thead><tr>${off ? '<th>Name</th><th>Kind</th>' : '<th>Code</th><th>Name</th><th>Type</th><th>Cell</th>'}<th>W m</th><th>D m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
     ${canEdit ? `<div class="row" style="margin:8px 0 0"><button class="btn o sm" id="b_add">＋ Add ${off ? 'room' : 'machine'}</button>${armed === 'example' ? '<button class="btn d sm" data-do="example">Press again to replace</button>' : '<button class="btn o sm" data-arm="example">Use the example list</button>'}${armed === 'clear' ? '<button class="btn d sm" data-do="clear">Press again to remove all</button>' : '<button class="btn o sm" data-arm="clear">Remove all</button>'}</div>
@@ -881,21 +1044,52 @@ function paintStu() {
    <div class="stk"><div class="head"><div class="tt"><b>Layout Studio</b><span>Re-design in the same building at 1:1 scale — sizes are never changed</span></div><div class="acts"><button class="btn o" id="b_dxf">⬇ Export DXF</button><button class="btn o" id="b_pdf1">⬇ Export PDF</button><button class="btn o" id="b_cad">Open in KMR CAD</button><button class="btn o" id="b_full2">⛶ Full screen</button><button class="btn" id="b_rep">Make the report →</button></div></div>
    <div class="sbar"><div class="pills" id="otabs"></div><div class="kb" id="kp"></div></div></div>
    <div class="canvas" id="cv"></div><div id="lg"></div>
-   <div id="cmp"></div>
+   <div id="cmp"></div><div class="an" id="an"></div>
    <div class="below"><div><h4>Checks</h4><div id="ck"></div></div><div><div id="lgs"></div></div></div></div></div>`;
   paintOpts(); stk();
 }
 function paintOpts() {
   if (!P || !$('#otabs')) return;
-  if (!OPTS.length) { $('#otabs').innerHTML = ''; $('#kp').innerHTML = ''; $('#cv').innerHTML = '<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>'; $('#lg').innerHTML = ''; $('#ck').innerHTML = ''; $('#lgs').innerHTML = ''; $('#cmp').innerHTML = ''; return; }
+  if (!OPTS.length) { $('#otabs').innerHTML = ''; $('#kp').innerHTML = ''; $('#cv').innerHTML = '<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>'; $('#lg').innerHTML = ''; $('#ck').innerHTML = ''; $('#lgs').innerHTML = ''; $('#cmp').innerHTML = ''; if ($('#an')) $('#an').innerHTML = ''; return; }
   const o = OPTS[P.sel], lab = x => x.asIs ? 'Current layout' : (x.name.split(':')[0].replace('Option ', 'Option ') + ': ' + x.short);
   $('#otabs').innerHTML = OPTS.map((x, i) => `<button class="pill ${i === P.sel ? 'on' : ''}" data-opt="${i}">${esc(lab(x))}</button>`).join('');
   const sv = o.asIs ? null : (o.vsCurrent != null ? o.vsCurrent : o.saving);
   $('#kp').innerHTML = `<span>${o.kind === 'office' ? 'Walking distance' : 'Route per part'}:<b>${o.travel} m</b></span><span>Floor utilisation:<b class="b2">${o.util}%</b></span>${sv != null ? `<span>${o.vsCurrent != null ? 'vs current' : 'Saving'}:<b class="${sv < 0 ? 'bad' : ''}">${sv}%</b></span>` : ''}<span>Placed:<b class="b2">${o.placedN} / ${o.total}</b></span><span>Scale:<b class="b2">1 m = 40 px (1:1)</b></span>`;
   $('#cv').innerHTML = drawSVG(o, 'dark', 's'); $('#lg').innerHTML = legendHTML(o);
-  $('#cmp').innerHTML = `<h4 style="margin:14px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#a78bfa">Designs compared — click a row to see it</h4><div style="overflow:auto"><table class="cmp"><thead><tr><th>Design</th><th>${o.kind === 'office' ? 'Walking' : 'Route per part'}</th><th>Floor use</th><th>${OPTS.some(x => x.asIs) ? 'vs current' : 'Saving'}</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x, i) => `<tr class="${i === P.sel ? 'on' : ''}" data-opt="${i}"><td>${esc(x.name)}</td><td>${x.travel} m</td><td>${x.util}%</td><td>${x.asIs ? '—' : (x.vsCurrent != null ? x.vsCurrent : x.saving) + '%'}</td><td>${x.placedN} / ${x.total}</td><td>${x.asIs ? '<span class="chip b">today</span>' : `<span class="chip ${x.grade === 'C' ? 'r' : 'g'}">${x.grade}</span>`}</td></tr>`).join('')}</tbody></table></div>`;
+  $('#cmp').innerHTML = `<h4 style="margin:14px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#a78bfa">Designs compared — click a row to see it</h4><div style="overflow:auto"><table class="cmp"><thead><tr><th>Design</th><th>${o.kind === 'office' ? 'Walking' : 'Route per part'}</th><th>Floor use</th><th>${OPTS.some(x => x.asIs) ? 'vs current' : 'Saving'}</th><th>Placed</th><th>Score /100</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x, i) => `<tr class="${i === P.sel ? 'on' : ''}" data-opt="${i}"><td>${esc(x.name)}${x.rec ? ' <span class="chip g">Recommended</span>' : ''}</td><td>${x.travel} m</td><td>${x.util}%</td><td>${x.asIs ? '—' : (x.vsCurrent != null ? x.vsCurrent : x.saving) + '%'}</td><td>${x.placedN} / ${x.total}</td><td><b>${x.total100}</b></td><td>${x.asIs ? '<span class="chip b">today</span>' : `<span class="chip ${x.grade === 'C' ? 'r' : 'g'}">${x.grade}</span>`}</td></tr>`).join('')}</tbody></table></div>`;
+  $('#an').innerHTML = anHTML(o);
   $('#ck').innerHTML = `<table><tbody>${o.checks.map(c => `<tr><td style="width:24px" class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '✔' : '✖'}</td><td>${esc(c.name)}</td><td class="mut">${esc(c.txt)}</td></tr>`).join('')}</tbody></table>` + (o.noFit.length ? `<p class="msg" style="margin-top:8px">Not placed: ${esc(o.noFit.map(m => m.name).join(', '))}. Make the building bigger, reduce the clearances, or remove items to see them placed.</p>` : '');
   $('#lgs').innerHTML = o.legs && o.legs.length ? `<h4>Route leg by leg (From → To, metres)</h4><table><thead><tr><th>From</th><th>To</th><th>Distance</th></tr></thead><tbody>${o.legs.map(l => `<tr><td>${esc(l.from)}</td><td>${esc(l.to)}</td><td>${l.m} m</td></tr>`).join('')}<tr><td colspan="2"><b>Total route per part</b></td><td><b>${o.travel} m</b></td></tr></tbody></table><p class="mut" style="margin:6px 0 0">Measured through the centre of each stage in process order. If your cells combine different machine types for one part family, the real walking inside a cell is shorter than this stage route shows.</p>` : '';
+}
+/* ---------- analysis views ---------- */
+const scol = v => v >= 80 ? '#34d399' : v >= 60 ? '#fbbf24' : '#f87171';
+const critNames = o => o.kind === 'office' ? CRIT_OFFICE : CRIT;
+const bars = (o, W) => Object.keys(CRIT).map(k => `<div class="ab"><span>${esc(critNames(o)[k])} <small>(${W[k]}%)</small></span><div class="tr"><i style="width:${o.sc[k]}%;background:${scol(o.sc[k])}"></i></div><b>${o.sc[k]}</b></div>`).join('');
+function recText() {
+  const best = OPTS.find(o => o.rec), pr = PRIORITY[P.dim.priority] || PRIORITY.balanced; if (!best) return '';
+  const names = critNames(best), ks = Object.keys(CRIT).sort((a, b) => best.sc[b] - best.sc[a]), weak = ks[ks.length - 1];
+  const next = OPTS.filter(x => !x.asIs && x !== best).sort((a, b) => b.total100 - a.total100)[0], asis = OPTS.find(x => x.asIs);
+  return `<div class="rec"><b class="big">Recommended: ${esc(best.name)}</b> <span class="chip g">${best.total100} / 100</span><div style="margin-top:6px">Judged for: <b>${esc(pr.n)}</b>. Strongest on <b>${esc(names[ks[0]])}</b> (${best.sc[ks[0]]}) and <b>${esc(names[ks[1]])}</b> (${best.sc[ks[1]]}). Weakest on <b>${esc(names[weak])}</b> (${best.sc[weak]}) — see the negative things below.${next ? ` Next best: ${esc(next.short)} (${next.total100}).` : ''}${asis && best.vsCurrent != null ? ` Route per part is ${Math.abs(best.vsCurrent)}% ${best.vsCurrent >= 0 ? 'shorter' : 'longer'} than your current layout.` : ''}${best.hard.length ? `<br><b style="color:#fca5a5">Fix first:</b> ${esc(best.hard.join('; '))}.` : ''}</div><div class="mut" style="margin-top:6px">The score is a guide for comparing designs, not a certificate. The decision stays with your team and the fire / safety officer.</div></div>`;
+}
+function matrixHTML(forReport) {
+  const W = (PRIORITY[P.dim.priority] || PRIORITY.balanced).w, o0 = OPTS[0];
+  return `<table class="mx"><thead><tr><th>Criterion (weight)</th>${OPTS.map(x => `<th>${esc(x.short)}${x.rec ? ' ★' : ''}</th>`).join('')}</tr></thead><tbody>${Object.keys(CRIT).map(k => `<tr><td>${esc(critNames(o0)[k])} (${W[k]}%)</td>${OPTS.map(x => `<td style="${forReport ? '' : 'background:' + scol(x.sc[k]) + '22;'}font-weight:600">${x.sc[k]}</td>`).join('')}</tr>`).join('')}<tr><td><b>Overall score</b></td>${OPTS.map(x => `<td><b>${x.total100}</b></td>`).join('')}</tr></tbody></table>`;
+}
+function anHTML(o) {
+  const W = (PRIORITY[P.dim.priority] || PRIORITY.balanced).w, f = findings(o, OPTS), a = o.an, rt = regTable(o);
+  const li = arr => arr.length ? '<ul>' + arr.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '<span class="mut">Nothing to report.</span>';
+  const far = a.ev.slice().sort((x, y) => y.d - x.d).slice(0, 5);
+  return `${recText()}
+  <h3>Analysis of: ${esc(o.name)} ${o.rec ? '<span class="chip g">Recommended</span>' : ''}</h3>
+  <div class="mut" style="margin-bottom:6px">${esc(f.info.type)} — best for: ${esc(f.info.bestFor)}</div>
+  <div class="row" style="align-items:flex-start;gap:24px"><div style="flex:1;min-width:280px"><b>Score by criterion</b>${bars(o, W)}<div class="ab"><span><b>Overall</b></span><div class="tr"><i style="width:${o.total100}%;background:${scol(o.total100)}"></i></div><b>${o.total100}</b></div></div>
+  <div style="flex:1.4;min-width:300px;overflow:auto"><b>All designs side by side</b>${matrixHTML(false)}</div></div>
+  <div class="pc"><div class="good"><h4>✔ Better things</h4>${li(f.pros)}</div><div class="badc"><h4>✖ Negative things</h4>${li(f.cons)}</div></div>
+  ${f.act.length ? `<div class="card"><b>What to do to improve this design</b>${li(f.act)}</div>` : ''}
+  <h3 style="margin-top:12px">Safety, evacuation, maintenance and rules checked</h3>
+  <div style="overflow:auto"><table><thead><tr><th>Check</th><th>Limit</th><th>This design</th><th>Result</th><th>Based on (check against your copy)</th></tr></thead><tbody>${rt.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td class="${r[3] ? 'ok' : 'bad'}">${r[3] ? '✔ Meets' : '✖ Gap'}</td><td class="mut">${esc(r[4])}</td></tr>`).join('')}</tbody></table></div>
+  <div class="row" style="align-items:flex-start;gap:24px;margin-top:10px"><div style="flex:1;min-width:260px"><b>Farthest ${o.kind === 'office' ? 'rooms' : 'machines'} from a door</b><table><thead><tr><th>${o.kind === 'office' ? 'Room' : 'Machine'}</th><th>Nearest door</th><th>Walk (m)</th></tr></thead><tbody>${far.map(e => `<tr><td>${esc(e.m.name)}</td><td>${esc(e.door)}</td><td>${r1(e.d)}</td></tr>`).join('')}</tbody></table></div>
+  <div style="flex:1;min-width:260px" class="mut">Distances are walking distances (along the floor, not straight lines) from the middle of each ${o.kind === 'office' ? 'room' : 'machine'} to the nearest door. ${o.kind === 'office' ? '' : 'Doors are taken at the standard positions: inbound at the top centre, scrap on the left, dispatch on the right.'} Limits shown are the values you set in Step 2; local rules (Factories Act 1948 and your State Factory Rules, National Building Code of India 2016 Part 4, OSHA 29 CFR 1910 where you follow it) decide the final numbers.</div></div>`;
 }
 function dirty() { P.dirty = true; clearTimeout(timer); timer = setTimeout(() => { recalc(); paintOpts(); paintHead(); const c = $('#mchk'); if (c) c.innerHTML = checkHTML(P.items, 'data-sms'); }, 250); }
 function paintHead() { const c = $('#co'); if (c && ctx) c.textContent = ctx.company + (P ? ' · ' + (P.no || 'new') + ' ' + P.title + (P.dirty ? '  (not saved)' : '') : ''); }
@@ -930,6 +1124,12 @@ function reportPages() {
    <div class="two" style="grid-template-columns:1fr 1fr;margin-top:6px"><div><h4>Checks on the option shown</h4><table><tbody>${o.checks.map(c => `<tr><td style="width:8mm">${c.ok ? '✔' : '✖'}</td><td>${esc(c.name)}</td><td>${esc(c.txt)}</td></tr>`).join('')}</tbody></table></div>
    <div>${o.legs && o.legs.length ? `<h4>Route leg by leg</h4><table><thead><tr><th>From</th><th>To</th><th>m</th></tr></thead><tbody>${o.legs.map(l => `<tr><td>${esc(l.from)}</td><td>${esc(l.to)}</td><td>${l.m}</td></tr>`).join('')}</tbody></table>` : ''}</div></div>
    <p style="margin:6px 0 0">Route length and floor use are calculated from the machine sizes and rules in this layout (1:1 scale, metres). Sizes are never changed. Grade ranks the new designs that place every item by shortest route: A+, A, B+, B; C means an item is left out.</p>`));
+  { const W = (PRIORITY[P.dim.priority] || PRIORITY.balanced).w, f = findings(o, OPTS), rt = regTable(o), li = arr => arr.length ? '<ul>' + arr.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '<i>Nothing to report.</i>', best = OPTS.find(x => x.rec);
+    pages.push(pg(`<h4>Analysis of the design shown: ${esc(o.name)}</h4><p style="margin:2px 0">${esc(f.info.type)} — best for: ${esc(f.info.bestFor)}${best ? ` <b>Recommended design: ${esc(best.short)} (${best.total100} / 100, judged for “${esc((PRIORITY[P.dim.priority] || PRIORITY.balanced).n)}”).</b>` : ''}</p>
+      <div class="two" style="grid-template-columns:1fr 1.5fr"><div><b>Score by criterion (weight)</b>${bars(o, W)}<div class="ab"><span><b>Overall</b></span><div class="tr"><i style="width:${o.total100}%;background:#0369a1"></i></div><b>${o.total100}</b></div></div><div>${matrixHTML(true)}</div></div>
+      <div class="two" style="grid-template-columns:1fr 1fr;margin-top:4px"><div><h4>Better things</h4>${li(f.pros)}</div><div><h4>Negative things</h4>${li(f.cons)}</div></div>${f.act.length ? `<h4>What to do to improve this design</h4>${li(f.act)}` : ''}`));
+    pages.push(pg(`<h4>Safety, evacuation, maintenance and rules checked — ${esc(o.short)}</h4><table><thead><tr><th>Check</th><th>Limit</th><th>This design</th><th>Result</th><th>Based on (check against your copy)</th></tr></thead><tbody>${rt.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td><b>${r[3] ? 'Meets' : 'GAP'}</b></td><td>${esc(r[4])}</td></tr>`).join('')}</tbody></table>
+      <p style="margin:6px 0 0">Limits are the values set in the layout (farthest to a door ${o.an.R.exitDist} m, clear zone at doors ${o.an.R.doorClear} m, escape route width ${o.an.R.minExit} m). Walking distances are measured from the middle of each ${o.kind === 'office' ? 'room' : 'machine'} to the nearest door; doors are at the standard positions. The scores compare designs and do not replace the approval of the fire / safety officer and the local authority.</p>`)); }
   if (asis && o !== asis) pages.push(pg(`<h4>Current layout (read from the plan) and the option shown</h4><div class="two" style="grid-template-columns:1fr 1fr"><div><b>Current layout — route ${asis.travel} m, floor use ${asis.util}%</b>${drawSVG(asis, 'light', 'r2')}</div><div><b>${esc(o.short)} — route ${o.travel} m, floor use ${o.util}%</b>${drawSVG(o, 'light', 'r3')}</div></div>`));
   for (let i = 0; i < Math.max(1, Math.ceil(items.length / per)); i++) pages.push(pg(`<h4>${P.kind === 'office' ? 'Rooms' : 'Machines'} in the option shown (${items.length}) — part ${i + 1}</h4><table><thead><tr><th>#</th>${P.kind === 'office' ? '<th>Room</th><th>Kind</th>' : '<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Size (m)</th><th>Position x, y (m)</th><th>Turned</th></tr></thead><tbody>${items.slice(i * per, i * per + per).map((m, j) => `<tr><td>${i * per + j + 1}</td>${P.kind === 'office' ? `<td>${esc(m.name)}</td><td>${esc((KINDS[m.kind] || {}).n || '')}</td>` : `<td>${esc(m.id)}</td><td>${esc(m.name)}</td><td>${esc((TYPES[m.type] || {}).s || '')}</td><td>${esc(m.cell || '')}</td>`}<td>${r2(m.w)} × ${r2(m.h)}</td><td>${m.x == null ? '<b>not placed</b>' : r2(m.x) + ', ' + r2(m.y)}</td><td>${m.rot ? 'yes' : ''}</td></tr>`).join('')}</tbody></table>`));
   const rows = KMRStd.rows('layout');
@@ -953,34 +1153,38 @@ async function issue() {
 }
 
 /* ---------- presentation ---------- */
-const SL_STD = [[['ISO 9001:2015', '7.1.3'], ['IATF 16949:2016', '7.1.3.1'], ['VDA 6.3:2016', 'P4 / P6']], [['IATF 16949:2016', '7.1.3.1'], ['APQP', 'Phase 3 floor plan layout'], ['ISO 9001:2015', '7.1.3']], [['IATF 16949:2016', '7.1.3.1 periodic review'], ['ISO 9001:2015', '6.3 planning of changes'], ['PPAP', 'Element 5 process flow diagram']], [['ISO 9001:2015', '7.1.4'], ['IATF 16949:2016', '7.1.4.1, 8.5.1.5'], ['VDA 6.3:2016', 'P6'], ['MSA 4th ed.', 'measurement environment']], [['IATF 16949:2016', '7.1.3.1 periodic review'], ['ISO 9001:2015', '10.2 corrective action']], [['AIAG-VDA FMEA', 'Step 2'], ['Control Plan', 'measurement location'], ['APQP', 'Phase 3']]];
+const SL_STD = [[['ISO 9001:2015', '7.1.3'], ['IATF 16949:2016', '7.1.3.1'], ['VDA 6.3:2016', 'P4 / P6']], [['IATF 16949:2016', '7.1.3.1'], ['APQP', 'Phase 3 floor plan layout'], ['ISO 9001:2015', '7.1.3']], [['IATF 16949:2016', '7.1.3.1 periodic review'], ['ISO 9001:2015', '6.3 planning of changes'], ['PPAP', 'Element 5 process flow diagram']], [['IATF 16949:2016', '7.1.3.1'], ['ISO 9001:2015', '7.1.4, 8.5.2 traceability'], ['IATF 16949:2016', '8.5.1.5, 8.5.2.1'], ['VDA 6.3:2016', 'P6']], [['ISO 9001:2015', '7.1.4'], ['IATF 16949:2016', '7.1.4.1, 8.5.1.5'], ['VDA 6.3:2016', 'P6'], ['MSA 4th ed.', 'measurement environment']], [['IATF 16949:2016', '7.1.3.1 periodic review'], ['ISO 9001:2015', '10.2 corrective action']], [['AIAG-VDA FMEA', 'Step 2'], ['Control Plan', 'measurement location'], ['APQP', 'Phase 3']]];
 function paintPre() {
   if (!P || !OPTS.length) { $('#pre').innerHTML = '<p class="mut">Open a layout that has machines or rooms. The presentation shows the real data of that layout.</p>'; return; }
   $('#pre').innerHTML = `<div class="row"><button class="btn" id="b_full">⛶ Start full screen presentation</button><span class="mut">Arrow keys or the buttons move between slides. It stays in full screen; press Esc to leave.</span></div><div class="pbox" id="pbox" tabindex="0"></div>`; slide(SL);
 }
 function slide(i) {
-  const b = $('#pbox'); if (!b) return; SL = Math.max(0, Math.min(5, i)); const o = OPTS[P.sel], ks = kpis(o), co = ctx ? ctx.company : '', stdz = SL_STD[SL], gaps = ks.filter(k => !k.ok); let body = '', title = '', sub = '';
+  const b = $('#pbox'); if (!b) return; SL = Math.max(0, Math.min(6, i)); const o = OPTS[P.sel], ks = kpis(o), co = ctx ? ctx.company : '', stdz = SL_STD[SL], gaps = ks.filter(k => !k.ok); let body = '', title = '', sub = '';
   const kp = (v, t, c) => `<div class="kpi" style="--c:${c}"><b>${esc(v)}</b><span>${esc(t)}</span></div>`;
   if (SL === 0) { title = 'Layout programme — ' + esc(co); sub = 'Real data from the saved layouts of this company'; body = `<div style="flex:1"><div class="kpis">${kp(LIST.length, 'Saved layouts', '#7dd3fc')}${kp(LIST.filter(p => p.status === 'approved').length, 'Approved', '#4ade80')}${kp(LIST.filter(p => p.status === 'review').length, 'In review', '#fbbf24')}${kp(LIST.filter(p => p.status === 'draft').length, 'Drafts', '#94a3b8')}</div><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Status</th><th>Changed</th></tr></thead><tbody>${LIST.slice(0, 7).map(p => `<tr><td>${esc(p.no)}</td><td>${esc(p.title)}</td><td>${kindName(p.kind)}</td><td>${STATUS_NAME[p.status] || p.status}</td><td>${dmy(p.updated_at)}</td></tr>`).join('')}</tbody></table>${LIST.length > 7 ? `<div class="sub">and ${LIST.length - 7} more</div>` : ''}</div>`; }
   if (SL === 1) { title = esc(P.no || '') + ' · ' + esc(P.title); sub = esc(o.name) + ' — 1:1 scale, ' + P.dim.width + ' m × ' + P.dim.depth + ' m'; body = `<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">${drawSVG(o, 'light', 'p' + SL)}</div><div style="width:22%;display:flex;flex-direction:column;gap:1vh">${kp(o.travel + ' m', P.kind === 'office' ? 'Walking distance' : 'Route per part', '#7dd3fc')}${kp(o.util + '%', 'Floor utilisation', '#c4b5fd')}${kp(o.placedN + ' / ' + o.total, 'Placed', '#fbbf24')}${kp(o.grade, 'Grade', '#4ade80')}</div>`; }
   if (SL === 2) { const asis = OPTS.find(x => x.asIs); title = asis ? 'Current layout against the new designs' : 'The designs compared'; sub = 'Shorter route is better; floor use should sit between ' + TARGETS.utilMin + '% and ' + TARGETS.utilMax + '%'; const mx = Math.max(...OPTS.map(x => x.travel), 1); body = `<div style="flex:1"><table><thead><tr><th>Option</th><th>Route</th><th style="width:28%"></th><th>Floor use</th><th>${asis ? 'vs current' : 'Saving'}</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x, j) => `<tr style="${j === P.sel ? 'background:#1e2a4a' : ''}"><td>${esc(x.name)}</td><td>${x.travel} m</td><td><div class="bar" style="width:${x.travel / mx * 100}%"></div></td><td>${x.util}%</td><td>${x.asIs ? '—' : (x.vsCurrent != null ? x.vsCurrent : x.saving) + '%'}</td><td>${x.placedN}/${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table></div>`; }
-  if (SL === 3) { title = 'KPI gaps against targets'; sub = 'Key Performance Indicators (KPIs) of the chosen option: ' + esc(o.name); body = `<div style="flex:1"><table><thead><tr><th>KPI</th><th>Value now</th><th>Target</th><th>Result</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td style="color:${k.ok ? '#4ade80' : '#f87171'};font-weight:700">${k.ok ? 'Met' : 'GAP'}</td></tr>`).join('')}</tbody></table><div class="sub" style="margin-top:1vh">${gaps.length ? gaps.length + ' gap' + (gaps.length > 1 ? 's' : '') + ' need an action plan (next slide).' : 'All KPIs meet their targets.'}</div></div>`; }
-  if (SL === 4) { title = 'Action plans'; sub = 'Each action names the KPI gap it closes'; const kopts = ['<option value="">Choose the KPI gap…</option>'].concat(ks.map(k => `<option value="${esc(k.name)}">${esc(k.name)}${k.ok ? '' : ' — GAP'}</option>`)).join('');
+  if (SL === 3) { const best = OPTS.find(x => x.rec), W = (PRIORITY[P.dim.priority] || PRIORITY.balanced).w, f = findings(o, OPTS), li = (arr, n) => arr.slice(0, n).map(x => `<li>${esc(x)}</li>`).join('');
+    title = 'Design analysis: ' + esc(o.short); sub = (best ? 'Recommended: ' + esc(best.short) + ' (' + best.total100 + ' / 100) · ' : '') + 'judged for ' + esc((PRIORITY[P.dim.priority] || PRIORITY.balanced).n);
+    body = `<div style="flex:1.1;min-width:0">${Object.keys(CRIT).map(k => `<div style="display:grid;grid-template-columns:36% 1fr 2em;gap:.6em;align-items:center;margin:.35em 0"><span>${esc(critNames(o)[k])}</span><div style="height:.8em;background:#1e293b;border-radius:5px"><i style="display:block;height:100%;width:${o.sc[k]}%;background:${scol(o.sc[k])};border-radius:5px"></i></div><b>${o.sc[k]}</b></div>`).join('')}<div class="sub" style="margin-top:.6em">Overall ${o.total100} / 100 · ${OPTS.filter(x => !x.asIs).map(x => esc(x.short) + ' ' + x.total100).join(' · ')}</div></div>
+    <div style="flex:1.3;min-width:0;display:flex;flex-direction:column;gap:.6em;overflow:hidden"><div><b style="color:#34d399">✔ Better things</b><ul style="margin:.2em 0;padding-left:1.2em">${li(f.pros, 3)}</ul></div><div><b style="color:#f87171">✖ Negative things</b><ul style="margin:.2em 0;padding-left:1.2em">${li(f.cons, 3)}</ul></div></div>`; }
+  if (SL === 4) { title = 'KPI gaps against targets'; sub = 'Key Performance Indicators (KPIs) of the chosen option: ' + esc(o.name); body = `<div style="flex:1"><table><thead><tr><th>KPI</th><th>Value now</th><th>Target</th><th>Result</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td style="color:${k.ok ? '#4ade80' : '#f87171'};font-weight:700">${k.ok ? 'Met' : 'GAP'}</td></tr>`).join('')}</tbody></table><div class="sub" style="margin-top:1vh">${gaps.length ? gaps.length + ' gap' + (gaps.length > 1 ? 's' : '') + ' need an action plan (next slide).' : 'All KPIs meet their targets.'}</div></div>`; }
+  if (SL === 5) { title = 'Action plans'; sub = 'Each action names the KPI gap it closes'; const kopts = ['<option value="">Choose the KPI gap…</option>'].concat(ks.map(k => `<option value="${esc(k.name)}">${esc(k.name)}${k.ok ? '' : ' — GAP'}</option>`)).join('');
     body = `<div style="flex:1;min-width:0"><table><thead><tr><th>KPI gap</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${ACTIONS.slice(0, 6).map(a => `<tr><td>${esc(a.kpi || '—')}</td><td>${esc(a.title)}</td><td>${esc(a.owner || '')}</td><td>${dmy(a.due)}</td><td>${canEdit ? `<select data-ast="${a.id}">${['Open', 'In progress', 'Done'].map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>` : esc(a.status)}</td><td>${canEdit ? `<button class="btn d sm" data-adel="${a.id}">✕</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" style="color:#94a3b8">No actions yet.</td></tr>'}${canEdit ? `<tr><td><select id="a_kpi">${kopts}</select></td><td><input id="a_t" placeholder="What will be done"></td><td><input id="a_o" placeholder="Owner"></td><td><input id="a_d" type="date"></td><td></td><td><button class="btn sm" id="a_add">Add</button></td></tr>` : ''}</tbody></table>${ACTIONS.length > 6 ? `<div class="sub">and ${ACTIONS.length - 6} more</div>` : ''}</div>`; }
-  if (SL === 5) { title = 'Standards covered'; sub = 'Clauses behind this layout programme'; const ev = evidence(); body = `<div style="flex:1"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>Evidence now</th></tr></thead><tbody>${KMRStd.rows('layout').slice(0, 9).map(r => `<tr><td>${esc((KMRStd.cat[r[0]] || [r[0]])[0])}</td><td>${esc(r[1])}</td><td>${esc(r[4] && ev[r[4]] ? ev[r[4]]() : '')}</td></tr>`).join('')}</tbody></table></div>`; }
-  b.innerHTML = `<div class="sl"><h2>${title}</h2><div class="sub">${sub}</div><div class="body">${body}</div></div><div class="sstd"><b>Standards for this slide:</b> ${stdz.map(s => `<span class="s">${esc(s[0])} · ${esc(s[1])}</span>`).join('')}</div><div class="pnav"><button class="btn o sm" data-sl="${SL - 1}" style="color:#fff;border-color:#fff8" ${SL === 0 ? 'disabled' : ''}>◀ Back</button><span>Slide ${SL + 1} of 6 · ${esc(co)}</span><button class="btn sm" data-sl="${SL + 1}" ${SL === 5 ? 'disabled' : ''}>Next ▶</button></div>`;
+  if (SL === 6) { title = 'Standards covered'; sub = 'Clauses behind this layout programme'; const ev = evidence(); body = `<div style="flex:1"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>Evidence now</th></tr></thead><tbody>${KMRStd.rows('layout').slice(0, 9).map(r => `<tr><td>${esc((KMRStd.cat[r[0]] || [r[0]])[0])}</td><td>${esc(r[1])}</td><td>${esc(r[4] && ev[r[4]] ? ev[r[4]]() : '')}</td></tr>`).join('')}</tbody></table></div>`; }
+  b.innerHTML = `<div class="sl"><h2>${title}</h2><div class="sub">${sub}</div><div class="body">${body}</div></div><div class="sstd"><b>Standards for this slide:</b> ${stdz.map(s => `<span class="s">${esc(s[0])} · ${esc(s[1])}</span>`).join('')}</div><div class="pnav"><button class="btn o sm" data-sl="${SL - 1}" style="color:#fff;border-color:#fff8" ${SL === 0 ? 'disabled' : ''}>◀ Back</button><span>Slide ${SL + 1} of 7 · ${esc(co)}</span><button class="btn sm" data-sl="${SL + 1}" ${SL === 6 ? 'disabled' : ''}>Next ▶</button></div>`;
 }
 async function addAction() {
   const kpi = $('#a_kpi').value, t = $('#a_t').value.trim(); if (!kpi) { say('Choose which KPI gap this action is for.'); return; } if (!t) { say('Write the action.'); return; }
   const std = /utilisation/i.test(kpi) ? 'IATF 16949:2016 7.1.3.1' : /placed/i.test(kpi) ? 'ISO 9001:2015 7.1.3' : /clearance/i.test(kpi) ? 'IATF 16949:2016 7.1.4.1 / 8.5.1.5' : 'IATF 16949:2016 7.1.3.1';
-  try { await api.rpc('kmr_pres_action_save', { p_code: 'layout', p_app: 'layout', p: { kpi, title: t, owner: $('#a_o').value.trim(), due: $('#a_d').value || '', standard: std } }); await loadActions(); slide(4); } catch (err) { say(err.message); }
+  try { await api.rpc('kmr_pres_action_save', { p_code: 'layout', p_app: 'layout', p: { kpi, title: t, owner: $('#a_o').value.trim(), due: $('#a_d').value || '', standard: std } }); await loadActions(); slide(5); } catch (err) { say(err.message); }
 }
 
 /* ---------- screens, events ---------- */
 const TABS = ['std', 'prj', 'imp', 'stu', 'rep', 'pre'];
 function stk() { const h = document.querySelector('header'), tb = document.querySelector('.tabs'), hh = h ? h.offsetHeight : 0, v = hh + (tb ? tb.offsetHeight : 0); document.documentElement.style.setProperty('--hh', hh + 'px'); document.querySelectorAll('.studio').forEach(s => { if (!document.fullscreenElement) s.style.setProperty('--stk', v + 'px'); }); }
 window.addEventListener('resize', stk);
-document.addEventListener('fullscreenchange', () => { const b = $('#b_full2'); if (b) b.textContent = document.fullscreenElement ? '✕ Exit full screen' : '⛶ Full screen'; stk(); });
+document.addEventListener('fullscreenchange', () => { document.querySelectorAll('.studio').forEach(s => { if (document.fullscreenElement) s.style.setProperty('--stk', '0px'); }); const b = $('#b_full2'); if (b) b.textContent = document.fullscreenElement ? '✕ Exit full screen' : '⛶ Full screen'; stk(); });
 function go(t) { if (!TABS.includes(t)) t = 'std'; document.querySelector('.panel').classList.toggle('wide', t === 'stu'); document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); TABS.forEach(x => $('#' + x).classList.toggle('hide', x !== t)); if (location.hash !== '#go=' + t) history.replaceState(null, '', location.pathname + location.search + '#go=' + t); if (t === 'rep') paintRep(); if (t === 'pre') paintPre(); if (t === 'std') paintStd(); }
 function paint() { paintStd(); paintPrj(); paintImp(); paintStu(); paintRep(); paintPre(); paintHead(); }
 function route() { const n = window.KMRNav && KMRNav.pending(); go(n ? n.go : 'std'); }
@@ -1016,7 +1220,7 @@ document.addEventListener('click', async e => {
     if (t.id === 'b_full') { const b = $('#pbox'); if (b.requestFullscreen) await b.requestFullscreen(); b.focus(); slide(SL); return; }
     if (d.sl !== undefined) return slide(+d.sl);
     if (t.id === 'a_add') return addAction();
-    if (d.adel) { await api.rpc('kmr_pres_action_delete', { p_code: 'layout', p_id: d.adel }); await loadActions(); slide(4); return; }
+    if (d.adel) { await api.rpc('kmr_pres_action_delete', { p_code: 'layout', p_id: d.adel }); await loadActions(); slide(5); return; }
     if (d.ims !== undefined) { useMasterSize(IM.res.items.filter(m => m.keep)[+d.ims]); return paintImp(); }
     if (t.id === 'data-ims-all') { IM.res.items.filter(m => m.keep).forEach(useMasterSize); return paintImp(); }
     if (d.sms !== undefined) { useMasterSize(P.items[+d.sms]); dirty(); return paintStu(); }
@@ -1050,6 +1254,7 @@ document.addEventListener('change', async e => {
   if (t.dataset.ik !== undefined) { IM.res.items[+t.dataset.ik].keep = t.checked; return paintImp(); }
   if (t.dataset.iv !== undefined && IM && IM.res) { if (t.dataset.f === 'type') paintImp(); return; }
   if (t.dataset.tt !== undefined) { TR.boxes[+t.dataset.tt].type = t.value; return; }
+  if (t.dataset.dims && P) { P.dim[t.dataset.dims] = t.value; dirty(); setTimeout(paintStu, 300); return; }
   if (t.dataset.i !== undefined && P) { const m = P.items[+t.dataset.i]; m[t.dataset.f] = t.value; dirty(); return; }
   if (t.dataset.ast) { try { await api.rpc('kmr_pres_action_save', { p_code: 'layout', p_app: 'layout', p: { id: t.dataset.ast, status: t.value } }); await loadActions(); } catch (err) { say(err.message); } return; }
   if (t.id === 'r_opt' && REPORT) { REPORT = null; paintRep(); }
