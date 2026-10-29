@@ -590,6 +590,22 @@ const kindName = k => k === 'office' ? 'Office floor plan' : 'Factory machine sh
 const mkKey = () => 'n' + Math.random().toString(36).slice(2, 8);
 let ctx = null, canEdit = false, slug = '', DEMO = QP.DEMO, LIST = [], P = null, OPTS = [], REPORT = null, ACTIONS = [], SL = 0, armed = null, timer = null, IM = null, TR = null;
 const api = { rpc: (f, a) => QP.call(f, a) };
+/* ---------- machine master (KMR Apps › Operations Master › Machines): the machine type comes from there ---------- */
+let MASTER = [], MASTER_OK = false;
+const MTYPE = { 'cnc turning': 'cnc', vmc: 'vmc', hmc: 'vmc', grinding: 'conv', 'gear hobbing': 'conv', broaching: 'conv', press: 'conv', welding: 'conv', assembly: 'finish', inspection: 'msa', other: 'conv' };
+const nz = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, '');
+async function loadMaster() { try { const d = await api.rpc('kmr_ops_list', { p_kind: 'machines' }); MASTER = (Array.isArray(d) ? d : (d && d.records) || []).filter(r => r.active !== false); MASTER_OK = MASTER.length > 0; } catch (e) { MASTER = []; MASTER_OK = false; } }
+function findMaster(m) {
+  const a = nz(m.id), b = nz(m.name); if (!a && !b) return null;
+  let x = MASTER.find(r => nz(r.code) === a || nz(r.code) === b || nz(r.name) === b || (a && nz(r.name) === a));
+  if (!x && b.length >= 3) x = MASTER.find(r => { const c = nz(r.code), n = nz(r.name); return (c.length >= 3 && (b.includes(c) || c.includes(b))) || (n.length >= 3 && (b.includes(n) || n.includes(b))); });
+  return x || null;
+}
+function applyMaster(items) {
+  let n = 0;
+  for (const m of items) { const r = findMaster(m), ty = r && MTYPE[String((r.data || {}).type || '').toLowerCase().trim()]; if (r && ty) { m.type = ty; m.cell = (r.data || {}).cell || CELL_OF[ty]; m.mcode = r.code; n++; } else delete m.mcode; }
+  return n;
+}
 
 /* ---------- loading and saving ---------- */
 function fromRow(r) { const d = r.dimensions || {}; return { id: r.id, no: r.no, title: r.title, kind: r.kind, status: r.status, source_file: r.source_file || '', sample: !!r.sample, history: r.history || [], sel: Math.max(0, (r.selected_option || 1) - 1), dirty: false, dim: { width: +d.width || 20, depth: +d.depth || 30, hallDepth: +d.hallDepth || 24, qcDepth: +d.qcDepth || 5.4, aisle: +d.aisle || 2.8, opClearance: +d.opClearance || 1.2, maintClearance: +d.maintClearance || 1.5 }, items: (r.machines || []).map(m => ({ ...m, w: +m.w, h: +m.h })) }; }
@@ -597,7 +613,7 @@ const good = m => m.w > 0 && m.h > 0;
 function recalc() { OPTS = P ? evaluate(P.items.filter(good), P.dim, P.kind) : []; if (P && P.sel > OPTS.length - 1) P.sel = 0; }
 const curKind = () => (P && P.kind === 'office') ? 'office-ergonomic' : (OPTS[P.sel] ? OPTS[P.sel].key : 'cellular-u');
 function summary() { return OPTS.map(x => ({ name: x.name, short: x.short, key: x.key, travel: x.travel, util: x.util, saving: x.saving, grade: x.grade, placed: x.placedN, total: x.total, noFit: x.noFit.length })); }
-function payload() { return { id: P.id || undefined, title: P.title, kind: P.kind, concept: curKind(), dimensions: { ...P.dim }, source_file: P.source_file || null, machines: P.items.filter(good).map(({ id, type, name, w, h, cell, kind, ax, ay, arot }) => ({ id, type, name, w, h, cell, kind, ax, ay, arot })), options: summary(), selected_option: P.sel + 1 }; }
+function payload() { return { id: P.id || undefined, title: P.title, kind: P.kind, concept: curKind(), dimensions: { ...P.dim }, source_file: P.source_file || null, machines: P.items.filter(good).map(({ id, type, name, w, h, cell, kind, ax, ay, arot, mcode }) => ({ id, type, name, w, h, cell, kind, ax, ay, arot, mcode })), options: summary(), selected_option: P.sel + 1 }; }
 async function loadList() { LIST = (await api.rpc('kmr_layout_list', {})) || []; }
 async function openProject(id, noGo) { const r = await api.rpc('kmr_layout_get', { p_id: id }); P = fromRow(r); recalc(); REPORT = null; await loadActions(); paint(); if (!noGo) go('stu'); }
 async function save(quiet) {
@@ -713,7 +729,7 @@ async function onPlanFile(f) {
     else if (ext === 'pdf') { IM.raw = await readPDF(await f.arrayBuffer()); IM.src = 'pdf'; IM.underlay = IM.raw.underlay; IM.page = [IM.raw.pageW, IM.raw.pageH]; const ext2 = IM.raw.rects.length ? Math.max(...IM.raw.rects.map(r => r.x1 - r.x0)) : 0; const sc = [20, 25, 50, 75, 100, 150, 200, 250, 500].find(s => { const m = ext2 * 25.4 / 72 / 1000 * s; return m >= 12 && m <= 150; }); IM.scale = sc || 100; }
     else if (/^(jpe?g|png|webp|gif|bmp)$/.test(ext)) { IM.raw = await readImage(f); IM.src = 'img'; IM.underlay = IM.raw.underlay; IM.page = [IM.raw.pageW, IM.raw.pageH]; TR = { mode: 'scale', pts: [], pxm: 0, bld: null, boxes: [] }; }
     else throw new Error('Upload a DXF, PDF, JPG or PNG file.');
-    IM.busy = false; reinterp();
+    IM.busy = false; reinterp(); if (IM.res && IM.res.items) IM.matched = applyMaster(IM.res.items);
     if (IM.src !== 'img' && (!IM.res || !IM.res.building || IM.res.items.length < 2)) { say('Few or no machines could be read from this file. For a scanned plan or a drawing without box shapes, trace the machines by hand below.'); IM.src = IM.src === 'dxf' ? 'dxf' : IM.src; if (IM.underlay) TR = { mode: 'scale', pts: [], pxm: 0, bld: null, boxes: [] }; }
   } catch (err) { IM = null; say(err.message); }
   paintImp();
@@ -741,8 +757,8 @@ function paintImp() {
   if (r && r.building && r.items.length) {
     const kept = r.items.filter(m => m.keep).length;
     body = `<div class="card"><h3>What was read from “${esc(IM.name)}”</h3><p style="margin:0 0 8px">Building <b>${r.building.w} m × ${r.building.h} m</b> · <b>${kept}</b> of ${r.items.length} machine boxes kept${r.skipped > 0 ? ` · ${r.skipped} other shapes ignored (walls, zones, duplicates)` : ''}${IM.warn ? ' · ' + esc(IM.warn) : ''}.</p>
-    <div class="mut" style="margin-bottom:8px">Check the sizes against the real machines. If the drawing shows only an outline, type the real size — the app uses exactly the sizes you confirm here and never changes them afterwards.</div>
-    <div class="stu" style="grid-template-columns:minmax(320px,1fr) minmax(300px,520px)"><div style="max-height:60vh;overflow:auto"><table class="mt"><thead><tr><th>Keep</th><th>#</th><th>Name</th><th>Type</th><th>Width m</th><th>Depth m</th><th>At x, y m</th></tr></thead><tbody>${r.items.map((m, i) => `<tr><td><input type="checkbox" data-ik="${i}" ${m.keep ? 'checked' : ''}></td><td>${i + 1}</td><td><input data-iv="${i}" data-f="name" value="${esc(m.name)}" style="min-width:110px"></td><td><select data-iv="${i}" data-f="type">${Object.entries(TYPES).filter(([k]) => k !== 'office').map(([k, v]) => `<option value="${k}" ${m.type === k ? 'selected' : ''}>${esc(v.s)}</option>`).join('')}</select></td><td><input data-iv="${i}" data-f="w" type="number" step=".05" value="${m.w}" style="width:64px"></td><td><input data-iv="${i}" data-f="h" type="number" step=".05" value="${m.h}" style="width:64px"></td><td class="mut">${m.ax}, ${m.ay}</td></tr>`).join('')}</tbody></table></div><div class="pv" id="im_pv">${impPreview()}</div></div>
+    <div class="mut" style="margin-bottom:8px">${MASTER_OK ? `<b>Machine type comes from your Machine master</b> (Operations Master): ${IM.matched || 0} of ${r.items.length} machines were matched by code or name and their type was set from the master. <button class="btn o sm" id="b_rematch">Match again</button>` : 'Your Machine master has no machines yet (or you have no access), so types were guessed from the names. Add the machines in the Operations Master and the types will be taken from there.'}</div><div class="mut" style="margin-bottom:8px">Check the sizes against the real machines. If the drawing shows only an outline, type the real size — the app uses exactly the sizes you confirm here and never changes them afterwards.</div>
+    <div class="stu" style="grid-template-columns:minmax(320px,1fr) minmax(300px,520px)"><div style="max-height:60vh;overflow:auto"><table class="mt"><thead><tr><th>Keep</th><th>#</th><th>Name</th><th>Type</th><th>Master</th><th>Width m</th><th>Depth m</th><th>At x, y m</th></tr></thead><tbody>${r.items.map((m, i) => `<tr><td><input type="checkbox" data-ik="${i}" ${m.keep ? 'checked' : ''}></td><td>${i + 1}</td><td><input data-iv="${i}" data-f="name" value="${esc(m.name)}" style="min-width:110px"></td><td><select data-iv="${i}" data-f="type">${Object.entries(TYPES).filter(([k]) => k !== 'office').map(([k, v]) => `<option value="${k}" ${m.type === k ? 'selected' : ''}>${esc(v.s)}</option>`).join('')}</select></td><td>${m.mcode ? `<span class="chip g" title="Type set from the Machine master">${esc(m.mcode)}</span>` : '<span class="mut">not in master</span>'}</td><td><input data-iv="${i}" data-f="w" type="number" step=".05" value="${m.w}" style="width:64px"></td><td><input data-iv="${i}" data-f="h" type="number" step=".05" value="${m.h}" style="width:64px"></td><td class="mut">${m.ax}, ${m.ay}</td></tr>`).join('')}</tbody></table></div><div class="pv" id="im_pv">${impPreview()}</div></div>
     <div class="row" style="margin-top:10px"><input id="im_title" value="${esc(IM.name.replace(/\.[^.]+$/, ''))} — re-layout" style="min-width:260px;max-width:380px"><button class="btn" id="b_accept">Use these ${kept} machines → design better layouts</button></div></div>`;
   } else if (IM.src !== 'img' && !TR) body = '<p class="mut">No machines found yet. Check the drawing units or paper scale above, or trace by hand.</p>';
   let trace = '';
@@ -771,13 +787,13 @@ function traceHTML() {
 function trPoint(ev) { const svg = $('#tr_svg'), pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); return [p.x, p.y]; }
 function trFinish() {
   const S = TR, items = S.boxes.map((b, i) => { const type = b.type || 'conv'; return { id: 'M-' + (i + 1), type, name: b.name || 'Machine ' + (i + 1), cell: CELL_OF[type], w: r2(b.w / S.pxm), h: r2(b.h / S.pxm), ax: r2((b.x - S.bld.x) / S.pxm), ay: r2((b.y - S.bld.y) / S.pxm), arot: false, keep: true }; });
-  IM.res = { building: { w: r2(S.bld.w / S.pxm), h: r2(S.bld.h / S.pxm), x0: 0, y0: 0 }, items, skipped: 0 }; IM.src = 'img'; IM.underlay = null; TR = null; paintImp();
+  IM.matched = applyMaster(items); IM.res = { building: { w: r2(S.bld.w / S.pxm), h: r2(S.bld.h / S.pxm), x0: 0, y0: 0 }, items, skipped: 0 }; IM.src = 'img'; IM.underlay = null; TR = null; paintImp();
 }
 async function acceptImport() {
   const r = IM.res, kept = r.items.filter(m => m.keep && m.w > 0 && m.h > 0); if (!kept.length) { say('Keep at least one machine.'); return; }
   const msa = kept.filter(m => m.type === 'msa'), depth = r.building.h;
   const low = msa.filter(m => m.ay >= depth * .7), hall = low.length ? Math.max(depth * .5, Math.min(...low.map(m => m.ay)) - .3) : depth * .85;
-  P = { id: null, no: null, title: ($('#im_title') || {}).value || 'Re-layout', kind: 'factory', status: 'draft', source_file: IM.name, history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM, width: r.building.w, depth, hallDepth: r1(hall), qcDepth: r1(depth - hall) }, items: kept.map((m, i) => ({ id: m.id || 'M-' + (i + 1), type: m.type, name: m.name, cell: m.cell || CELL_OF[m.type], w: m.w, h: m.h, ax: m.ax, ay: m.ay, arot: false })) };
+  P = { id: null, no: null, title: ($('#im_title') || {}).value || 'Re-layout', kind: 'factory', status: 'draft', source_file: IM.name, history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM, width: r.building.w, depth, hallDepth: r1(hall), qcDepth: r1(depth - hall) }, items: kept.map((m, i) => ({ id: m.id || 'M-' + (i + 1), type: m.type, name: m.name, cell: m.cell || CELL_OF[m.type], w: m.w, h: m.h, ax: m.ax, ay: m.ay, arot: false, mcode: m.mcode })) };
   recalc(); REPORT = null; ACTIONS = [];
   if (await save(true)) say(`Layout ${P.no} created from your plan: ${P.items.length} machines. Option “Current layout” shows what you have today; the other options are new designs in the same building.`, true);
   P.sel = Math.max(0, OPTS.findIndex(x => x.asIs)); paint(); go('stu');
@@ -804,6 +820,7 @@ function paintStu() {
    <div class="card"><h3>4 · ${off ? 'Rooms and zones' : 'Machines'} (${P.items.length})</h3>
     <div style="max-height:46vh;overflow:auto"><table class="mt"><thead><tr>${off ? '<th>Name</th><th>Kind</th>' : '<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Width m</th><th>Depth m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
     ${canEdit ? `<div class="row" style="margin:8px 0 0"><button class="btn o sm" id="b_add">＋ Add ${off ? 'room' : 'machine'}</button>${armed === 'example' ? '<button class="btn d sm" data-do="example">Press again to replace</button>' : '<button class="btn o sm" data-arm="example">Use the example list</button>'}${armed === 'clear' ? '<button class="btn d sm" data-do="clear">Press again to remove all</button>' : '<button class="btn o sm" data-arm="clear">Remove all</button>'}</div>
+    ${!off ? (MASTER_OK ? `<div class="row" style="margin:8px 0 0"><select id="m_pick" style="max-width:230px"><option value="">Add a machine from the Machine master…</option>${MASTER.map(r => `<option value="${esc(r.code)}">${esc(r.code)}${r.name ? ' — ' + esc(r.name) : ''} (${esc((r.data || {}).type || 'no type')})</option>`).join('')}</select><button class="btn o sm" id="b_mpick">Add</button><button class="btn o sm" id="b_mmatch">Set all types from the master</button></div><div class="mut" style="margin-top:4px">Machine type is taken from the Machine master (Operations Master). Machines not in the master keep the type you chose. You still enter the machine size, because the master does not hold the floor size.</div>` : `<div class="mut" style="margin-top:8px">Machine types are taken from the Machine master (Operations Master) when it has machines. It is empty or not available now.</div>`) : ''}
     <div class="mut" style="margin-top:6px">Cell group = the part family or work area a machine belongs to. Machines with the same cell group are kept together as one cell.</div>
     <details style="margin-top:8px"><summary class="mut" style="cursor:pointer">Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off ? 'name, kind (public / open / private / service), width, depth' : 'id, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>` : ''}</div>
   </div><div>
@@ -938,6 +955,9 @@ document.addEventListener('click', async e => {
     if (d.sl !== undefined) return slide(+d.sl);
     if (t.id === 'a_add') return addAction();
     if (d.adel) { await api.rpc('kmr_pres_action_delete', { p_code: 'layout', p_id: d.adel }); await loadActions(); slide(4); return; }
+    if (t.id === 'b_rematch') { IM.matched = applyMaster(IM.res.items); return paintImp(); }
+    if (t.id === 'b_mmatch') { const n = applyMaster(P.items); dirty(); paintStu(); say(n + ' of ' + P.items.length + ' machines found in the Machine master; their type was set from it.', true); return; }
+    if (t.id === 'b_mpick') { const c = $('#m_pick').value; if (!c) { say('Choose a machine from the master first.'); return; } const r = MASTER.find(x => x.code === c), ty = MTYPE[String((r.data || {}).type || 'other').toLowerCase().trim()] || 'conv'; P.items.push({ id: r.code, type: ty, name: r.name || r.code, cell: (r.data || {}).cell || CELL_OF[ty], w: 2, h: 1.5, mcode: r.code }); dirty(); paintStu(); say('Added ' + r.code + '. Type "' + ((r.data || {}).type || 'other') + '" comes from the master. Now enter its real width and depth in the list.', true); return; }
     if (t.id === 'b_accept') return acceptImport();
     if (t.id === 'b_trace') { TR = { mode: 'scale', pts: [], pxm: 0, bld: null, boxes: [] }; paintImp(); return; }
     if (d.tm) { TR.mode = d.tm; paintImp(); return; }
@@ -992,6 +1012,7 @@ document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test((e.
     kmr_layout_delete: a => { init(); S = S.filter(x => x.id !== a.p_id); return { ok: true }; },
     kmr_layout_status: a => { init().find(x => x.id === a.p_id).status = a.p_status; return { ok: true }; },
     kmr_layout_report: a => { const r = init().find(x => x.id === a.p_id), ref = 'LAY-R-DEMO-' + String(++rseq).padStart(4, '0'); r.history.push({ t: 'report', ref, at: new Date().toISOString(), by: 'demo' }); return { ref, issued_at: new Date().toISOString(), issued_by: 'demo', no: r.no }; },
+    kmr_ops_list: () => [['VMC B-51', 'VMC'], ['HMC NEJ-01', 'HMC'], ['NE44', 'CNC Turning'], ['NEJ-04', 'CNC Turning'], ['B-82', 'Grinding'], ['B-88 Grinder', 'Grinding'], ['IC STUD 3 TABLE (CMM)', 'Inspection'], ['PARKAR ARIA (Tanks)', 'Assembly']].map(x => ({ id: 'o' + x[0], code: x[0], name: x[0], active: true, data: { type: x[1] } })),
     kmr_pres_actions_get: () => acts.slice(),
     kmr_pres_action_save: a => { const p = a.p; if (p.id) Object.assign(acts.find(x => x.id === p.id), p); else acts.unshift({ ...p, id: 'a' + Math.random(), status: 'Open' }); return 'ok'; },
     kmr_pres_action_delete: a => { acts = acts.filter(x => x.id !== a.p_id); return null; }
@@ -1001,7 +1022,7 @@ document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test((e.
   try {
     if (!(await QP.init('layout', 'kmr_layout_context'))) return;
     ctx = QP.ctx; canEdit = QP.canEdit; slug = QP.slug; DEMO = QP.DEMO;
-    await loadList(); paint(); route();
+    await loadMaster(); await loadList(); paint(); route();
   } catch (err) { say(err.message); }
 })();
 </script>
