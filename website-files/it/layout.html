@@ -50,6 +50,39 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .sstd{background:#06102a;border-top:1px solid #26304d;padding:1vh 3vw;font-size:clamp(9px,1.5vh,14px);color:#cbd5e1;display:flex;gap:.6em;flex-wrap:wrap;align-items:center}.sstd b{color:#7dd3fc}.sstd span.s{border:1px solid #334155;border-radius:99px;padding:.1em .7em}
 .pnav{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:.8vh 3vw;background:#06102a}.pnav .btn{padding:.35em .9em}
 .bar{height:1.1em;border-radius:4px;background:linear-gradient(90deg,#0ea5e9,#7c3aed)}
+
+/* studio: dark two-pane workspace */
+.studio{display:grid;grid-template-columns:minmax(330px,430px) 1fr;margin:-16px;background:#0b1120;color:#e2e8f0;border-radius:0 12px 12px 12px;overflow:hidden;min-height:80vh}
+@media(max-width:980px){.studio{grid-template-columns:1fr}.studio .side{max-height:none!important;border-right:0!important;border-bottom:1px solid #1e293b}}
+.studio .side{background:#0f172a;padding:14px;overflow:auto;max-height:88vh;border-right:1px solid #1e293b}
+.studio .main{padding:14px;min-width:0}
+.studio .step{background:#131c33;border:1px solid #26304d;border-radius:14px;padding:14px;margin-bottom:12px}
+.studio .step h3{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a78bfa;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.studio .step h3 small{color:#93a0bd;letter-spacing:0;text-transform:none;font-weight:600}
+.studio .lb,.studio label{color:#93a0bd;font-size:12px;font-weight:600;display:block;margin-bottom:2px}.studio .step input,.studio .step select{font-size:14px}
+.studio input,.studio select,.studio textarea{background:#0b1120;border-color:#26304d;color:#e2e8f0}
+.studio .mut{color:#93a0bd}
+.studio .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.studio .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.studio .btn.o{color:#c4b5fd;border-color:#6d5bd0}.studio .btn.d{color:#fca5a5;border-color:#b91c1c}
+.studio table th{color:#93a0bd;border-bottom-color:#26304d}.studio table td{border-bottom-color:#1e293b}
+.studio .mt input,.studio .mt select{padding:3px 5px;font-size:11.5px}
+.studio .inv{max-height:44vh;overflow:auto;border:1px solid #1e293b;border-radius:10px}
+.studio .msg{background:#3b1d1d;color:#fecaca}.studio .msg.ok{background:#12301f;color:#bbf7d0}
+.studio details summary{cursor:pointer;color:#93a0bd}
+.studio .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.studio .head .tt{flex:1;min-width:200px}.studio .head .tt b{font-size:18px;display:block}.studio .head .tt span{color:#93a0bd;font-size:13px}
+.studio .pills{display:inline-flex;gap:4px;background:#111a2e;border:1px solid #26304d;border-radius:12px;padding:4px;flex-wrap:wrap}
+.studio .pill{border:0;background:none;color:#cbd5e1;padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;white-space:nowrap}.studio .pill.on{background:#2563eb;color:#fff}
+.studio .kb{display:flex;gap:18px;flex-wrap:wrap;align-items:center;color:#93a0bd;font-size:13px}.studio .kb b{color:#34d399;font-family:ui-monospace,monospace;font-size:15px;margin-left:4px}.studio .kb b.b2{color:#38bdf8}.studio .kb b.bad{color:#f87171}
+.studio .sbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:10px;justify-content:space-between}
+.studio .canvas{border:1px solid #1e293b;max-height:none;background:#0b1120;padding:0}
+.studio .acts{display:flex;gap:8px;flex-wrap:wrap}
+.studio .acts .btn.o{background:#111a2e}
+.studio .cmp tr{cursor:pointer}.studio .cmp tr.on{background:#16233f}
+.studio .below{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}@media(max-width:1200px){.studio .below{grid-template-columns:1fr}}
+.studio .below h4{margin:0 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#a78bfa}
+.studio .chip.b{--c:#0284c7}
+.studio .card{background:#131c33;border-color:#26304d;color:#e2e8f0}
 </style></head><body>
 <header><span class="clogo" id="clogo" hidden></span><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
 <div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="prj" href="#go=prj">Layouts</a><a class="tab" data-t="imp" href="#go=imp">Existing plan</a><a class="tab" data-t="stu" href="#go=stu">Studio</a><a class="tab" data-t="rep" href="#go=rep">Report</a><a class="tab" data-t="pre" href="#go=pre">Presentation</a></div>
@@ -820,37 +853,41 @@ function itemRows() {
 }
 function paintStu() {
   if (!P) { $('#stu').innerHTML = '<p class="mut">Open a layout from <b>Layouts</b>, or <a href="#go=imp">read your existing plan</a> first.</p>'; return; }
-  const off = P.kind === 'office', dis = canEdit ? '' : 'disabled';
-  $('#stu').innerHTML = `<div class="stu"><div>
-   <div class="card"><h3>1 · Layout</h3><label class="lb">Title</label><input id="p_title" value="${esc(P.title)}" ${dis}>
-    <div class="row" style="margin:10px 0 0"><span class="chip ${STATUS_CLS[P.status] || 'x'}">${STATUS_NAME[P.status] || P.status}</span><span class="mut">${esc(P.no || 'not saved yet')} · ${kindName(P.kind)}${P.source_file ? ' · from ' + esc(P.source_file) : ''}</span></div>
-    <div class="row" style="margin:10px 0 0"><button class="btn" id="b_save" ${dis}>Save</button>${P.id && canEdit ? `<select id="p_status" style="width:auto">${CFG.STATUS.map(s => `<option value="${s}" ${P.status === s ? 'selected' : ''}>${STATUS_NAME[s]}</option>`).join('')}</select><button class="btn o sm" id="b_status">Set status</button>` : ''}</div></div>
-   <div class="card"><h3>2 · Building (fixed)</h3><div class="frm">${num2('d_w', 'Width (m)', 'width', .5)}${num2('d_d', 'Total depth (m)', 'depth', .5)}${off ? '' : num2('d_h', 'Machine hall depth (m)', 'hallDepth', .5)}</div>
-    ${off ? '' : `<p class="mut" style="margin:6px 0 0">Quality room depth = total depth − hall depth = <b>${Math.max(0, P.dim.depth - P.dim.hallDepth).toFixed(1)} m</b>.</p>`}
-    <p class="mut" style="margin:6px 0 0">The building size and every machine size stay exactly as given. The designs only choose positions and turn a machine by 90° where needed.</p></div>
-   <div class="card"><h3>3 · Rules</h3><div class="frm">${off ? '' : num2('d_a', 'Central aisle (m)', 'aisle', .2)}${num2('d_o', 'Operator clearance (m)', 'opClearance', .1)}${num2('d_m', 'Maintenance corridor (m)', 'maintClearance', .1)}</div>
-    <p class="mut" style="margin:6px 0 0">Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m, maintenance ${TARGETS.maint} m. A smaller value is allowed but shows as a gap.</p></div>
-   <div class="card"><h3>4 · ${off ? 'Rooms and zones' : 'Machines'} (${P.items.length})</h3>
-    <div style="max-height:46vh;overflow:auto"><table class="mt"><thead><tr>${off ? '<th>Name</th><th>Kind</th>' : '<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Width m</th><th>Depth m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
+  const off = P.kind === 'office', dis = canEdit ? '' : 'disabled', n = P.items.length;
+  $('#stu').innerHTML = `<div class="studio"><div class="side">
+   <div class="step"><h3>Step 1 · Layout and building <small>${esc(P.no || 'not saved yet')}</small></h3>
+    <label class="lb" for="p_title">Title</label><input id="p_title" value="${esc(P.title)}" ${dis}>
+    <div class="row" style="margin:8px 0"><span class="chip ${STATUS_CLS[P.status] || 'x'}">${STATUS_NAME[P.status] || P.status}</span><span class="mut">${kindName(P.kind)}${P.source_file ? ' · from ' + esc(P.source_file) : ''}</span></div>
+    <div class="${off ? 'grid2' : 'grid3'}">${num2('d_w', 'Width (m)', 'width', .5)}${num2('d_d', 'Total depth (m)', 'depth', .5)}${off ? '' : num2('d_h', 'Hall depth (m)', 'hallDepth', .5)}</div>
+    ${off ? '' : `<p class="mut" style="margin:6px 0 0">Quality room depth: <b>${Math.max(0, P.dim.depth - P.dim.hallDepth).toFixed(1)} m</b> · building and machine sizes are never changed.</p>`}
+    <div class="row" style="margin:10px 0 0"><button class="btn" id="b_save" ${dis}>Save</button>${P.id && canEdit ? `<select id="p_status" style="width:auto">${CFG.STATUS.map(s => `<option value="${s}" ${P.status === s ? 'selected' : ''}>${STATUS_NAME[s]}</option>`).join('')}</select><button class="btn o sm" id="b_status">Set status</button>` : ''}<a class="btn o sm" href="#go=imp">Read another plan</a></div></div>
+   <div class="step"><h3>Step 2 · Transformation rules</h3><div class="${off ? 'grid2' : 'grid3'}">${off ? '' : num2('d_a', 'Central aisle (m)', 'aisle', .2)}${num2('d_o', 'Operator clearance (m)', 'opClearance', .1)}${num2('d_m', 'Maintenance corridor (m)', 'maintClearance', .1)}</div>
+    <p class="mut" style="margin:6px 0 0">Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m, maintenance ${TARGETS.maint} m. A smaller value is allowed but shows as a gap. The four designs on the right are generated from these rules.</p></div>
+   <div class="step"><h3>Step 3 · ${off ? 'Rooms and zones' : 'Machine inventory'} <small>${n} ${off ? 'rooms' : 'assets'}</small></h3>
+    <div class="inv"><table class="mt"><thead><tr>${off ? '<th>Name</th><th>Kind</th>' : '<th>Code</th><th>Name</th><th>Type</th><th>Cell</th>'}<th>W m</th><th>D m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
     ${canEdit ? `<div class="row" style="margin:8px 0 0"><button class="btn o sm" id="b_add">＋ Add ${off ? 'room' : 'machine'}</button>${armed === 'example' ? '<button class="btn d sm" data-do="example">Press again to replace</button>' : '<button class="btn o sm" data-arm="example">Use the example list</button>'}${armed === 'clear' ? '<button class="btn d sm" data-do="clear">Press again to remove all</button>' : '<button class="btn o sm" data-arm="clear">Remove all</button>'}</div>
     ${!off ? (MASTER_OK ? `<div class="row" style="margin:8px 0 0"><select id="m_pick" style="max-width:230px"><option value="">Add a machine by its master code…</option>${MASTER.map(r => `<option value="${esc(r.code)}">${esc(r.code)}${r.name ? ' — ' + esc(r.name) : ''} (${esc((r.data || {}).type || 'no type')})</option>`).join('')}</select><button class="btn o sm" id="b_mpick">Add</button><button class="btn o sm" id="b_mmatch">Set all types from the master</button></div><div class="mut" style="margin-top:4px">Machines are matched to the Machine master by <b>machine code</b>. Type, length and width come from the master.</div><div id="mchk">${checkHTML(P.items, 'data-sms')}</div>` : `<div class="mut" style="margin-top:8px">Machine types are taken from the Machine master (Operations Master) when it has machines. It is empty or not available now.</div>`) : ''}
-    <div class="mut" style="margin-top:6px">Cell group = the part family or work area a machine belongs to. Machines with the same cell group are kept together as one cell.</div>
-    <details style="margin-top:8px"><summary class="mut" style="cursor:pointer">Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off ? 'name, kind (public / open / private / service), width, depth' : 'id, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>` : ''}</div>
-  </div><div>
-   <div class="otabs" id="otabs"></div><div id="kp"></div><div class="canvas" id="cv"></div><div id="lg"></div><div id="ck"></div><div id="lgs"></div>
-   <div class="row" style="margin-top:10px"><button class="btn o" id="b_dxf">⬇ Export DXF (Drawing Exchange Format)</button><button class="btn o" id="b_cad">Open in KMR CAD Draft</button><button class="btn o" id="b_pdf1">⬇ Export PDF</button><button class="btn" id="b_rep">Make the report →</button></div></div></div>`;
+    <div class="mut" style="margin-top:6px">Cell group = the part family or work area; machines with the same cell group are kept together as one cell.</div>
+    <details style="margin-top:8px"><summary>Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off ? 'name, kind (public / open / private / service), width, depth' : 'code, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>` : ''}</div>
+  </div><div class="main">
+   <div class="head"><div class="tt"><b>Layout Studio</b><span>Re-design in the same building at 1:1 scale — sizes are never changed</span></div><div class="acts"><button class="btn o" id="b_dxf">⬇ Export DXF</button><button class="btn o" id="b_pdf1">⬇ Export PDF</button><button class="btn o" id="b_cad">Open in KMR CAD</button><button class="btn" id="b_rep">Make the report →</button></div></div>
+   <div class="sbar"><div class="pills" id="otabs"></div><div class="kb" id="kp"></div></div>
+   <div class="canvas" id="cv"></div><div id="lg"></div>
+   <div id="cmp"></div>
+   <div class="below"><div><h4>Checks</h4><div id="ck"></div></div><div><div id="lgs"></div></div></div></div></div>`;
   paintOpts();
 }
 function paintOpts() {
   if (!P || !$('#otabs')) return;
-  if (!OPTS.length) { $('#otabs').innerHTML = ''; $('#kp').innerHTML = ''; $('#cv').innerHTML = '<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>'; $('#lg').innerHTML = ''; $('#ck').innerHTML = ''; $('#lgs').innerHTML = ''; return; }
-  const o = OPTS[P.sel];
-  $('#otabs').innerHTML = OPTS.map((x, i) => `<button class="ot ${i === P.sel ? 'on' : ''}" data-opt="${i}"><b>${esc(x.name.split(':')[0])}${x.asIs ? '' : ': ' + esc(x.short)}</b><span>${x.travel} m · ${x.util}% · ${x.placedN}/${x.total} placed${x.vsCurrent != null ? ' · ' + (x.vsCurrent >= 0 ? '−' : '+') + Math.abs(x.vsCurrent) + '% vs current' : ''} ${x.asIs ? '<span class="chip b">today</span>' : `<span class="chip ${x.grade === 'C' ? 'r' : 'g'}">${x.grade}</span>`}</span></button>`).join('');
-  const k = (v, t, c) => `<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
-  $('#kp').innerHTML = `<div class="kpis">${k(o.travel + ' m', o.kind === 'office' ? 'Walking distance (visitor + service routes)' : 'Material route per part', 'var(--b2)')}${k(o.util + '%', 'Floor utilisation (cells with gangways)', 'var(--b1)')}${k(o.asIs ? '—' : (o.vsCurrent != null ? o.vsCurrent + '%' : o.saving + '%'), o.vsCurrent != null ? 'Route saving against your current layout' : 'Saving against the longest option', 'var(--g)')}${k(o.placedN + ' / ' + o.total, 'Placed', 'var(--a)')}${k(o.grade, 'Grade (rank by route length)', o.grade === 'C' ? 'var(--r)' : 'var(--g)')}</div>`;
+  if (!OPTS.length) { $('#otabs').innerHTML = ''; $('#kp').innerHTML = ''; $('#cv').innerHTML = '<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>'; $('#lg').innerHTML = ''; $('#ck').innerHTML = ''; $('#lgs').innerHTML = ''; $('#cmp').innerHTML = ''; return; }
+  const o = OPTS[P.sel], lab = x => x.asIs ? 'Current layout' : (x.name.split(':')[0].replace('Option ', 'Option ') + ': ' + x.short);
+  $('#otabs').innerHTML = OPTS.map((x, i) => `<button class="pill ${i === P.sel ? 'on' : ''}" data-opt="${i}">${esc(lab(x))}</button>`).join('');
+  const sv = o.asIs ? null : (o.vsCurrent != null ? o.vsCurrent : o.saving);
+  $('#kp').innerHTML = `<span>${o.kind === 'office' ? 'Walking distance' : 'Route per part'}:<b>${o.travel} m</b></span><span>Floor utilisation:<b class="b2">${o.util}%</b></span>${sv != null ? `<span>${o.vsCurrent != null ? 'vs current' : 'Saving'}:<b class="${sv < 0 ? 'bad' : ''}">${sv}%</b></span>` : ''}<span>Placed:<b class="b2">${o.placedN} / ${o.total}</b></span><span>Scale:<b class="b2">1 m = 40 px (1:1)</b></span>`;
   $('#cv').innerHTML = drawSVG(o, 'dark', 's'); $('#lg').innerHTML = legendHTML(o);
+  $('#cmp').innerHTML = `<h4 style="margin:14px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#a78bfa">Designs compared — click a row to see it</h4><div style="overflow:auto"><table class="cmp"><thead><tr><th>Design</th><th>${o.kind === 'office' ? 'Walking' : 'Route per part'}</th><th>Floor use</th><th>${OPTS.some(x => x.asIs) ? 'vs current' : 'Saving'}</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x, i) => `<tr class="${i === P.sel ? 'on' : ''}" data-opt="${i}"><td>${esc(x.name)}</td><td>${x.travel} m</td><td>${x.util}%</td><td>${x.asIs ? '—' : (x.vsCurrent != null ? x.vsCurrent : x.saving) + '%'}</td><td>${x.placedN} / ${x.total}</td><td>${x.asIs ? '<span class="chip b">today</span>' : `<span class="chip ${x.grade === 'C' ? 'r' : 'g'}">${x.grade}</span>`}</td></tr>`).join('')}</tbody></table></div>`;
   $('#ck').innerHTML = `<table><tbody>${o.checks.map(c => `<tr><td style="width:24px" class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '✔' : '✖'}</td><td>${esc(c.name)}</td><td class="mut">${esc(c.txt)}</td></tr>`).join('')}</tbody></table>` + (o.noFit.length ? `<p class="msg" style="margin-top:8px">Not placed: ${esc(o.noFit.map(m => m.name).join(', '))}. Make the building bigger, reduce the clearances, or remove items to see them placed.</p>` : '');
-  $('#lgs').innerHTML = o.legs && o.legs.length ? `<h4 style="margin:12px 0 4px">Route leg by leg (From → To, metres)</h4><table><thead><tr><th>From</th><th>To</th><th>Distance</th></tr></thead><tbody>${o.legs.map(l => `<tr><td>${esc(l.from)}</td><td>${esc(l.to)}</td><td>${l.m} m</td></tr>`).join('')}<tr><td colspan="2"><b>Total route per part</b></td><td><b>${o.travel} m</b></td></tr></tbody></table><p class="mut" style="margin:6px 0 0">Measured through the centre of each stage in process order. If your cells combine different machine types for one part family, the real walking inside a cell is shorter than this stage route shows.</p>` : '';
+  $('#lgs').innerHTML = o.legs && o.legs.length ? `<h4>Route leg by leg (From → To, metres)</h4><table><thead><tr><th>From</th><th>To</th><th>Distance</th></tr></thead><tbody>${o.legs.map(l => `<tr><td>${esc(l.from)}</td><td>${esc(l.to)}</td><td>${l.m} m</td></tr>`).join('')}<tr><td colspan="2"><b>Total route per part</b></td><td><b>${o.travel} m</b></td></tr></tbody></table><p class="mut" style="margin:6px 0 0">Measured through the centre of each stage in process order. If your cells combine different machine types for one part family, the real walking inside a cell is shorter than this stage route shows.</p>` : '';
 }
 function dirty() { P.dirty = true; clearTimeout(timer); timer = setTimeout(() => { recalc(); paintOpts(); paintHead(); const c = $('#mchk'); if (c) c.innerHTML = checkHTML(P.items, 'data-sms'); }, 250); }
 function paintHead() { const c = $('#co'); if (c && ctx) c.textContent = ctx.company + (P ? ' · ' + (P.no || 'new') + ' ' + P.title + (P.dirty ? '  (not saved)' : '') : ''); }
@@ -938,7 +975,7 @@ function paint() { paintStd(); paintPrj(); paintImp(); paintStu(); paintRep(); p
 function route() { const n = window.KMRNav && KMRNav.pending(); go(n ? n.go : 'std'); }
 window.addEventListener('hashchange', route);
 document.addEventListener('click', async e => {
-  const t = e.target.closest('button,a'); if (!t) return; const d = t.dataset;
+  const t = e.target.closest('button,a,tr[data-opt]'); if (!t) return; const d = t.dataset;
   try {
     if (t.classList.contains('tab')) { e.preventDefault(); return go(d.t); }
     if (t.tagName === 'A') return;
