@@ -1,44 +1,41 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/kmr-ui.js"></script>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
 <title>Factory & Office Layout Studio · KMR Apps</title>
+<meta name="theme-color" content="#7c3aed">
 <style>
-:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0ea5e9;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#7c3aed;--b2:#0ea5e9;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
 @media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
-*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
-header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
-.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto}.tab{border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;cursor:pointer}.tab.on{background:var(--card);color:var(--b2);box-shadow:0 -2px 0 var(--b2) inset}
-main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
-input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%}input[type=range]{padding:0}
-.btn{border:0;border-radius:9px;padding:8px 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer}.btn.o{background:none;color:var(--b2);border:1px solid var(--b2)}.btn.d{background:none;color:var(--r);border:1px solid var(--r)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:90px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;color:#130a3a;font-weight:800;font-size:14px;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:10px;align-items:center;padding:10px 14px;background:#2e1065;color:#fff;flex-wrap:nowrap;position:sticky;top:0;z-index:7}header>div:first-of-type{min-width:0}header h1{font-size:17px;margin:0}header small{display:block;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#role{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{text-decoration:none;display:inline-block;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap}.tab.on{background:var(--card);color:var(--b1);box-shadow:0 -2px 0 var(--b1) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;min-height:50vh;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:8px 9px;border:1px solid var(--line);border-radius:9px;background:var(--card);width:100%;min-width:0}input[type=range]{padding:0}input[type=checkbox]{width:18px;height:18px}
+.btn{border:0;border-radius:10px;padding:9px 15px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer;text-decoration:none;display:inline-block}.btn.o{background:none;color:var(--b1);border:1px solid var(--b1)}.btn.d{background:none;color:var(--r);border:1px solid var(--r)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row input,.row select{width:auto}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b2))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b1));background:var(--card)}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
 table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
-.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}.v{--c:var(--b2)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8);white-space:nowrap}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b2)}.v{--c:var(--b1)}
 .mut{color:var(--mut)}.hide{display:none!important}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
-.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}.card h3{margin:0 0 8px;font-size:14px}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}.card h3{margin:0 0 8px;font-size:15px}
+.guide{background:var(--bg);border-left:4px solid var(--b1);padding:8px 12px;border-radius:8px;margin:0 0 12px;color:var(--mut);font-size:13.5px}
 .frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.frm label,.lb{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
-.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
-/* studio */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:12px}.steps div{border:1px solid var(--line);border-radius:12px;padding:10px 12px}.steps b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--b1);color:#fff;margin-right:6px}
 .stu{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:14px;align-items:start}@media(max-width:980px){.stu{grid-template-columns:1fr}}
-.otabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.ot{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--card);cursor:pointer;text-align:left;min-width:190px}.ot.on{border-color:var(--b2);box-shadow:0 0 0 2px var(--b2) inset}.ot b{display:block;font-size:13px}.ot span{font-size:12px;color:var(--mut)}
+.otabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.ot{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--card);cursor:pointer;text-align:left;min-width:170px}.ot.on{border-color:var(--b1);box-shadow:0 0 0 2px var(--b1) inset}.ot b{display:block;font-size:13px}.ot span{font-size:12px;color:var(--mut)}
 .canvas{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#0b1120;padding:8px;max-height:78vh}
-.mt input,.mt select{padding:4px 6px;font-size:12px}.mt td,.mt th{padding:3px 4px}.mt{min-width:0}
+.mt input,.mt select{padding:4px 6px;font-size:12px}.mt td,.mt th{padding:3px 4px}
 .ok{color:var(--g);font-weight:700}.bad{color:var(--r);font-weight:700}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin:8px 0}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-/* report pages */
-.pages{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
-.page{width:297mm;height:210mm;background:#fff;color:#000;padding:9mm 11mm;box-sizing:border-box;display:flex;flex-direction:column;box-shadow:0 2px 12px #0003;font-size:11px;line-height:1.35;overflow:hidden}
-.page .ph{display:grid;grid-template-columns:62mm 1fr 62mm;gap:6mm;align-items:center;border-bottom:2px solid #0c1a3a;padding-bottom:3mm;margin-bottom:3mm}
-.page .logo{height:16mm;display:flex;align-items:center}.page .logo img{max-height:16mm;max-width:60mm}.page .logo b{font-size:14px;border:1px solid #000;padding:3mm 4mm}
-.page .pt{text-align:center;font-size:17px;font-weight:700}.page .pt small{display:block;font-size:11px;font-weight:400;color:#334155}
-.page .rf{border:1px solid #000;padding:2mm 3mm;font-size:10px}.page .rf b{font-size:13px;display:block}
-.page .pb{flex:1;min-height:0;overflow:hidden}.page .pf{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm;border-top:1px solid #000;padding-top:2mm;margin-top:2mm;font-size:9.5px;color:#111}
-.page table{font-size:10px}.page th,.page td{border-bottom:1px solid #cbd5e1;padding:2px 5px}.page th{color:#334155;background:#f1f5f9}
-.page .two{display:grid;grid-template-columns:1fr 92mm;gap:6mm;height:100%}.page .two svg{max-height:138mm;width:100%;height:auto}
-.page .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;margin-top:6mm}.page .sg div{border-top:1px solid #000;padding-top:2mm;height:20mm}
-.page .chip{color:#fff}
-@page{size:A4 landscape;margin:0}
-@media print{body{background:#fff;padding:0}body>*:not(#printroot){display:none!important}#printroot{display:block!important}.page{box-shadow:none;page-break-after:always;break-after:page}}
+.pv{border:1px solid var(--line);border-radius:12px;background:#fff;overflow:auto;max-height:70vh;touch-action:none}.pv svg{display:block;width:100%;height:auto}
+.tr svg{cursor:crosshair}.dz{border:2px dashed var(--b1);border-radius:14px;padding:18px;text-align:center;background:var(--bg)}
+/* report (screen preview + print) */
+.rp{background:#fff;color:#000;border:1px solid var(--line);border-radius:6px;padding:12px 14px;margin-bottom:12px;font-size:12px;line-height:1.35;max-width:1100px;overflow:auto}
+.rp .rh{display:flex;justify-content:space-between;gap:10px;align-items:center;border-bottom:1px solid #0c1a3a;padding-bottom:6px;margin-bottom:8px}.rp .rh img{max-height:42px;max-width:150px}.rp h4{margin:6px 0 4px;font-size:13px}
+.rp table{font-size:11px}.rp th,.rp td{border-bottom:1px solid #cbd5e1;padding:2px 5px}.rp th{background:#f1f5f9;color:#334155}
+.rp .two{display:grid;grid-template-columns:1fr 340px;gap:14px}.rp .two svg{width:100%;height:auto;max-height:150mm}.rp .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;margin-top:6mm}.rp .sg div{border-top:1px solid #000;padding-top:2mm;height:16mm}
+@media(max-width:800px){.rp .two{grid-template-columns:1fr}}
 #printroot{display:none}
+@media print{header,.tabs,.kmr-foot,.kmr-demo,.noprint,.modal{display:none!important}body{background:#fff;padding:0}body>*:not(#printroot){display:none!important}#printroot{display:block!important}#printroot .rp{border:0;border-radius:0;padding:0;margin:0;max-width:none;overflow:visible;break-after:page;page-break-after:always;min-height:0}#printroot .rp:last-child{break-after:auto;page-break-after:auto}#printroot .rp .rh{display:none}#printroot .rp .two{grid-template-columns:1fr 95mm}#printroot .rp .two svg{max-height:140mm}}
 /* presentation */
 .pbox{background:#0c1a3a;color:#fff;aspect-ratio:16/9;width:100%;max-width:1100px;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;position:relative}
 .pbox:fullscreen{max-width:none;width:100vw;height:100vh;border-radius:0;aspect-ratio:auto}
@@ -52,13 +49,13 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .sl input,.sl select{background:#141a2e;border-color:#26304d;color:#fff;padding:.3em .4em;font-size:.85em}
 .sstd{background:#06102a;border-top:1px solid #26304d;padding:1vh 3vw;font-size:clamp(9px,1.5vh,14px);color:#cbd5e1;display:flex;gap:.6em;flex-wrap:wrap;align-items:center}.sstd b{color:#7dd3fc}.sstd span.s{border:1px solid #334155;border-radius:99px;padding:.1em .7em}
 .pnav{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:.8vh 3vw;background:#06102a}.pnav .btn{padding:.35em .9em}
-.bar{height:1.1em;border-radius:4px;background:linear-gradient(90deg,#0ea5e9,#7c3aed)}.bar.t{background:#f59e0b}
+.bar{height:1.1em;border-radius:4px;background:linear-gradient(90deg,#0ea5e9,#7c3aed)}
 </style></head><body>
-<header><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
-<div class="tabs"><button class="tab on" data-t="std">Standards alignment</button><button class="tab" data-t="prj">Projects</button><button class="tab" data-t="stu">Studio</button><button class="tab" data-t="rep">Report</button><button class="tab" data-t="pre">Presentation</button></div>
-<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="prj" class="hide"></section><section id="stu" class="hide"></section><section id="rep" class="hide"></section><section id="pre" class="hide"></section></div></main>
+<header><span class="clogo" id="clogo" hidden></span><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="prj" href="#go=prj">Layouts</a><a class="tab" data-t="imp" href="#go=imp">Existing plan</a><a class="tab" data-t="stu" href="#go=stu">Studio</a><a class="tab" data-t="rep" href="#go=rep">Report</a><a class="tab" data-t="pre" href="#go=pre">Presentation</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="prj" class="hide"></section><section id="imp" class="hide"></section><section id="stu" class="hide"></section><section id="rep" class="hide"></section><section id="pre" class="hide"></section></div></main>
 <div id="printroot"></div>
-<a class="back hide" id="back" href="#">← <span id="bco"></span> · KMR Apps</a>
+<script src="/it/apps/qp-core.js"></script>
 <script>
 /* ENGINE — pure functions, no screen access. Units: metres. y grows downwards (north = 0). */
 const TYPES = {
@@ -78,8 +75,10 @@ const KINDS = {
 const FACTORY_CONCEPTS = [
   { key: 'cellular-u',     name: 'Option A: Dual U-cells (lean group technology)', short: 'U-cells' },
   { key: 'cellular-heavy', name: 'Option B: Heavy machines on the walls + central island', short: 'Heavy perimeter' },
-  { key: 'straight-flow',  name: 'Option C: Straight one-piece flow, north to south', short: 'Straight flow' }
+  { key: 'straight-flow',  name: 'Option C: Straight one-piece flow, north to south', short: 'Straight flow' },
+  { key: 'functional',     name: 'Option D: Departments by machine type (functional layout)', short: 'Departments' }
 ];
+const ASIS_CONCEPT = { key: 'as-is', name: 'Your current layout (as read from the uploaded plan)', short: 'Current layout' };
 const OFFICE_VARIANTS = [
   { key: 'office-ergonomic', name: 'Option A: Visitors at the entrance, quiet cabins at the back', short: 'Public first', order: ['public', 'service', 'open', 'private'] },
   { key: 'office-ergonomic', name: 'Option B: Visitors and cabins together, open floor at the back', short: 'Cabins near entrance', order: ['public', 'private', 'service', 'open'] },
@@ -260,6 +259,30 @@ function layoutStraight(items, G) {
   return { placed, noFit, blocks };
 }
 
+/* functional (process) layout: one department per machine type, largest department first, whatever the part route */
+function layoutFunctional(items, G) {
+  const byType = new Map();
+  for (const m of items) { const k = m.type; if (!byType.has(k)) byType.set(k, []); byType.get(k).push(m); }
+  const cells = [...byType.entries()].map(([k, ms]) => ({ name: 'Department: ' + ((TYPES[k] || {}).s || k), ms: ms.slice().sort((a, b) => area(b) - area(a)), area: ms.reduce((s, m) => s + area(m), 0), o: 0 }))
+    .sort((a, b) => b.area - a.area);
+  const bays = [{ seg: G.west, y: G.yMin }, { seg: G.east, y: G.yMin }];
+  return placeCells(cells, bays, G);
+}
+
+/* the layout as drawn in the uploaded plan: positions come from the plan, sizes are the machine sizes */
+function layoutAsIs(items, G) {
+  const placed = [], noFit = [];
+  for (const m of items) {
+    if (m.ax == null || m.ay == null) { noFit.push(m); continue; }
+    const rot = !!m.arot, w = rot ? m.h : m.w, h = rot ? m.w : m.h;
+    placed.push(Object.assign({}, m, { x: r2(m.ax), y: r2(m.ay), w, h, rot }));
+  }
+  const groups = new Map();
+  for (const p of placed) { const k = (p.cell || 'Other'); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); }
+  const blocks = [...groups.entries()].map(([k, l]) => boundsBlock(l, k));
+  return { placed, noFit, blocks };
+}
+
 function centroid(list) {
   const a = list.reduce((s, m) => s + area(m), 0);
   if (!a) return null;
@@ -267,26 +290,31 @@ function centroid(list) {
 }
 
 function factoryOption(items, dim, idx) {
-  const G = geometry(dim), concept = FACTORY_CONCEPTS[idx];
+  const G = geometry(dim), asIs = idx === 'asis', concept = asIs ? ASIS_CONCEPT : FACTORY_CONCEPTS[idx];
   const hall = items.filter(m => m.type !== 'msa');
-  const lay = idx === 0 ? layoutU(hall, G) : idx === 1 ? layoutHeavy(hall, G) : layoutStraight(hall, G);
-  const qc = layoutQC(items, G);
+  let lay, qc;
+  if (asIs) { const r = layoutAsIs(items, G); lay = { placed: r.placed.filter(m => m.type !== 'msa'), noFit: r.noFit.filter(m => m.type !== 'msa'), blocks: r.blocks }; qc = { placed: r.placed.filter(m => m.type === 'msa'), noFit: r.noFit.filter(m => m.type === 'msa') }; }
+  else { lay = idx === 0 ? layoutU(hall, G) : idx === 1 ? layoutHeavy(hall, G) : idx === 2 ? layoutStraight(hall, G) : layoutFunctional(hall, G); qc = layoutQC(items, G); }
   const placed = lay.placed.concat(qc.placed), noFit = lay.noFit.concat(qc.noFit);
-  const pts = [G.inbound];
   const hallPlaced = lay.placed;
   const stage = t => centroid(hallPlaced.filter(m => m.type === t));
-  let travel = 0, prev = G.inbound, viaD1 = false;
-  const route = [G.inbound];
-  const go = (p, d1) => { if (!p) return; if (d1) { travel += manhattan(prev, G.d1) + manhattan(G.d1, p); route.push(G.d1, p); } else { travel += manhattan(prev, p); route.push(p); } prev = p; };
-  go(stage('cnc')); go(stage('vmc')); go(stage('conv'));
+  let travel = 0, prev = G.inbound, prevName = 'Inbound door';
+  const route = [G.inbound], legs = [];
+  const go = (p, name, d1) => {
+    if (!p) return;
+    const d = d1 ? manhattan(prev, G.d1) + manhattan(G.d1, p) : manhattan(prev, p);
+    if (d1) route.push(G.d1, p); else route.push(p);
+    travel += d; legs.push({ from: prevName, to: name, m: r1(d) }); prev = p; prevName = name;
+  };
+  go(stage('cnc'), 'CNC turning'); go(stage('vmc'), 'Machining centres'); go(stage('conv'), 'Conventional');
   const qcC = centroid(qc.placed);
-  if (qcC) { go(qcC, true); }
+  if (qcC) go(qcC, 'Quality room', !asIs);
   const fin = stage('finish');
-  if (fin) { if (qcC) { travel += manhattan(prev, G.d1) + manhattan(G.d1, fin); route.push(G.d1, fin); prev = fin; } else go(fin); }
-  travel += manhattan(prev, G.dispatch); route.push(G.dispatch);
+  if (fin) go(fin, 'Finish and pack', !!qcC && !asIs);
+  go(G.dispatch, 'Dispatch door');
   const hallArea = G.W * G.Hh;
-  const util = hallArea ? (lay.blocks || []).reduce((s, b) => s + b.w * b.h, 0) / hallArea * 100 : 0;
-  return { idx, key: concept.key, name: concept.name, short: concept.short, kind: 'factory', G, placed, noFit, blocks: lay.blocks || [], route, travel: r1(travel), util: r1(util), total: items.length, placedN: placed.length };
+  const util = hallArea ? (asIs ? placed.reduce((s, m) => s + m.w * m.h, 0) * 1.8 : (lay.blocks || []).reduce((s, b) => s + b.w * b.h, 0)) / hallArea * 100 : 0;
+  return { idx, key: concept.key, name: concept.name, short: concept.short, kind: 'factory', asIs, G, placed, noFit, blocks: lay.blocks || [], route, legs, travel: r1(travel), util: r1(util), total: items.length, placedN: placed.length, turned: placed.filter(m => m.rot).length };
 }
 
 function officeOption(items, dim, idx) {
@@ -307,21 +335,27 @@ function officeOption(items, dim, idx) {
   if (svc.length) travel += opn.reduce((s, m) => s + Math.min(...svc.map(q => manhattan(c(m), c(q)))), 0);
   const floor = W * D - cw * D;
   const util = floor ? placed.reduce((s, m) => s + area(m), 0) / floor * 100 : 0;
-  return { idx, key: v.key, name: v.name, short: v.short, kind: 'office', G, placed, noFit, blocks: [], route: [G.entrance], travel: r1(travel), util: r1(util), total: items.length, placedN: placed.length };
+  return { idx, key: v.key, name: v.name, short: v.short, kind: 'office', G, placed, noFit, blocks: [], route: [G.entrance], legs: [], turned: placed.filter(m => m.rot).length, travel: r1(travel), util: r1(util), total: items.length, placedN: placed.length };
 }
 
 function evaluate(items, dim, kind) {
-  const opts = [0, 1, 2].map(i => kind === 'office' ? officeOption(items, dim, i) : factoryOption(items, dim, i));
+  const opts = [0, 1, 2, 3].map(i => kind === 'office' ? (i < 3 ? officeOption(items, dim, i) : null) : factoryOption(items, dim, i)).filter(Boolean);
+  const known = kind === 'factory' ? items.filter(m => m.ax != null && m.ay != null).length : 0;
+  if (known && known >= items.length * 0.8) opts.push(factoryOption(items, dim, 'asis'));
+  const gen = opts.filter(o => !o.asIs);
   const maxT = Math.max(...opts.map(o => o.travel));
-  const okOpts = opts.filter(o => !o.noFit.length).sort((a, b) => a.travel - b.travel);
-  const grades = ['A+', 'A', 'B+'];
+  const okOpts = gen.filter(o => !o.noFit.length).sort((a, b) => a.travel - b.travel);
+  const asis = opts.find(o => o.asIs);
+  const grades = ['A+', 'A', 'B+', 'B'];
   for (const o of opts) {
     o.saving = maxT > 0 ? r1((maxT - o.travel) / maxT * 100) : 0;
+    o.vsCurrent = asis && !o.asIs && asis.travel > 0 ? r1((asis.travel - o.travel) / asis.travel * 100) : null;
     const rank = okOpts.indexOf(o);
-    o.grade = o.noFit.length ? 'C' : (rank < 0 ? 'C' : grades[rank]);
+    o.grade = o.asIs ? '—' : (o.noFit.length ? 'C' : (rank < 0 ? 'C' : grades[Math.min(rank, 3)]));
     const d = num(dim.aisle, 2.8), op = num(dim.opClearance, 1.2), mt = num(dim.maintClearance, 1.5);
     o.checks = [
       { k: 'fit', name: 'Every machine / room has a place', ok: !o.noFit.length, txt: o.noFit.length ? o.noFit.length + ' left out: ' + o.noFit.slice(0, 6).map(m => m.name).join(', ') + (o.noFit.length > 6 ? ' …' : '') : 'All ' + o.total + ' placed' },
+      { k: 'size', name: 'Sizes kept exactly as given', ok: true, txt: 'No machine or room is resized' + (o.turned ? '; ' + o.turned + ' turned by 90°' : '') },
       { k: 'aisle', name: 'Central aisle at least ' + TARGETS.aisle + ' m', ok: kind === 'office' ? true : d >= TARGETS.aisle - 1e-9, txt: kind === 'office' ? 'Office corridor is 2.0 m' : d.toFixed(1) + ' m set' },
       { k: 'op', name: 'Operator clearance at least ' + TARGETS.op + ' m', ok: op >= TARGETS.op - 1e-9, txt: op.toFixed(1) + ' m set' },
       { k: 'maint', name: 'Maintenance corridor at least ' + TARGETS.maint + ' m', ok: mt >= TARGETS.maint - 1e-9, txt: mt.toFixed(1) + ' m set' },
@@ -334,8 +368,13 @@ function evaluate(items, dim, kind) {
 /* The key performance indicators of one chosen option and their gaps against the targets. */
 function kpis(opt) {
   const c = k => opt.checks.find(x => x.k === k);
+  const first = opt.asIs
+    ? { k: 'saving', name: 'Route per part of the current layout (the baseline)', val: opt.travel.toFixed(1) + ' m', target: 'baseline', ok: true }
+    : opt.vsCurrent != null
+      ? { k: 'saving', name: 'Route saving against your current layout', val: opt.vsCurrent.toFixed(1) + '%', target: '≥ ' + TARGETS.saving + '%', ok: opt.vsCurrent >= TARGETS.saving - 1e-9 }
+      : { k: 'saving', name: 'Travel saving against the longest option', val: opt.saving.toFixed(1) + '%', target: '≥ ' + TARGETS.saving + '%', ok: opt.saving >= TARGETS.saving - 1e-9 };
   return [
-    { k: 'saving', name: 'Travel saving against the longest option', val: opt.saving.toFixed(1) + '%', target: '≥ ' + TARGETS.saving + '%', ok: opt.saving >= TARGETS.saving - 1e-9 },
+    first,
     { k: 'util', name: 'Floor utilisation', val: opt.util.toFixed(1) + '%', target: TARGETS.utilMin + '–' + TARGETS.utilMax + '%', ok: c('util').ok },
     { k: 'fit', name: 'Machines / rooms placed', val: opt.placedN + ' of ' + opt.total, target: 'all', ok: c('fit').ok },
     { k: 'clear', name: 'Aisle and clearances', val: c('aisle').txt + ' / ' + c('op').txt + ' / ' + c('maint').txt, target: '≥ ' + TARGETS.aisle + ' / ' + TARGETS.op + ' / ' + TARGETS.maint + ' m', ok: c('aisle').ok && c('op').ok && c('maint').ok }
@@ -352,317 +391,619 @@ const SAMPLE_MACHINES=[
 const SAMPLE_ROOMS=[
 {id:'BOSS',type:'office',kind:'private',name:'Executive cabin (MD)',w:4.5,h:3.8},{id:'CONF-1',type:'office',kind:'public',name:'Board conference room (12 seats)',w:6.0,h:4.5},{id:'CONF-2',type:'office',kind:'public',name:'Meeting room 2 (6 seats)',w:4.0,h:3.5},{id:'DESKS',type:'office',kind:'open',name:'Open workstation pod (16 desks)',w:11.0,h:6.5},{id:'RECEP',type:'office',kind:'public',name:'Reception and visitor lounge',w:5.0,h:4.5},{id:'PANTRY',type:'office',kind:'service',name:'Pantry and dining',w:4.5,h:4.0},{id:'SERVER',type:'office',kind:'service',name:'IT server and documentation vault',w:3.5,h:3.0},{id:'TOILETS',type:'office',kind:'service',name:'Restrooms (men / women)',w:4.5,h:3.5}];
 
-const CFG={SUPABASE_URL:'https://dehlcusptkzfhqvpfyjh.supabase.co',
- FORMAT:{no:'KMR/LAY/F-01',title:'Factory & Office Layout Report',rev:'00',revDate:'2026-10-29',history:[{rev:'00',date:'2026-10-29',note:'First issue of this report format'}]},
- PX:40,STATUS:['draft','review','approved','superseded']};
-const STATUS_NAME={draft:'Draft',review:'In review',approved:'Approved',superseded:'Superseded'},STATUS_CLS={draft:'x',review:'a',approved:'g',superseded:'v'};
-const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const qs=new URLSearchParams(location.search),DEMO=qs.has('demo');let slug=(qs.get('co')||'').toLowerCase(),sb,ctx=null,canEdit=false,isStaff=false;
-const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}),dmy=d=>d?String(d).slice(0,10).split('-').reverse().join('-'):'—';
-let LIST=[],P=null,OPTS=[],REPORT=null,ACTIONS=[],SL=0,underlay='',armed=null,timer=null;
-const say=(t,ok)=>{$('#msg').innerHTML=t?`<div class="msg ${ok?'ok':''}">${esc(t)}</div>`:'';if(t)window.scrollTo(0,0);if(ok)setTimeout(()=>say(''),3500)};
-const api=DEMO?demo():{async rpc(f,a){const{data,error}=await sb.rpc(f,a);if(error)throw new Error(error.message);return data}};
-const kindName=k=>k==='office'?'Office floor plan':'Factory machine shop';
-const mkKey=()=>'n'+Math.random().toString(36).slice(2,8);
-
-/* ---------- standards (Standards alignment screen) ---------- */
-const STD=[
-['ISO 9001:2015','7.1.3 Infrastructure','Provide and maintain the buildings, equipment and transport needed to make conforming product.','Every machine and room is registered with its size and placed on a 1:1 metric plan. The plan is saved, given a number and controlled by status (Draft, In review, Approved).',()=>`${LIST.length} saved layouts, ${LIST.filter(p=>p.status==='approved').length} approved`],
-['ISO 9001:2015','7.1.4 Environment for the operation of processes','Provide a suitable working environment.','Operator clearance, central aisle and maintenance corridor are checked on every option and shown as pass or gap.',()=>P?`Open layout: ${OPTS[P.sel]?OPTS[P.sel].checks.filter(c=>c.ok).length+' of '+OPTS[P.sel].checks.length+' checks pass':'—'}`:'Open a layout to see its checks'],
-['ISO 9001:2015','8.5.1 Control of production and service provision','Production under controlled conditions, including suitable infrastructure.','The material route of each part (inbound door, cells, quality room, dispatch door) is drawn and measured in metres.',()=>P&&OPTS[P.sel]?`Route length ${OPTS[P.sel].travel} m`:'—'],
-['IATF 16949:2016','7.1.3.1 Plant, facility and equipment planning','Plant layouts must optimise material travel, material handling and value-added use of floor space; use lean methods; review the effectiveness of existing operations periodically.','Three options per layout are compared on computed travel distance and floor utilisation. The Presentation screen keeps the review action plans.',()=>`${LIST.length} layouts, last change ${LIST.length?dmy(LIST.map(p=>p.updated_at).sort().pop()):'—'}`],
-['IATF 16949:2016','7.1.4.1 Environment for the operation of processes','Personnel safety, cleanliness and order suited to the product and process.','Clear gangways (operator side) and aisles for pallet trucks are part of the rules; a gap is shown if they are set below the targets.',()=>`Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m`],
-['IATF 16949:2016','8.5.1.5 Total productive maintenance','Maintenance access to equipment is planned.','A rear maintenance corridor between cells is kept in every option and checked against the target.',()=>`Target maintenance corridor ${TARGETS.maint} m`],
-['IATF 16949:2016','8.5.4 Preservation (incl. 8.5.4.1)','Handling, storage and transport of product are controlled.','Inbound, scrap and dispatch doors and the central transport aisle are drawn on the plan.',()=>'Doors and aisle shown on every drawing'],
-['APQP (AIAG, 2nd edition)','Phase 3 Process design and development — floor plan layout','The floor plan is a required output of process design.','The printed report, with its reference number, is the floor plan output for the quality-planning file.',()=>`${(P&&P.history||[]).filter(h=>h.t==='report').length} reports issued for the open layout`],
-['PPAP (AIAG, 4th edition)','Element 5 Process flow diagram','The flow must agree with the submitted process flow diagram.','The route drawn on the layout lists the same stages in the same order; compare it with the diagram in your PPAP file.',()=>'Compare the route with the PPAP flow diagram'],
-['AIAG-VDA FMEA (1st edition, 2019)','Process FMEA Step 2 Structure analysis','Structure the process into steps and 4M elements (Man, Machine, Material, Environment).','The machine list with cell groups and the room plan give the Machine and Environment elements for the Process FMEA (Failure Mode and Effects Analysis).',()=>P?`${P.items.length} items in the open layout`:'—'],
-['FMEA (AIAG, 4th edition)','Process FMEA — process step and material handling causes','Material handling and mix-up causes need the real flow.','Use the drawn route to rate handling and mix-up risks in the Process FMEA.',()=>'Route drawn on every option'],
-['Control Plan (AIAG)','Process step and measurement location','Show where each control or measurement happens.','Measurement tables sit in the quality room bay and are listed in the report.',()=>P?`${P.items.filter(m=>m.type==='msa').length} measurement tables in the open layout`:'—'],
-['VDA 6.3:2016','Process elements P4 Realisation of product and process development and P6 Process analysis / production','Production means, flow, handling and storage are suitable.','The layout, flow route, clearances and approval status are evidence for these process audit elements.',()=>`${LIST.filter(p=>p.status==='approved').length} approved layouts`],
-['MSA (AIAG, 4th edition)','Measurement environment','Measurement systems need a controlled environment.','Measurement (quality) tables are placed in their own room bay away from machining, so temperature and vibration can be controlled.',()=>P?`${P.items.filter(m=>m.type==='msa').length} tables`:'—'],
-['SPC (AIAG, 2nd edition)','Statistical Process Control','—','Not applicable here: this app makes no control charts. The quality room position supports collecting data near the line.',()=>'Not applicable']];
-const GLOSS=[['KPI','Key Performance Indicator'],['CNC','Computer Numerical Control'],['VMC / HMC','Vertical / Horizontal Machining Centre'],['QC','Quality Control'],['MSA','Measurement System Analysis'],['CMM','Coordinate Measuring Machine'],['DXF','Drawing Exchange Format (AutoCAD)'],['WIP','Work In Progress'],['RS','Rolling Shutter (door)'],['U-cell','Machines in a U shape around one operator gangway'],['FMEA','Failure Mode and Effects Analysis'],['APQP','Advanced Product Quality Planning'],['PPAP','Production Part Approval Process'],['SPC','Statistical Process Control'],['IATF','International Automotive Task Force'],['ISO','International Organization for Standardization'],['VDA','Verband der Automobilindustrie (German automotive association)'],['AIAG','Automotive Industry Action Group']];
-
-/* ---------- drawing ---------- */
-function drawSVG(o,th,id){
-  const S=CFG.PX,M=56,G=o.G,W=G.W,D=G.D,dk=th==='dark',C=dk?{bg:'#0b1120',wall:'#94a3b8',grid:'#1e293b',tx:'#e2e8f0',aisle:'#33415566',blk:'#94a3b8',rt:'#fbbf24',dim:'#38bdf8',qc:'#10b98122',qcs:'#10b981'}:{bg:'#ffffff',wall:'#0f172a',grid:'#e5e9f2',tx:'#0f172a',aisle:'#cbd5e155',blk:'#475569',rt:'#b45309',dim:'#0369a1',qc:'#10b98118',qcs:'#047857'};
-  const px=v=>v*S,w=px(W)+2*M,h=px(D)+2*M,u=id||'a';
-  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;font-family:system-ui,sans-serif"><defs><pattern id="g${u}" width="${S}" height="${S}" patternUnits="userSpaceOnUse"><path d="M${S} 0H0V${S}" fill="none" stroke="${C.grid}" stroke-width=".6"/></pattern><marker id="m${u}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${C.rt}"/></marker></defs><rect width="${w}" height="${h}" fill="${C.bg}"/>`;
-  if(underlay&&dk)s+=`<image href="${underlay}" x="${M}" y="${M}" width="${px(W)}" height="${px(D)}" preserveAspectRatio="xMidYMid meet" opacity="${(+($('#rng_op')||{value:40}).value||40)/100}"/>`;
-  s+=`<g transform="translate(${M},${M})"><rect width="${px(W)}" height="${px(D)}" fill="url(#g${u})" stroke="${C.wall}" stroke-width="3"/>`;
-  const T=(x,y,t,sz,fill,extra)=>`<text x="${x}" y="${y}" font-size="${sz}" fill="${fill||C.tx}" ${extra||''}>${esc(t)}</text>`;
-  if(o.kind==='factory'){
-    const hh=px(G.Hh);
-    s+=`<rect x="${px(W/2-G.aisle/2)}" y="${px(.5)}" width="${px(G.aisle)}" height="${hh-px(1)}" fill="${C.aisle}" stroke="${C.blk}" stroke-dasharray="5 4"/>`;
-    s+=T(px(W/2)+4,px(G.Hh/2),G.aisle.toFixed(1)+' m central transport aisle',10,C.blk,`text-anchor="middle" transform="rotate(-90 ${px(W/2)+4} ${px(G.Hh/2)})" letter-spacing="2"`);
-    s+=`<line x1="0" y1="${hh}" x2="${px(W)}" y2="${hh}" stroke="${C.wall}" stroke-width="3"/><rect x="${px(W/2-1.5)}" y="${hh-5}" width="${px(3)}" height="10" fill="${C.bg}" stroke="#38bdf8" stroke-dasharray="3 2"/>`+T(px(W/2),hh-9,'D1 access',9,C.dim,'text-anchor="middle"');
-    const door=(x,y,wd,ht,col,lab,lx,ly,rot)=>`<rect x="${x}" y="${y}" width="${wd}" height="${ht}" fill="${col}" stroke="${C.wall}" rx="2"/>`+T(lx,ly,lab,9,col,rot?`text-anchor="middle" transform="rotate(${rot} ${lx} ${ly})"`:'text-anchor="middle"');
-    s+=door(px(W/2-1.8),-5,px(3.6),10,'#0284c7','RS 1 inbound (3.6 m Rolling Shutter)',px(W/2),-12,0);
-    s+=door(-5,px(G.scrap[1]-1.8),10,px(3.6),'#d97706','RS 2 scrap',-12,px(G.scrap[1]),-90);
-    s+=door(px(W)-5,px(G.dispatch[1]-1.8),10,px(3.6),'#db2777','RS 3 dispatch',px(W)+16,px(G.dispatch[1]),90);
-    s+=`<rect x="${px(.3)}" y="${hh+px(.3)}" width="${px(W-.6)}" height="${px(G.qcDepth-.6)}" rx="4" fill="${C.qc}" stroke="${C.qcs}"/>`+T(px(W/2),hh+px(.3)+14,`QUALITY CONTROL AND MEASUREMENT ROOM — ${(W-.6).toFixed(1)} m × ${(G.qcDepth-.6).toFixed(1)} m`,10,C.qcs,'text-anchor="middle" font-weight="700"');
-    for(const b of o.blocks)s+=`<rect x="${px(b.x)}" y="${px(b.y)}" width="${px(b.w)}" height="${px(b.h)}" rx="8" fill="none" stroke="${C.blk}" stroke-dasharray="6 4" stroke-width="1.5"/>`+T(px(b.x)+4,px(b.y)-3,String(b.label).toUpperCase(),8,C.blk,'font-weight="700"');
-    if(o.route.length>1)s+=`<polyline points="${o.route.map(p=>px(p[0])+','+px(p[1])).join(' ')}" fill="none" stroke="${C.rt}" stroke-width="2.2" stroke-dasharray="7 5" marker-end="url(#m${u})" opacity=".9"/>`;
-  }else{
-    s+=`<rect x="${px(W/2-G.cw/2)}" y="${px(.3)}" width="${px(G.cw)}" height="${px(D-.6)}" fill="${C.aisle}" stroke="${C.blk}" stroke-dasharray="5 4"/>`+T(px(W/2),px(D/2),'2.0 m central office corridor',10,C.blk,`text-anchor="middle" transform="rotate(-90 ${px(W/2)} ${px(D/2)})" letter-spacing="2"`);
-    s+=`<rect x="${px(W/2-1)}" y="${px(D)-5}" width="${px(2)}" height="10" fill="#0284c7" stroke="${C.wall}"/>`+T(px(W/2),px(D)+16,'ENTRANCE',10,C.dim,'text-anchor="middle" font-weight="700"');
+/* ====================== READER: existing plan -> machines (DXF drawing, PDF plan, picture) ====================== */
+const UNIT_M = { m: 1, cm: .01, mm: .001, in: .0254, ft: .3048 };
+const CELL_OF = { cnc: 'CNC Turning', vmc: 'VMC / HMC', conv: 'Conventional', msa: 'Quality / MSA', finish: 'Finish & Pack' };
+function guessType(t) {
+  const s = String(t || '').toLowerCase();
+  if (/cmm|gauge|inspect|quality|\bqc\b|msa|measur|test(ing)? table|\btable\b/.test(s)) return 'msa';
+  if (/pack|assy|assembl|finish|wash|paint|park|dispatch|deburr|rotor|drive/.test(s)) return 'finish';
+  if (/vmc|hmc|machining cent|mill|tap|bed|drill.*cent/.test(s)) return 'vmc';
+  if (/cnc|lathe|turn|\bnej|\bneb|\bne\d|\bnm|\bnet|\bb-?\d+/.test(s)) return /^b-?\d/.test(s) ? 'conv' : 'cnc';
+  return 'conv';
+}
+/* --- DXF (ASCII) --- */
+function parseDXF(text) {
+  const L = text.split(/\r?\n/), pairs = [];
+  for (let i = 0; i + 1 < L.length; i += 2) pairs.push([parseInt(L[i].trim(), 10), L[i + 1].trim()]);
+  const num = v => parseFloat(v);
+  let i = 0, section = '', insunits = null; const blocks = {}, ents = []; let curBlock = null, cur = null;
+  const push = e => { (curBlock ? curBlock.ents : ents).push(e); };
+  for (; i < pairs.length; i++) {
+    const [c, v] = pairs[i];
+    if (c === 0 && v === 'SECTION') { section = (pairs[i + 1] && pairs[i + 1][1]) || ''; i++; continue; }
+    if (c === 0 && v === 'ENDSEC') { section = ''; continue; }
+    if (section === 'HEADER') { if (c === 9 && v === '$INSUNITS' && pairs[i + 1]) insunits = parseInt(pairs[i + 1][1], 10); continue; }
+    if (section !== 'ENTITIES' && section !== 'BLOCKS') continue;
+    if (c !== 0) continue;
+    // an entity or block record starts here: collect its group codes
+    let j = i + 1; const g = []; while (j < pairs.length && pairs[j][0] !== 0) { g.push(pairs[j]); j++; }
+    const first = (code) => { const f = g.find(p => p[0] === code); return f ? f[1] : undefined; };
+    const all = (code) => g.filter(p => p[0] === code).map(p => p[1]);
+    if (v === 'BLOCK') { curBlock = { name: first(2) || '', base: [num(first(10) || 0), num(first(20) || 0)], ents: [] }; blocks[curBlock.name] = curBlock; }
+    else if (v === 'ENDBLK') curBlock = null;
+    else if (v === 'LWPOLYLINE') { const xs = all(10).map(num), ys = all(20).map(num); push({ t: 'poly', pts: xs.map((x, k) => [x, ys[k]]), closed: (parseInt(first(70) || 0, 10) & 1) === 1 }); }
+    else if (v === 'POLYLINE') cur = { t: 'poly', pts: [], closed: (parseInt(first(70) || 0, 10) & 1) === 1 };
+    else if (v === 'VERTEX' && cur) cur.pts.push([num(first(10)), num(first(20))]);
+    else if (v === 'SEQEND' && cur) { push(cur); cur = null; }
+    else if (v === 'LINE') push({ t: 'line', a: [num(first(10)), num(first(20))], b: [num(first(11)), num(first(21))] });
+    else if (v === 'CIRCLE' || v === 'ARC') push({ t: 'circle', c: [num(first(10)), num(first(20))], r: num(first(40)) });
+    else if (v === 'INSERT') push({ t: 'ins', name: first(2), p: [num(first(10) || 0), num(first(20) || 0)], sx: num(first(41) || 1), sy: num(first(42) || 1), rot: num(first(50) || 0) });
+    else if (v === 'TEXT' || v === 'MTEXT') push({ t: 'text', p: [num(first(10) || 0), num(first(20) || 0)], s: String(all(3).join('') + (first(1) || '')).replace(/\\[A-Za-z][^;]*;/g, '').replace(/\\P/g, ' ').replace(/[{}]/g, '').trim() });
+    i = j - 1;
   }
-  for(const m of o.placed){
-    const col=o.kind==='office'?(KINDS[m.kind]||{c:'#0891b2'}).c:(TYPES[m.type]||{c:'#64748b'}).c,x=px(m.x),y=px(m.y),mw=px(m.w),mh=px(m.h),ch=Math.max(4,Math.floor(mw/5.4));
-    s+=`<rect x="${x}" y="${y}" width="${mw}" height="${mh}" rx="3" fill="${col}" fill-opacity="${o.kind==='office'?.82:.92}" stroke="${dk?'#fff':'#0f172a'}" stroke-opacity=".55"/>`;
-    const lab=mw>=70?m.name:(m.id||m.name),dims=`${r2(m.w)}×${r2(m.h)}${m.rot?' ↻':''}`;
-    s+=`<text x="${x+mw/2}" y="${y+mh/2-(mw>=70&&mh>=34?2:-3)}" font-size="${mw>=70?9.5:8}" fill="#fff" text-anchor="middle" font-weight="700">${esc(String(lab).slice(0,ch))}</text>`;
-    if(mw>=70&&mh>=34)s+=`<text x="${x+mw/2}" y="${y+mh/2+10}" font-size="8" fill="#fff" fill-opacity=".85" text-anchor="middle">${dims}${o.kind==='office'?' · '+r1(m.w*m.h)+' m²':''}</text>`;
+  return { ents, blocks, insunits };
+}
+function bboxOf(list, blocks, depth) {
+  let x0 = 1e18, y0 = 1e18, x1 = -1e18, y1 = -1e18;
+  const add = (x, y) => { if (isFinite(x) && isFinite(y)) { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); } };
+  for (const e of list) {
+    if (e.t === 'poly') e.pts.forEach(p => add(p[0], p[1]));
+    else if (e.t === 'line') { add(e.a[0], e.a[1]); add(e.b[0], e.b[1]); }
+    else if (e.t === 'circle') { add(e.c[0] - e.r, e.c[1] - e.r); add(e.c[0] + e.r, e.c[1] + e.r); }
+    else if (e.t === 'ins' && depth < 4 && blocks[e.name]) { const b = insBox(e, blocks, depth + 1); if (b) { add(b.x0, b.y0); add(b.x1, b.y1); } }
   }
-  s+=T(px(W/2),px(D)+34,`WIDTH ${W.toFixed(1)} m (${Math.round(W*1000)} mm)`,11,C.dim,'text-anchor="middle" font-weight="700"')+T(-30,px(D/2),`DEPTH ${D.toFixed(1)} m (${Math.round(D*1000)} mm)`,11,C.dim,`text-anchor="middle" font-weight="700" transform="rotate(-90 -30 ${px(D/2)})"`);
-  return s+'</g></svg>';
+  return x0 > x1 ? null : { x0, y0, x1, y1 };
 }
-function legendHTML(o){
-  if(o.kind==='office')return `<div class="legend">${Object.entries(KINDS).map(([k,v])=>`<span><i style="background:${v.c}"></i>${esc(v.n)}</span>`).join('')}</div>`;
-  const used=[...new Set(o.placed.map(m=>m.type))];
-  return `<div class="legend">${used.map(t=>`<span><i style="background:${TYPES[t].c}"></i>${esc(TYPES[t].n)}</span>`).join('')}<span><i style="background:#f59e0b"></i>Material route per part (dashed)</span></div>`;
+function insBox(e, blocks, depth) {
+  const blk = blocks[e.name]; if (!blk) return null;
+  const bb = bboxOf(blk.ents, blocks, depth || 0); if (!bb) return null;
+  const a = e.rot * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+  const pts = [[bb.x0, bb.y0], [bb.x1, bb.y0], [bb.x1, bb.y1], [bb.x0, bb.y1]].map(([x, y]) => { const lx = (x - blk.base[0]) * e.sx, ly = (y - blk.base[1]) * e.sy; return [e.p[0] + lx * ca - ly * sa, e.p[1] + lx * sa + ly * ca]; });
+  return { x0: Math.min(...pts.map(p => p[0])), y0: Math.min(...pts.map(p => p[1])), x1: Math.max(...pts.map(p => p[0])), y1: Math.max(...pts.map(p => p[1])), name: e.name, oblique: Math.abs(((e.rot % 90) + 90) % 90) > 0.5 && Math.abs(((e.rot % 90) + 90) % 90 - 90) > 0.5 };
 }
-/* ---------- DXF (Drawing Exchange Format, AutoCAD R12) ---------- */
-function dxf(o){
-  const G=o.G,D=G.D,mm=v=>Math.round(v*1000),Y=y=>mm(D-y);let e='';
-  const L=(ly,a,b,c,d)=>{e+=`0\nLINE\n8\n${ly}\n10\n${a}\n20\n${b}\n30\n0\n11\n${c}\n21\n${d}\n31\n0\n`};
-  const R=(ly,x,y,w,h)=>{const X=mm(x),X2=mm(x+w),Y1=Y(y),Y2=Y(y+h);L(ly,X,Y1,X2,Y1);L(ly,X2,Y1,X2,Y2);L(ly,X2,Y2,X,Y2);L(ly,X,Y2,X,Y1)};
-  const T=(ly,x,y,ht,t)=>{e+=`0\nTEXT\n8\n${ly}\n10\n${mm(x)}\n20\n${Y(y)}\n30\n0\n40\n${ht}\n1\n${String(t).replace(/[\r\n]/g,' ')}\n`};
-  R('WALLS',0,0,G.W,D);
-  if(o.kind==='factory'){R('AISLES',G.W/2-G.aisle/2,.5,G.aisle,G.Hh-1);L('WALLS',0,Y(G.Hh),mm(G.W),Y(G.Hh));R('ZONES',.3,G.Hh+.3,G.W-.6,G.qcDepth-.6);T('ANNOTATIONS',G.W/2-3,G.Hh+.9,250,'QUALITY CONTROL AND MEASUREMENT ROOM');for(const b of o.blocks){R('ZONES',b.x,b.y,b.w,b.h);T('ANNOTATIONS',b.x+.1,b.y+.4,200,b.label)}}
-  else{R('AISLES',G.W/2-G.cw/2,.3,G.cw,D-.6)}
-  for(const m of o.placed){R('MACHINES',m.x,m.y,m.w,m.h);T('ANNOTATIONS',m.x+.15,m.y+m.h/2,200,m.name)}
-  T('ANNOTATIONS',0,-1,300,`${P?P.title:''} — ${o.name} — scale 1:1, units mm`);
-  const lay=[['WALLS',7],['MACHINES',1],['AISLES',4],['ZONES',3],['ANNOTATIONS',2]];
-  return '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLTYPE\n70\n1\n0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0\n0\nENDTAB\n0\nTABLE\n2\nLAYER\n70\n'+lay.length+'\n'+lay.map(l=>`0\nLAYER\n2\n${l[0]}\n70\n0\n62\n${l[1]}\n6\nCONTINUOUS\n`).join('')+'0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n'+e+'0\nENDSEC\n0\nEOF\n';
+function rectsFromDXF(d) {
+  const rects = [], texts = []; let oblique = 0;
+  for (const e of d.ents) {
+    if (e.t === 'poly') {
+      let p = e.pts.slice(); if (p.length === 5 && Math.hypot(p[0][0] - p[4][0], p[0][1] - p[4][1]) < 1e-6) p.pop();
+      if ((e.closed || p.length === 4) && p.length === 4) {
+        const bb = { x0: Math.min(...p.map(q => q[0])), y0: Math.min(...p.map(q => q[1])), x1: Math.max(...p.map(q => q[0])), y1: Math.max(...p.map(q => q[1])) };
+        const ar = Math.abs(p.reduce((s, q, k) => s + (q[0] * p[(k + 1) % 4][1] - p[(k + 1) % 4][0] * q[1]), 0)) / 2, bba = (bb.x1 - bb.x0) * (bb.y1 - bb.y0);
+        if (bba > 0 && ar / bba > 0.98) rects.push(bb); else if (bba > 0) oblique++;
+      }
+    } else if (e.t === 'ins') { const b = insBox(e, d.blocks, 0); if (b) { rects.push({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y1, name: b.name }); if (b.oblique) oblique++; } }
+    else if (e.t === 'text' && e.s) texts.push({ x: e.p[0], y: e.p[1], t: e.s });
+  }
+  return { rects, texts, oblique, yUp: true };
 }
-function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+function unitGuess(raw, insunits) {
+  const map = { 1: 'in', 2: 'ft', 4: 'mm', 5: 'cm', 6: 'm' };
+  if (insunits && map[insunits]) return map[insunits];
+  const all = raw.rects; if (!all.length) return 'mm';
+  const ext = Math.max(...all.map(r => Math.max(r.x1 - r.x0, r.y1 - r.y0)));
+  return ext > 400 ? 'mm' : 'm';
+}
+/* --- turn boxes into a building and a machine list (metres, y downward from the building's top-left corner) --- */
+function interpret(raw, k, opts) {
+  opts = opts || {};
+  const R = raw.rects.map(r => ({ x0: r.x0 * k, x1: r.x1 * k, y0: raw.yUp ? r.y0 * k : r.y0 * k, y1: r.y1 * k, name: r.name }));
+  R.forEach(r => { r.w = r.x1 - r.x0; r.h = r.y1 - r.y0; r.a = r.w * r.h; });
+  const T = raw.texts.map(t => ({ x: t.x * k, y: t.y * k, t: t.t }));
+  const good = R.filter(r => r.w > 0.05 && r.h > 0.05);
+  let bld = null;
+  const inside = (o, b) => (o.x0 + o.x1) / 2 >= b.x0 && (o.x0 + o.x1) / 2 <= b.x1 && (o.y0 + o.y1) / 2 >= b.y0 && (o.y0 + o.y1) / 2 <= b.y1;
+  const cand = good.filter(r => r.a >= 40).sort((a, b) => b.a - a.a);
+  for (const c of cand) { if (good.filter(o => o !== c && inside(o, c)).length >= 3) { bld = c; break; } }
+  if (opts.buildingW && bld) { /* real width given by the user rescales everything */ }
+  if (!bld && good.length) bld = { x0: Math.min(...good.map(r => r.x0)), y0: Math.min(...good.map(r => r.y0)), x1: Math.max(...good.map(r => r.x1)), y1: Math.max(...good.map(r => r.y1)) };
+  if (!bld) return { building: null, items: [], skipped: 0 };
+  bld.w = bld.x1 - bld.x0; bld.h = bld.y1 - bld.y0;
+  let c = good.filter(r => r !== bld && inside(r, bld) && r.w >= 0.3 && r.h >= 0.3 && r.w <= 15 && r.h <= 15 && r.a <= bld.w * bld.h * 0.5);
+  // drop zones: a box that holds two or more other boxes; and duplicates
+  c = c.filter(r => c.filter(o => o !== r && inside(o, r)).length < 2);
+  const keep = []; for (const r of c) if (!keep.some(o => Math.abs(o.x0 - r.x0) < .02 && Math.abs(o.x1 - r.x1) < .02 && Math.abs(o.y0 - r.y0) < .02 && Math.abs(o.y1 - r.y1) < .02)) keep.push(r);
+  const used = new Set(); const items = [];
+  keep.sort((a, b) => (raw.yUp ? b.y1 - a.y1 : a.y0 - b.y0) || a.x0 - b.x0);
+  keep.forEach((r, n) => {
+    let lab = r.name && !/^(\*|A\$C|_)/.test(r.name) ? r.name : '';
+    const inT = T.filter(t => t.x >= r.x0 - .05 && t.x <= r.x1 + .05 && t.y >= r.y0 - .05 && t.y <= r.y1 + .05);
+    if (inT.length) { const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2; inT.sort((p, q) => Math.hypot(p.x - cx, p.y - cy) - Math.hypot(q.x - cx, q.y - cy)); lab = inT[0].t.slice(0, 28); }
+    else { let best = null, bd = 1.2; for (const t of T) { if (used.has(t)) continue; const dx = Math.max(r.x0 - t.x, 0, t.x - r.x1), dy = Math.max(r.y0 - t.y, 0, t.y - r.y1), d = Math.hypot(dx, dy); if (d < bd) { bd = d; best = t; } } if (best) { used.add(best); lab = best.t.slice(0, 28); } }
+    if (!lab) lab = 'Machine ' + (n + 1);
+    const type = guessType(lab);
+    const ax = r.x0 - bld.x0, ay = raw.yUp ? bld.y1 - r.y1 : r.y0 - bld.y0;
+    items.push({ id: 'M-' + (n + 1), type, name: lab, cell: CELL_OF[type], w: r2(r.w), h: r2(r.h), ax: r2(ax), ay: r2(ay), arot: false, keep: true });
+  });
+  return { building: { w: r2(bld.w), h: r2(bld.h), x0: bld.x0, y0: raw.yUp ? bld.y1 : bld.y0 }, items, skipped: good.length - keep.length - 1 };
+}
+/* --- PDF plan (pdf.js) --- */
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+function loadScript(src) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('Could not load the PDF reader. Check your internet connection.')); document.head.append(s); }); }
+async function pdfLib() { if (!window.pdfjsLib) await loadScript(PDFJS + 'pdf.min.js'); window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; return window.pdfjsLib; }
+const mul = (m1, m2) => [m1[0] * m2[0] + m1[2] * m2[1], m1[1] * m2[0] + m1[3] * m2[1], m1[0] * m2[2] + m1[2] * m2[3], m1[1] * m2[2] + m1[3] * m2[3], m1[0] * m2[4] + m1[2] * m2[5] + m1[4], m1[1] * m2[4] + m1[3] * m2[5] + m1[5]];
+async function readPDF(buf) {
+  const lib = await pdfLib(), OPS = lib.OPS, doc = await lib.getDocument({ data: buf }).promise, page = await doc.getPage(1), vp = page.getViewport({ scale: 1 });
+  const rects = [], texts = [];
+  const tc = await page.getTextContent();
+  for (const it of tc.items) { if (!it.str || !it.str.trim()) continue; const m = lib.Util.transform(vp.transform, it.transform); texts.push({ x: m[4], y: m[5], t: it.str.trim() }); }
+  const ol = await page.getOperatorList(); let ctm = [1, 0, 0, 1, 0, 0]; const st = []; let path = [];
+  const paint = new Set([OPS.stroke, OPS.closeStroke, OPS.fill, OPS.eoFill, OPS.fillStroke, OPS.eoFillStroke, OPS.closeFillStroke, OPS.closeEOFillStroke]);
+  const P = (x, y) => { const m = mul(vp.transform, ctm); return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]]; };
+  const flush = () => {
+    for (const sp of path) {
+      if (sp.rect) { const [x, y, w, h] = sp.rect, pts = [P(x, y), P(x + w, y), P(x + w, y + h), P(x, y + h)]; addRect(pts); }
+      else if (sp.pts && (sp.pts.length === 4 || (sp.pts.length === 5 && Math.hypot(sp.pts[0][0] - sp.pts[4][0], sp.pts[0][1] - sp.pts[4][1]) < 1e-6))) addRect(sp.pts.slice(0, 4).map(p => P(p[0], p[1])));
+    }
+    path = [];
+  };
+  const addRect = pts => {
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), bb = { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+    const ar = Math.abs(pts.reduce((s, q, k) => s + (q[0] * pts[(k + 1) % 4][1] - pts[(k + 1) % 4][0] * q[1]), 0)) / 2, bba = (bb.x1 - bb.x0) * (bb.y1 - bb.y0);
+    if (bba > 4 && ar / bba > 0.98) rects.push(bb);
+  };
+  for (let i = 0; i < ol.fnArray.length; i++) {
+    const f = ol.fnArray[i], a = ol.argsArray[i];
+    if (f === OPS.save) st.push(ctm.slice()); else if (f === OPS.restore) ctm = st.pop() || ctm;
+    else if (f === OPS.transform) ctm = mul(ctm, a);
+    else if (f === OPS.constructPath) {
+      const ops = a[0], co = a[1]; let k = 0, sp = null;
+      for (const op of ops) {
+        if (op === OPS.moveTo) { sp = { pts: [[co[k], co[k + 1]]] }; path.push(sp); k += 2; }
+        else if (op === OPS.lineTo) { if (sp) sp.pts.push([co[k], co[k + 1]]); k += 2; }
+        else if (op === OPS.curveTo) { if (sp) sp.pts.push([0, 0], [0, 0], [0, 0]); k += 6; }
+        else if (op === OPS.curveTo2 || op === OPS.curveTo3) { if (sp) sp.pts.push([0, 0], [0, 0]); k += 4; }
+        else if (op === OPS.rectangle) { path.push({ rect: [co[k], co[k + 1], co[k + 2], co[k + 3]] }); k += 4; }
+        else if (op === OPS.closePath) { if (sp && sp.pts.length === 4) sp.pts.push(sp.pts[0].slice()); }
+      }
+    } else if (paint.has(f) || f === OPS.endPath) { if (paint.has(f)) flush(); else path = []; }
+  }
+  // picture of the page: used as the background to check the reading, and to trace over
+  const sc = 2, cv = document.createElement('canvas'), v2 = page.getViewport({ scale: sc }); cv.width = v2.width; cv.height = v2.height;
+  await page.render({ canvasContext: cv.getContext('2d'), viewport: v2 }).promise;
+  return { rects, texts, yUp: false, underlay: cv.toDataURL('image/jpeg', 0.82), pageW: vp.width, pageH: vp.height };
+}
+async function readImage(file) {
+  const url = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(file); });
+  const dim = await new Promise(ok => { const im = new Image(); im.onload = () => ok([im.naturalWidth, im.naturalHeight]); im.onerror = () => ok([0, 0]); im.src = url; });
+  return { rects: [], texts: [], yUp: false, underlay: url, pageW: dim[0], pageH: dim[1], picture: true };
+}
+
+/* ---------- DXF (Drawing Exchange Format, AutoCAD R12) — one closed polyline per machine, so CAD programmes and this app can read each machine back ---------- */
+function dxf(o, title) {
+  const G = o.G, D = G.D, mm = v => Math.round(v * 1000), Y = y => mm(D - y); let e = '';
+  const L = (ly, a, b, c, d) => { e += `0\nLINE\n8\n${ly}\n10\n${a}\n20\n${b}\n30\n0\n11\n${c}\n21\n${d}\n31\n0\n`; };
+  const R = (ly, x, y, w, h) => {
+    const X = mm(x), X2 = mm(x + w), Y1 = Y(y), Y2 = Y(y + h);
+    e += `0\nPOLYLINE\n8\n${ly}\n66\n1\n70\n1\n`;
+    for (const [px, py] of [[X, Y1], [X2, Y1], [X2, Y2], [X, Y2]]) e += `0\nVERTEX\n8\n${ly}\n10\n${px}\n20\n${py}\n30\n0\n`;
+    e += '0\nSEQEND\n8\n' + ly + '\n';
+  };
+  const T = (ly, x, y, ht, t) => { e += `0\nTEXT\n8\n${ly}\n10\n${mm(x)}\n20\n${Y(y)}\n30\n0\n40\n${ht}\n1\n${String(t).replace(/[\r\n]/g, ' ')}\n`; };
+  R('WALLS', 0, 0, G.W, D);
+  if (o.kind === 'factory') {
+    R('AISLES', G.W / 2 - G.aisle / 2, .5, G.aisle, G.Hh - 1); L('WALLS', 0, Y(G.Hh), mm(G.W), Y(G.Hh));
+    if (G.qcDepth > 0.7) { R('ZONES', .3, G.Hh + .3, G.W - .6, G.qcDepth - .6); T('ANNOTATIONS', G.W / 2 - 3, G.Hh + .9, 250, 'QUALITY CONTROL AND MEASUREMENT ROOM'); }
+    for (const b of o.blocks) { R('ZONES', b.x, b.y, b.w, b.h); T('ANNOTATIONS', b.x + .1, b.y + .4, 200, b.label); }
+  } else { R('AISLES', G.W / 2 - G.cw / 2, .3, G.cw, D - .6); }
+  for (const m of o.placed) { R('MACHINES', m.x, m.y, m.w, m.h); T('ANNOTATIONS', m.x + .15, m.y + m.h / 2, 200, m.name); }
+  T('ANNOTATIONS', 0, -1, 300, `${title || ''} — ${o.name} — scale 1:1, units mm`);
+  const lay = [['WALLS', 7], ['MACHINES', 1], ['AISLES', 4], ['ZONES', 3], ['ANNOTATIONS', 2]];
+  return '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLTYPE\n70\n1\n0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0\n0\nENDTAB\n0\nTABLE\n2\nLAYER\n70\n' + lay.length + '\n' + lay.map(l => `0\nLAYER\n2\n${l[0]}\n70\n0\n62\n${l[1]}\n6\nCONTINUOUS\n`).join('') + '0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n' + e + '0\nENDSEC\n0\nEOF\n';
+}
+
+/* ======================================================= the app ======================================================= */
+const CFG = { FORMAT: { no: 'KMR/LAY/F-01', title: 'Factory & Office Layout Report', rev: '01', revDate: '2026-10-29', history: [{ rev: '01', date: '2026-10-29', note: 'First issue of this report format' }] }, STATUS: ['draft', 'review', 'approved', 'superseded'] };
+const STATUS_NAME = { draft: 'Draft', review: 'In review', approved: 'Approved', superseded: 'Superseded' }, STATUS_CLS = { draft: 'x', review: 'a', approved: 'g', superseded: 'v' };
+const $ = s => document.querySelector(s), esc = QP.esc, say = QP.say, dmy = d => d ? String(d).slice(0, 10).split('-').reverse().join('-') : '—';
+const kindName = k => k === 'office' ? 'Office floor plan' : 'Factory machine shop';
+const mkKey = () => 'n' + Math.random().toString(36).slice(2, 8);
+let ctx = null, canEdit = false, slug = '', DEMO = QP.DEMO, LIST = [], P = null, OPTS = [], REPORT = null, ACTIONS = [], SL = 0, armed = null, timer = null, IM = null, TR = null;
+const api = { rpc: (f, a) => QP.call(f, a) };
 
 /* ---------- loading and saving ---------- */
-function fromRow(r){const d=r.dimensions||{};return{id:r.id,no:r.no,title:r.title,kind:r.kind,status:r.status,source_file:r.source_file||'',sample:!!r.sample,history:r.history||[],sel:Math.max(0,Math.min(2,(r.selected_option||1)-1)),dirty:false,dim:{width:+d.width||20,depth:+d.depth||30,hallDepth:+d.hallDepth||24,qcDepth:+d.qcDepth||5.4,aisle:+d.aisle||2.8,opClearance:+d.opClearance||1.2,maintClearance:+d.maintClearance||1.5},items:(r.machines||[]).map(m=>({...m,w:+m.w,h:+m.h}))}}
-const good=m=>m.w>0&&m.h>0;
-function recalc(){OPTS=P?evaluate(P.items.filter(good),P.dim,P.kind):[];if(P&&P.sel>2)P.sel=0}
-function summary(){return OPTS.map(x=>({name:x.name,short:x.short,key:x.key,travel:x.travel,util:x.util,saving:x.saving,grade:x.grade,placed:x.placedN,total:x.total,noFit:x.noFit.length}))}
-function payload(){return{id:P.id||undefined,title:P.title,kind:P.kind,concept:P.kind==='office'?'office-ergonomic':FACTORY_CONCEPTS[P.sel].key,dimensions:{...P.dim},source_file:P.source_file||null,machines:P.items.filter(good).map(({id,type,name,w,h,cell,kind})=>({id,type,name,w,h,cell,kind})),options:summary(),selected_option:P.sel+1}}
-async function loadList(){LIST=await api.rpc('kmr_layout_list',{p_slug:slug})||[]}
-async function openProject(id){const r=await api.rpc('kmr_layout_get',{p_slug:slug,p_id:id});P=fromRow(r);recalc();REPORT=null;underlay='';await loadActions();paint();go('stu')}
-async function save(quiet){
-  if(!P)return;if(!canEdit){say('You can view layouts but not change them. Ask your administrator for editor access.');return false}
-  if(!String(P.title||'').trim()){say('Write a title for the layout first.');return false}
-  try{const r=await api.rpc('kmr_layout_save',{p_slug:slug,p:payload()});P.id=r.id;if(r.no)P.no=r.no;P.dirty=false;await loadList();if(!quiet)say('Saved '+(P.no||'')+'.',true);paintHead();return true}catch(err){say(err.message);return false}
+function fromRow(r) { const d = r.dimensions || {}; return { id: r.id, no: r.no, title: r.title, kind: r.kind, status: r.status, source_file: r.source_file || '', sample: !!r.sample, history: r.history || [], sel: Math.max(0, (r.selected_option || 1) - 1), dirty: false, dim: { width: +d.width || 20, depth: +d.depth || 30, hallDepth: +d.hallDepth || 24, qcDepth: +d.qcDepth || 5.4, aisle: +d.aisle || 2.8, opClearance: +d.opClearance || 1.2, maintClearance: +d.maintClearance || 1.5 }, items: (r.machines || []).map(m => ({ ...m, w: +m.w, h: +m.h })) }; }
+const good = m => m.w > 0 && m.h > 0;
+function recalc() { OPTS = P ? evaluate(P.items.filter(good), P.dim, P.kind) : []; if (P && P.sel > OPTS.length - 1) P.sel = 0; }
+const curKind = () => (P && P.kind === 'office') ? 'office-ergonomic' : (OPTS[P.sel] ? OPTS[P.sel].key : 'cellular-u');
+function summary() { return OPTS.map(x => ({ name: x.name, short: x.short, key: x.key, travel: x.travel, util: x.util, saving: x.saving, grade: x.grade, placed: x.placedN, total: x.total, noFit: x.noFit.length })); }
+function payload() { return { id: P.id || undefined, title: P.title, kind: P.kind, concept: curKind(), dimensions: { ...P.dim }, source_file: P.source_file || null, machines: P.items.filter(good).map(({ id, type, name, w, h, cell, kind, ax, ay, arot }) => ({ id, type, name, w, h, cell, kind, ax, ay, arot })), options: summary(), selected_option: P.sel + 1 }; }
+async function loadList() { LIST = (await api.rpc('kmr_layout_list', {})) || []; }
+async function openProject(id, noGo) { const r = await api.rpc('kmr_layout_get', { p_id: id }); P = fromRow(r); recalc(); REPORT = null; await loadActions(); paint(); if (!noGo) go('stu'); }
+async function save(quiet) {
+  if (!P) return false; if (!canEdit) { say('You can view layouts but not change them. Ask your administrator for editor access.'); return false; }
+  if (!String(P.title || '').trim()) { say('Write a title for the layout first.'); return false; }
+  try { const r = await api.rpc('kmr_layout_save', { p: payload() }); P.id = r.id; if (r.no) P.no = r.no; P.dirty = false; await loadList(); if (!quiet) say('Saved ' + (P.no || '') + '.', true); paintHead(); return true; } catch (err) { say(err.message); return false; }
 }
-async function newProject(kind,example){
-  if(!canEdit){say('You can view layouts but not change them.');return}
-  const t=($('#np_t')||{value:''}).value.trim()||(kind==='office'?'New office floor plan':'New factory layout');
-  P={id:null,no:null,title:t,kind,status:'draft',source_file:'',history:[],sel:0,dirty:true,dim:{...DEFAULT_DIM},items:example?JSON.parse(JSON.stringify(kind==='office'?SAMPLE_ROOMS:SAMPLE_MACHINES)):[]};
-  if(example&&kind==='factory'){P.dim={...P.dim,width:24,depth:36,hallDepth:30,qcDepth:6}}
-  recalc();REPORT=null;underlay='';ACTIONS=[];if(await save(true)){say('Layout '+P.no+' created. Add or change the machines below.',true)}paint();go('stu')
+async function newProject(kind, example) {
+  if (!canEdit) { say('You can view layouts but not change them.'); return; }
+  const t = ($('#np_t') || { value: '' }).value.trim() || (kind === 'office' ? 'New office floor plan' : 'New factory layout');
+  P = { id: null, no: null, title: t, kind, status: 'draft', source_file: '', history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM }, items: example ? JSON.parse(JSON.stringify(kind === 'office' ? SAMPLE_ROOMS : SAMPLE_MACHINES)) : [] };
+  if (example && kind === 'factory') P.dim = { ...P.dim, width: 24, depth: 36, hallDepth: 30, qcDepth: 6 };
+  recalc(); REPORT = null; ACTIONS = [];
+  if (await save(true)) say('Layout ' + P.no + ' created. Add or change the machines below.', true);
+  paint(); go('stu');
 }
-async function loadActions(){try{ACTIONS=await api.rpc('kmr_pres_actions_get',{p_slug:slug,p_code:'layout',p_app:'layout'})||[]}catch{ACTIONS=[]}}
+async function loadActions() { try { ACTIONS = (await api.rpc('kmr_pres_actions_get', { p_code: 'layout', p_app: 'layout' })) || []; } catch { ACTIONS = []; } }
 
-/* ---------- screens ---------- */
-const TABS=['std','prj','stu','rep','pre'];
-function go(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));TABS.forEach(x=>$('#'+x).classList.toggle('hide',x!==t));if(t==='rep')paintRep();if(t==='pre')paintPre()}
-function paint(){paintStd();paintPrj();paintStu();paintRep();paintPre();paintHead()}
-function paintHead(){const c=$('#co');c.textContent=(ctx?ctx.company:'')+(P?' · '+(P.no||'new')+' '+P.title+(P.dirty?'  (not saved)':''):'')}
-const armBtn=(id,label,sure)=>armed===id?`<button class="btn d sm" data-do="${id}">${sure}</button>`:`<button class="btn o sm" data-arm="${id}">${label}</button>`;
+/* ---------- drawing ---------- */
+const PX = 40;
+function drawSVG(o, th, id, opt) {
+  opt = opt || {};
+  const S = PX, M = 56, G = o.G, W = G.W, D = G.D, dk = th === 'dark', C = dk ? { bg: '#0b1120', wall: '#94a3b8', grid: '#1e293b', tx: '#e2e8f0', aisle: '#33415566', blk: '#94a3b8', rt: '#fbbf24', dim: '#38bdf8', qc: '#10b98122', qcs: '#10b981' } : { bg: '#ffffff', wall: '#0f172a', grid: '#e5e9f2', tx: '#0f172a', aisle: '#cbd5e155', blk: '#475569', rt: '#b45309', dim: '#0369a1', qc: '#10b98118', qcs: '#047857' };
+  const px = v => v * S, w = px(W) + 2 * M, h = px(D) + 2 * M, u = id || 'a';
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;font-family:system-ui,sans-serif"><defs><pattern id="g${u}" width="${S}" height="${S}" patternUnits="userSpaceOnUse"><path d="M${S} 0H0V${S}" fill="none" stroke="${C.grid}" stroke-width=".6"/></pattern><marker id="m${u}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${C.rt}"/></marker></defs><rect width="${w}" height="${h}" fill="${C.bg}"/>`;
+  s += `<g transform="translate(${M},${M})"><rect width="${px(W)}" height="${px(D)}" fill="url(#g${u})" stroke="${C.wall}" stroke-width="3"/>`;
+  const T = (x, y, t, sz, fill, extra) => `<text x="${x}" y="${y}" font-size="${sz}" fill="${fill || C.tx}" ${extra || ''}>${esc(t)}</text>`;
+  if (o.kind === 'factory') {
+    const hh = px(G.Hh);
+    if (!o.asIs) {
+      s += `<rect x="${px(W / 2 - G.aisle / 2)}" y="${px(.5)}" width="${px(G.aisle)}" height="${hh - px(1)}" fill="${C.aisle}" stroke="${C.blk}" stroke-dasharray="5 4"/>`;
+      s += T(px(W / 2) + 4, px(G.Hh / 2), G.aisle.toFixed(1) + ' m central transport aisle', 10, C.blk, `text-anchor="middle" transform="rotate(-90 ${px(W / 2) + 4} ${px(G.Hh / 2)})" letter-spacing="2"`);
+    }
+    s += `<line x1="0" y1="${hh}" x2="${px(W)}" y2="${hh}" stroke="${C.wall}" stroke-width="3" stroke-dasharray="${o.asIs ? '8 6' : ''}"/>`;
+    const door = (x, y, wd, ht, col, lab, lx, ly, rot) => `<rect x="${x}" y="${y}" width="${wd}" height="${ht}" fill="${col}" stroke="${C.wall}" rx="2"/>` + T(lx, ly, lab, 9, col, rot ? `text-anchor="middle" transform="rotate(${rot} ${lx} ${ly})"` : 'text-anchor="middle"');
+    s += door(px(W / 2 - 1.8), -5, px(3.6), 10, '#0284c7', 'RS 1 inbound (3.6 m Rolling Shutter)', px(W / 2), -12, 0);
+    s += door(-5, px(G.scrap[1] - 1.8), 10, px(3.6), '#d97706', 'RS 2 scrap', -12, px(G.scrap[1]), -90);
+    s += door(px(W) - 5, px(G.dispatch[1] - 1.8), 10, px(3.6), '#db2777', 'RS 3 dispatch', px(W) + 16, px(G.dispatch[1]), 90);
+    if (!o.asIs && G.qcDepth > 0.7) s += `<rect x="${px(.3)}" y="${hh + px(.3)}" width="${px(W - .6)}" height="${px(G.qcDepth - .6)}" rx="4" fill="${C.qc}" stroke="${C.qcs}"/>` + T(px(W / 2), hh + px(.3) + 14, `QUALITY CONTROL AND MEASUREMENT ROOM — ${(W - .6).toFixed(1)} m × ${(G.qcDepth - .6).toFixed(1)} m`, 10, C.qcs, 'text-anchor="middle" font-weight="700"');
+    for (const b of o.blocks) s += `<rect x="${px(b.x)}" y="${px(b.y)}" width="${px(b.w)}" height="${px(b.h)}" rx="8" fill="none" stroke="${C.blk}" stroke-dasharray="6 4" stroke-width="1.5"/>` + T(px(b.x) + 4, px(b.y) - 3, String(b.label).toUpperCase(), 8, C.blk, 'font-weight="700"');
+    if (o.route.length > 1) s += `<polyline points="${o.route.map(p => px(p[0]) + ',' + px(p[1])).join(' ')}" fill="none" stroke="${C.rt}" stroke-width="2.2" stroke-dasharray="7 5" marker-end="url(#m${u})" opacity=".9"/>`;
+  } else {
+    s += `<rect x="${px(W / 2 - G.cw / 2)}" y="${px(.3)}" width="${px(G.cw)}" height="${px(D - .6)}" fill="${C.aisle}" stroke="${C.blk}" stroke-dasharray="5 4"/>` + T(px(W / 2), px(D / 2), '2.0 m central office corridor', 10, C.blk, `text-anchor="middle" transform="rotate(-90 ${px(W / 2)} ${px(D / 2)})" letter-spacing="2"`);
+    s += `<rect x="${px(W / 2 - 1)}" y="${px(D) - 5}" width="${px(2)}" height="10" fill="#0284c7" stroke="${C.wall}"/>` + T(px(W / 2), px(D) + 16, 'ENTRANCE', 10, C.dim, 'text-anchor="middle" font-weight="700"');
+  }
+  for (const m of o.placed) {
+    const col = o.kind === 'office' ? (KINDS[m.kind] || { c: '#0891b2' }).c : (TYPES[m.type] || { c: '#64748b' }).c, x = px(m.x), y = px(m.y), mw = px(m.w), mh = px(m.h), ch = Math.max(4, Math.floor(mw / 5.4));
+    s += `<rect x="${x}" y="${y}" width="${mw}" height="${mh}" rx="3" fill="${col}" fill-opacity="${o.kind === 'office' ? .82 : .92}" stroke="${dk ? '#fff' : '#0f172a'}" stroke-opacity=".55"/>`;
+    const lab = mw >= 70 ? m.name : (m.id || m.name), dims = `${r2(m.w)}×${r2(m.h)}${m.rot ? ' ↻' : ''}`;
+    s += `<text x="${x + mw / 2}" y="${y + mh / 2 - (mw >= 70 && mh >= 34 ? 2 : -3)}" font-size="${mw >= 70 ? 9.5 : 8}" fill="#fff" text-anchor="middle" font-weight="700">${esc(String(lab).slice(0, ch))}</text>`;
+    if (mw >= 70 && mh >= 34) s += `<text x="${x + mw / 2}" y="${y + mh / 2 + 10}" font-size="8" fill="#fff" fill-opacity=".85" text-anchor="middle">${dims}${o.kind === 'office' ? ' · ' + r1(m.w * m.h) + ' m²' : ''}</text>`;
+  }
+  s += T(px(W / 2), px(D) + 34, `WIDTH ${W.toFixed(1)} m (${Math.round(W * 1000)} mm)`, 11, C.dim, 'text-anchor="middle" font-weight="700"') + T(-30, px(D / 2), `DEPTH ${D.toFixed(1)} m (${Math.round(D * 1000)} mm)`, 11, C.dim, `text-anchor="middle" font-weight="700" transform="rotate(-90 -30 ${px(D / 2)})"`);
+  return s + '</g></svg>';
+}
+function legendHTML(o) {
+  if (o.kind === 'office') return `<div class="legend">${Object.entries(KINDS).map(([k, v]) => `<span><i style="background:${v.c}"></i>${esc(v.n)}</span>`).join('')}</div>`;
+  const used = [...new Set(o.placed.map(m => m.type))];
+  return `<div class="legend">${used.map(t => `<span><i style="background:${(TYPES[t] || TYPES.conv).c}"></i>${esc((TYPES[t] || TYPES.conv).n)}</span>`).join('')}<span><i style="background:#f59e0b"></i>Material route per part (dashed)</span></div>`;
+}
+function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000); }
 
-function paintStd(){
-  $('#std').innerHTML=`<p class="mut" style="margin-top:0">How this app meets the standards used in KMR apps. The right-hand column shows live evidence from your own layouts. Clause numbers follow the editions named — check them against your controlled copies.</p>
-  <div style="overflow-x:auto"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>What it asks for</th><th>How Layout Studio meets it</th><th>Evidence now</th></tr></thead><tbody>${STD.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td class="mut">${esc(r[2])}</td><td>${esc(r[3])}</td><td><span class="chip ${r[4]()==='Not applicable'?'x':'b'}">${esc(r[4]())}</span></td></tr>`).join('')}</tbody></table></div>
-  <div class="card" style="margin-top:14px"><h3>Short forms used in this app and what they mean</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 16px">${GLOSS.map(g=>`<div><b>${esc(g[0])}</b> — ${esc(g[1])}</div>`).join('')}</div></div>`}
+/* ---------- standards (shared screen: standards.js, app key "layout") ---------- */
+const GLOSS = [['KPI', 'Key Performance Indicator'], ['CNC', 'Computer Numerical Control'], ['VMC / HMC', 'Vertical / Horizontal Machining Centre'], ['QC', 'Quality Control'], ['MSA', 'Measurement System Analysis'], ['CMM', 'Coordinate Measuring Machine'], ['DXF', 'Drawing Exchange Format (AutoCAD)'], ['DWG', 'AutoCAD drawing file'], ['PDF', 'Portable Document Format'], ['WIP', 'Work In Progress'], ['RS', 'Rolling Shutter (door)'], ['U-cell', 'Machines in a U shape around one operator gangway'], ['FMEA', 'Failure Mode and Effects Analysis'], ['APQP', 'Advanced Product Quality Planning'], ['PPAP', 'Production Part Approval Process'], ['IATF', 'International Automotive Task Force'], ['ISO', 'International Organization for Standardization'], ['VDA', 'Verband der Automobilindustrie (German automotive association)'], ['AIAG', 'Automotive Industry Action Group'], ['SLP', 'Systematic Layout Planning (Richard Muther)'], ['VDI', 'Verein Deutscher Ingenieure (German association of engineers)']];
+function evidence() {
+  const o = P && OPTS[P.sel], asis = OPTS.find(x => x.asIs);
+  return {
+    lay: () => `${LIST.length} saved layouts, ${LIST.filter(p => p.status === 'approved').length} approved`,
+    chk: () => o ? `${o.checks.filter(c => c.ok).length} of ${o.checks.length} checks pass in the open layout` : 'Open a layout to see its checks',
+    route: () => o ? `Route per part ${o.travel} m (${o.legs.length} legs)` : '—',
+    rpt: () => `${(P && P.history || []).filter(h => h.t === 'report').length} reports issued for the open layout`,
+    cur: () => asis ? `Current layout read: ${asis.placedN} machines, route ${asis.travel} m` : 'No existing plan read yet',
+    msa: () => P ? `${P.items.filter(m => m.type === 'msa').length} measurement tables in the open layout` : '—'
+  };
+}
+function paintStd() {
+  KMRStd.draw($('#std'), 'layout', { evidence: evidence() });
+  $('#std').insertAdjacentHTML('beforeend', `<div class="card" style="margin-top:14px"><h3>Short forms used in this app and what they mean</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 16px">${GLOSS.map(g => `<div><b>${esc(g[0])}</b> — ${esc(g[1])}</div>`).join('')}</div></div>`);
+}
 
-function paintPrj(){
-  const n=LIST.length,ap=LIST.filter(p=>p.status==='approved').length,rv=LIST.filter(p=>p.status==='review').length,dr=LIST.filter(p=>p.status==='draft').length;
-  const k=(v,t,c)=>`<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
-  const best=p=>{const o=(p.options||[]).filter(x=>!x.noFit).sort((a,b)=>a.travel-b.travel)[0];return o?o:null};
-  $('#prj').innerHTML=`<div class="kpis">${k(n,'Saved layouts','var(--b2)')}${k(ap,'Approved','var(--g)')}${k(rv,'In review','var(--a)')}${k(dr,'Drafts','#94a3b8')}</div>
-  ${canEdit?`<div class="card"><h3>Start a new layout</h3><div class="row"><input id="np_t" placeholder="Title, e.g. Machine shop re-layout" style="min-width:260px;max-width:360px"><button class="btn" data-new="factory">＋ Factory (empty)</button><button class="btn o" data-new="factory-ex">＋ Factory with example machines</button><button class="btn" data-new="office">＋ Office floor plan</button></div><p class="mut" style="margin:0">A factory layout needs the list of machines (name, size, group). An office plan starts with a typical set of rooms that you can change.</p></div>`:'<p class="mut">You can view layouts. Editor access is needed to create or change them.</p>'}
-  ${isStaff?`<div class="row"><span class="mut">KMR staff only:</span><button class="btn o sm" data-sample="load">Load sample layouts</button>${armBtn('flush','Remove sample layouts','Press again to remove')}</div>`:''}
-  ${n?`<div style="overflow-x:auto"><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Items</th><th>Best option</th><th>Travel</th><th>Floor use</th><th>Status</th><th>Changed</th><th></th></tr></thead><tbody>${LIST.map(p=>{const b=best(p);return`<tr><td><b>${esc(p.no)}</b></td><td>${esc(p.title)}${p.sample?' <span class="chip x">sample</span>':''}</td><td>${kindName(p.kind)}</td><td>${p.machine_count}</td><td>${b?esc(b.short):'—'}</td><td>${b?b.travel+' m':'—'}</td><td>${b?b.util+'%':'—'}</td><td><span class="chip ${STATUS_CLS[p.status]||'x'}">${STATUS_NAME[p.status]||p.status}</span></td><td>${dmy(p.updated_at)}</td><td style="white-space:nowrap"><button class="btn sm" data-open="${p.id}">Open</button> ${canEdit?armBtn('del'+p.id,'Delete','Press again'):''}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="mut">No layouts yet. Start one above.</p>'}`}
+/* ---------- projects ---------- */
+const DESIGNS = [['U-cells (cellular layout)', 'Machines that make one family of parts are grouped in a U around one operator gangway. Short walking, one-piece flow, work shared between operators. Based on group technology and lean cell design.'], ['Heavy perimeter', 'Large, heavy machines stand along the walls (foundation, crane, vibration); lighter machines form cells in the middle.'], ['Straight flow (line layout)', 'Machines stand in the order of the process, from the inbound door to the dispatch door. Best for few products with the same route.'], ['Departments (functional layout)', 'Like machines are grouped together, all turning machines in one place, all milling in another. Flexible for many different parts, but the routes are longer.'], ['Current layout', 'The plan you upload, measured in the same way, so every new option is compared with what you have today.']];
+function paintPrj() {
+  const n = LIST.length, ap = LIST.filter(p => p.status === 'approved').length, rv = LIST.filter(p => p.status === 'review').length, dr = LIST.filter(p => p.status === 'draft').length;
+  const k = (v, t, c) => `<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
+  const best = p => (p.options || []).filter(x => !x.noFit).sort((a, b) => a.travel - b.travel)[0] || null;
+  $('#prj').innerHTML = `<div class="guide"><b>What this app does.</b> Upload the plan of your existing factory floor or office (DXF, PDF or a picture). The app reads the building and the machines with their sizes, measures the current layout, then designs better options in the same building at 1:1 scale. Machine sizes are never changed, only their positions. You compare the options, print the report and present the result.</div>
+  <div class="steps"><div><b>1</b>Existing plan: upload and check what was read</div><div><b>2</b>Studio: set the rules, compare 4 designs against your current layout</div><div><b>3</b>Report: issue a numbered report, export PDF or DXF</div><div><b>4</b>Presentation: show gaps and action plans</div></div>
+  <div class="kpis">${k(n, 'Saved layouts', 'var(--b1)')}${k(ap, 'Approved', 'var(--g)')}${k(rv, 'In review', 'var(--a)')}${k(dr, 'Drafts', '#94a3b8')}</div>
+  ${canEdit ? `<div class="card"><h3>Start a new layout</h3><div class="row"><input id="np_t" placeholder="Title, e.g. Machine shop re-layout" style="min-width:260px;max-width:360px"><a class="btn" href="#go=imp">⬆ Read my existing plan</a><button class="btn o" data-new="factory">＋ Factory (empty)</button><button class="btn o" data-new="factory-ex">＋ Factory with example machines</button><button class="btn o" data-new="office">＋ Office floor plan</button></div></div>` : '<p class="mut">You can view layouts. Editor access is needed to create or change them.</p>'}
+  ${n ? `<div style="overflow-x:auto"><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Items</th><th>Best option</th><th>Route</th><th>Floor use</th><th>Status</th><th>Changed</th><th></th></tr></thead><tbody>${LIST.map(p => { const b = best(p); return `<tr><td><b>${esc(p.no)}</b></td><td>${esc(p.title)}${p.sample ? ' <span class="chip x">sample</span>' : ''}</td><td>${kindName(p.kind)}</td><td>${p.machine_count}</td><td>${b ? esc(b.short) : '—'}</td><td>${b ? b.travel + ' m' : '—'}</td><td>${b ? b.util + '%' : '—'}</td><td><span class="chip ${STATUS_CLS[p.status] || 'x'}">${STATUS_NAME[p.status] || p.status}</span></td><td>${dmy(p.updated_at)}</td><td style="white-space:nowrap"><button class="btn sm" data-open="${p.id}">Open</button> ${canEdit ? (armed === 'del' + p.id ? `<button class="btn d sm" data-do="del${p.id}">Press again</button>` : `<button class="btn o sm" data-arm="del${p.id}">Delete</button>`) : ''}</td></tr>`; }).join('')}</tbody></table></div>` : '<p class="mut">No layouts yet. Start one above.</p>'}
+  <div class="card" style="margin-top:14px"><h3>The designs compared in this app</h3><table><tbody>${DESIGNS.map(d => `<tr><td style="width:230px"><b>${esc(d[0])}</b></td><td class="mut">${esc(d[1])}</td></tr>`).join('')}</tbody></table><p class="mut" style="margin:8px 0 0">Ideas used: Systematic Layout Planning (Richard Muther), group technology and production flow analysis, lean cell design, and the factory planning approach of VDI 5200. The route per part is measured in metres through the process stages in order: inbound door, turning, machining centres, conventional, quality room, finish and pack, dispatch door.</p></div>`;
+}
 
-const num2=(id,lab,f,step)=>`<div><label for="${id}">${lab}</label><input id="${id}" type="number" step="${step||.1}" min="0" data-dim="${f}" value="${P.dim[f]}" ${canEdit?'':'disabled'}></div>`;
-function itemRows(){
-  if(P.kind==='office')return P.items.map((m,i)=>`<tr><td><input data-i="${i}" data-f="name" value="${esc(m.name)}" style="min-width:140px"></td><td><select data-i="${i}" data-f="kind">${Object.entries(KINDS).map(([k,v])=>`<option value="${k}" ${m.kind===k?'selected':''}>${esc(v.n)}</option>`).join('')}</select></td><td><input data-i="${i}" data-f="w" type="number" step=".1" value="${m.w}" style="width:64px"></td><td><input data-i="${i}" data-f="h" type="number" step=".1" value="${m.h}" style="width:64px"></td><td><button class="btn d sm" data-rm="${i}" title="Remove">✕</button></td></tr>`).join('');
-  return P.items.map((m,i)=>`<tr><td><input data-i="${i}" data-f="id" value="${esc(m.id)}" style="width:70px"></td><td><input data-i="${i}" data-f="name" value="${esc(m.name)}" style="min-width:120px"></td><td><select data-i="${i}" data-f="type">${Object.entries(TYPES).filter(([k])=>k!=='office').map(([k,v])=>`<option value="${k}" ${m.type===k?'selected':''}>${esc(v.s)}</option>`).join('')}</select></td><td><input data-i="${i}" data-f="cell" value="${esc(m.cell||'')}" style="width:100px"></td><td><input data-i="${i}" data-f="w" type="number" step=".05" value="${m.w}" style="width:60px"></td><td><input data-i="${i}" data-f="h" type="number" step=".05" value="${m.h}" style="width:60px"></td><td><button class="btn d sm" data-rm="${i}" title="Remove">✕</button></td></tr>`).join('')}
-function paintStu(){
-  if(!P){$('#stu').innerHTML='<p class="mut">Open a layout from <b>Projects</b>, or start a new one there.</p>';return}
-  const off=P.kind==='office',dis=canEdit?'':'disabled';
-  $('#stu').innerHTML=`<div class="stu"><div>
+/* ---------- existing plan: read DXF / PDF / picture ---------- */
+function impK() {
+  if (!IM || !IM.raw) return 1;
+  let k = IM.src === 'dxf' ? UNIT_M[IM.unit] : (25.4 / 72 / 1000) * IM.scale;
+  return k;
+}
+function reinterp() {
+  if (!IM || !IM.raw || IM.src === 'img') return;
+  let k = impK(), res = interpret(IM.raw, k);
+  if (IM.realW > 0 && res.building && res.building.w > 0) { k *= IM.realW / res.building.w; res = interpret(IM.raw, k); }
+  IM.res = res;
+}
+async function onPlanFile(f) {
+  if (!f) return; const ext = (f.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'dwg') { say('A DWG is a closed AutoCAD file that this page cannot read. In AutoCAD choose Save As → DXF (ASCII), or open the DWG in KMR CAD Draft, which converts it, and save it as DXF. Then upload the DXF here.'); return; }
+  IM = { name: f.name, src: '', raw: null, unit: 'mm', scale: 100, realW: 0, res: null, busy: true }; paintImp(); say('');
+  try {
+    if (ext === 'dxf') { const txt = await f.text(), d = parseDXF(txt); IM.raw = rectsFromDXF(d); IM.src = 'dxf'; IM.unit = unitGuess(IM.raw, d.insunits); if (IM.raw.oblique) IM.warn = IM.raw.oblique + ' item(s) drawn at an angle were not read.'; }
+    else if (ext === 'pdf') { IM.raw = await readPDF(await f.arrayBuffer()); IM.src = 'pdf'; IM.underlay = IM.raw.underlay; IM.page = [IM.raw.pageW, IM.raw.pageH]; const ext2 = IM.raw.rects.length ? Math.max(...IM.raw.rects.map(r => r.x1 - r.x0)) : 0; const sc = [20, 25, 50, 75, 100, 150, 200, 250, 500].find(s => { const m = ext2 * 25.4 / 72 / 1000 * s; return m >= 12 && m <= 150; }); IM.scale = sc || 100; }
+    else if (/^(jpe?g|png|webp|gif|bmp)$/.test(ext)) { IM.raw = await readImage(f); IM.src = 'img'; IM.underlay = IM.raw.underlay; IM.page = [IM.raw.pageW, IM.raw.pageH]; TR = { mode: 'scale', pts: [], pxm: 0, bld: null, boxes: [] }; }
+    else throw new Error('Upload a DXF, PDF, JPG or PNG file.');
+    IM.busy = false; reinterp();
+    if (IM.src !== 'img' && (!IM.res || !IM.res.building || IM.res.items.length < 2)) { say('Few or no machines could be read from this file. For a scanned plan or a drawing without box shapes, trace the machines by hand below.'); IM.src = IM.src === 'dxf' ? 'dxf' : IM.src; if (IM.underlay) TR = { mode: 'scale', pts: [], pxm: 0, bld: null, boxes: [] }; }
+  } catch (err) { IM = null; say(err.message); }
+  paintImp();
+}
+function impPreview() {
+  const r = IM.res; if (!r || !r.building) return '';
+  const b = r.building, M = 1, S = 40, W = b.w, D = b.h;
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${-M * S} ${-M * S} ${W * S + 2 * M * S} ${D * S + 2 * M * S}" style="background:#fff;font-family:system-ui,sans-serif">`;
+  s += `<rect x="0" y="0" width="${W * S}" height="${D * S}" fill="none" stroke="#0f172a" stroke-width="3"/>`;
+  r.items.forEach((m, i) => { const col = (TYPES[m.type] || TYPES.conv).c; s += `<rect x="${m.ax * S}" y="${m.ay * S}" width="${m.w * S}" height="${m.h * S}" fill="${col}" fill-opacity="${m.keep ? .7 : .12}" stroke="${col}"/><text x="${(m.ax + m.w / 2) * S}" y="${(m.ay + m.h / 2) * S + 4}" font-size="11" text-anchor="middle" fill="#fff" font-weight="700" stroke="#0008" stroke-width=".4">${i + 1}</text>`; });
+  return s + '</svg>';
+}
+function paintImp() {
+  const el = $('#imp'); if (!el) return;
+  const intro = `<div class="guide"><b>Step 1 — read your existing plan.</b> Upload a DXF drawing, a PDF plan or a picture. The app finds the building and each machine box, reads its size and its name, and shows what it found for you to check and correct. Nothing is changed in your file.</div>`;
+  if (!canEdit) { el.innerHTML = intro + '<p class="mut">Editor access is needed to read a plan into a new layout.</p>'; return; }
+  const up = `<div class="dz"><b>Drop or choose the plan file</b><div class="mut" style="margin:4px 0 8px">DXF (best, from AutoCAD or KMR CAD) · PDF plan · JPG / PNG picture · DWG must be saved as DXF first</div><input id="plan_file" type="file" accept=".dxf,.pdf,.jpg,.jpeg,.png,.webp,.gif,.bmp,.dwg" style="max-width:360px"></div>`;
+  if (!IM) { el.innerHTML = intro + up; return; }
+  if (IM.busy) { el.innerHTML = intro + up + '<p class="mut">Reading the file…</p>'; return; }
+  const r = IM.res, ctl = [];
+  if (IM.src === 'dxf') ctl.push(`<div><label class="lb">Drawing units</label><select id="im_unit">${Object.keys(UNIT_M).map(u => `<option ${IM.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select></div>`);
+  if (IM.src === 'pdf') ctl.push(`<div><label class="lb">Paper scale 1 :</label><input id="im_scale" type="number" min="1" value="${IM.scale}"></div>`);
+  if (IM.src !== 'img') ctl.push(`<div><label class="lb">Real building width (m) — optional, corrects the scale</label><input id="im_realw" type="number" step=".1" min="0" value="${IM.realW || ''}"></div>`);
+  let body = '';
+  if (r && r.building && r.items.length) {
+    const kept = r.items.filter(m => m.keep).length;
+    body = `<div class="card"><h3>What was read from “${esc(IM.name)}”</h3><p style="margin:0 0 8px">Building <b>${r.building.w} m × ${r.building.h} m</b> · <b>${kept}</b> of ${r.items.length} machine boxes kept${r.skipped > 0 ? ` · ${r.skipped} other shapes ignored (walls, zones, duplicates)` : ''}${IM.warn ? ' · ' + esc(IM.warn) : ''}.</p>
+    <div class="mut" style="margin-bottom:8px">Check the sizes against the real machines. If the drawing shows only an outline, type the real size — the app uses exactly the sizes you confirm here and never changes them afterwards.</div>
+    <div class="stu" style="grid-template-columns:minmax(320px,1fr) minmax(300px,520px)"><div style="max-height:60vh;overflow:auto"><table class="mt"><thead><tr><th>Keep</th><th>#</th><th>Name</th><th>Type</th><th>Width m</th><th>Depth m</th><th>At x, y m</th></tr></thead><tbody>${r.items.map((m, i) => `<tr><td><input type="checkbox" data-ik="${i}" ${m.keep ? 'checked' : ''}></td><td>${i + 1}</td><td><input data-iv="${i}" data-f="name" value="${esc(m.name)}" style="min-width:110px"></td><td><select data-iv="${i}" data-f="type">${Object.entries(TYPES).filter(([k]) => k !== 'office').map(([k, v]) => `<option value="${k}" ${m.type === k ? 'selected' : ''}>${esc(v.s)}</option>`).join('')}</select></td><td><input data-iv="${i}" data-f="w" type="number" step=".05" value="${m.w}" style="width:64px"></td><td><input data-iv="${i}" data-f="h" type="number" step=".05" value="${m.h}" style="width:64px"></td><td class="mut">${m.ax}, ${m.ay}</td></tr>`).join('')}</tbody></table></div><div class="pv" id="im_pv">${impPreview()}</div></div>
+    <div class="row" style="margin-top:10px"><input id="im_title" value="${esc(IM.name.replace(/\.[^.]+$/, ''))} — re-layout" style="min-width:260px;max-width:380px"><button class="btn" id="b_accept">Use these ${kept} machines → design better layouts</button></div></div>`;
+  } else if (IM.src !== 'img' && !TR) body = '<p class="mut">No machines found yet. Check the drawing units or paper scale above, or trace by hand.</p>';
+  let trace = '';
+  if (TR && IM.underlay) trace = traceHTML();
+  else if (IM.src && IM.src !== 'img' && IM.underlay) trace = `<div class="row"><button class="btn o" id="b_trace">Trace machines by hand on the picture instead</button></div>`;
+  el.innerHTML = intro + up + (ctl.length ? `<div class="frm" style="margin:12px 0;max-width:640px">${ctl.join('')}</div>` : '') + body + trace;
+}
+/* trace by hand on a picture */
+function traceHTML() {
+  const S = TR, w = IM.page[0], h = IM.page[1], bar = ['scale', 'bld', 'mach'], nm = { scale: '1 · Set the scale', bld: '2 · Draw the building', mach: '3 · Draw each machine' };
+  const ok = { scale: S.pxm > 0, bld: !!S.bld, mach: S.boxes.length > 0 };
+  let svg = `<svg id="tr_svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}"><image href="${IM.underlay}" width="${w}" height="${h}"/>`;
+  if (S.pts.length) svg += S.pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="${w / 160}" fill="#dc2626"/>`).join('') + (S.pts.length === 2 ? `<line x1="${S.pts[0][0]}" y1="${S.pts[0][1]}" x2="${S.pts[1][0]}" y2="${S.pts[1][1]}" stroke="#dc2626" stroke-width="${w / 400}"/>` : '');
+  if (S.bld) svg += `<rect x="${S.bld.x}" y="${S.bld.y}" width="${S.bld.w}" height="${S.bld.h}" fill="none" stroke="#0f172a" stroke-width="${w / 300}"/>`;
+  S.boxes.forEach((b, i) => { svg += `<rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" fill="#7c3aed55" stroke="#7c3aed" stroke-width="${w / 500}"/><text x="${b.x + b.w / 2}" y="${b.y + b.h / 2}" font-size="${w / 70}" text-anchor="middle" fill="#000" font-weight="700">${i + 1}</text>`; });
+  if (S.drag) svg += `<rect x="${S.drag.x}" y="${S.drag.y}" width="${S.drag.w}" height="${S.drag.h}" fill="#0ea5e955" stroke="#0ea5e9" stroke-dasharray="6 4"/>`;
+  svg += '</svg>';
+  const bx = S.pxm > 0 ? S.boxes.map(b => ({ w: r2(b.w / S.pxm), h: r2(b.h / S.pxm) })) : [];
+  return `<div class="card tr"><h3>Trace by hand</h3><div class="row">${bar.map(m => `<button class="btn ${S.mode === m ? '' : 'o'} sm" data-tm="${m}">${ok[m] ? '✔ ' : ''}${nm[m]}</button>`).join('')}</div>
+  <div class="mut" style="margin-bottom:6px">${S.mode === 'scale' ? 'Click the two ends of a distance you know on the drawing (a dimension line or the building width). Then type the real distance.' : S.mode === 'bld' ? 'Drag a box around the outside of the building.' : 'Drag a box over each machine. Press and drag; repeat for every machine.'}</div>
+  ${S.mode === 'scale' ? `<div class="row"><span>Real distance between the two clicks (m):</span><input id="tr_m" type="number" step=".1" min="0" style="width:110px"><button class="btn sm" id="tr_setscale" ${S.pts.length === 2 ? '' : 'disabled'}>Set scale</button>${S.pxm ? `<span class="chip g">scale set: ${r2(S.pxm)} pixels per metre</span>` : ''}</div>` : ''}
+  <div class="pv">${svg}</div>
+  ${S.boxes.length && S.pxm ? `<table class="mt" style="margin-top:8px"><thead><tr><th>#</th><th>Name</th><th>Type</th><th>Width m</th><th>Depth m</th><th></th></tr></thead><tbody>${S.boxes.map((b, i) => `<tr><td>${i + 1}</td><td><input data-tn="${i}" value="${esc(b.name || 'Machine ' + (i + 1))}"></td><td><select data-tt="${i}">${Object.entries(TYPES).filter(([k]) => k !== 'office').map(([k, v]) => `<option value="${k}" ${(b.type || 'conv') === k ? 'selected' : ''}>${esc(v.s)}</option>`).join('')}</select></td><td>${bx[i].w}</td><td>${bx[i].h}</td><td><button class="btn d sm" data-trd="${i}">✕</button></td></tr>`).join('')}</tbody></table>` : ''}
+  <div class="row" style="margin-top:8px"><button class="btn" id="tr_done" ${S.pxm && S.bld && S.boxes.length ? '' : 'disabled'}>Use the traced machines</button></div></div>`;
+}
+function trPoint(ev) { const svg = $('#tr_svg'), pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; const p = pt.matrixTransform(svg.getScreenCTM().inverse()); return [p.x, p.y]; }
+function trFinish() {
+  const S = TR, items = S.boxes.map((b, i) => { const type = b.type || 'conv'; return { id: 'M-' + (i + 1), type, name: b.name || 'Machine ' + (i + 1), cell: CELL_OF[type], w: r2(b.w / S.pxm), h: r2(b.h / S.pxm), ax: r2((b.x - S.bld.x) / S.pxm), ay: r2((b.y - S.bld.y) / S.pxm), arot: false, keep: true }; });
+  IM.res = { building: { w: r2(S.bld.w / S.pxm), h: r2(S.bld.h / S.pxm), x0: 0, y0: 0 }, items, skipped: 0 }; IM.src = 'img'; IM.underlay = null; TR = null; paintImp();
+}
+async function acceptImport() {
+  const r = IM.res, kept = r.items.filter(m => m.keep && m.w > 0 && m.h > 0); if (!kept.length) { say('Keep at least one machine.'); return; }
+  const msa = kept.filter(m => m.type === 'msa'), depth = r.building.h;
+  const low = msa.filter(m => m.ay >= depth * .7), hall = low.length ? Math.max(depth * .5, Math.min(...low.map(m => m.ay)) - .3) : depth * .85;
+  P = { id: null, no: null, title: ($('#im_title') || {}).value || 'Re-layout', kind: 'factory', status: 'draft', source_file: IM.name, history: [], sel: 0, dirty: true, dim: { ...DEFAULT_DIM, width: r.building.w, depth, hallDepth: r1(hall), qcDepth: r1(depth - hall) }, items: kept.map((m, i) => ({ id: m.id || 'M-' + (i + 1), type: m.type, name: m.name, cell: m.cell || CELL_OF[m.type], w: m.w, h: m.h, ax: m.ax, ay: m.ay, arot: false })) };
+  recalc(); REPORT = null; ACTIONS = [];
+  if (await save(true)) say(`Layout ${P.no} created from your plan: ${P.items.length} machines. Option “Current layout” shows what you have today; the other options are new designs in the same building.`, true);
+  P.sel = Math.max(0, OPTS.findIndex(x => x.asIs)); paint(); go('stu');
+}
+
+/* ---------- studio ---------- */
+const num2 = (id, lab, f, step) => `<div><label for="${id}">${lab}</label><input id="${id}" type="number" step="${step || .1}" min="0" data-dim="${f}" value="${P.dim[f]}" ${canEdit ? '' : 'disabled'}></div>`;
+function itemRows() {
+  if (P.kind === 'office') return P.items.map((m, i) => `<tr><td><input data-i="${i}" data-f="name" value="${esc(m.name)}" style="min-width:140px"></td><td><select data-i="${i}" data-f="kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}" ${m.kind === k ? 'selected' : ''}>${esc(v.n)}</option>`).join('')}</select></td><td><input data-i="${i}" data-f="w" type="number" step=".1" value="${m.w}" style="width:64px"></td><td><input data-i="${i}" data-f="h" type="number" step=".1" value="${m.h}" style="width:64px"></td><td><button class="btn d sm" data-rm="${i}" title="Remove">✕</button></td></tr>`).join('');
+  return P.items.map((m, i) => `<tr><td><input data-i="${i}" data-f="id" value="${esc(m.id)}" style="width:70px"></td><td><input data-i="${i}" data-f="name" value="${esc(m.name)}" style="min-width:120px"></td><td><select data-i="${i}" data-f="type">${Object.entries(TYPES).filter(([k]) => k !== 'office').map(([k, v]) => `<option value="${k}" ${m.type === k ? 'selected' : ''}>${esc(v.s)}</option>`).join('')}</select></td><td><input data-i="${i}" data-f="cell" value="${esc(m.cell || '')}" style="width:100px"></td><td><input data-i="${i}" data-f="w" type="number" step=".05" value="${m.w}" style="width:60px"></td><td><input data-i="${i}" data-f="h" type="number" step=".05" value="${m.h}" style="width:60px"></td><td><button class="btn d sm" data-rm="${i}" title="Remove">✕</button></td></tr>`).join('');
+}
+function paintStu() {
+  if (!P) { $('#stu').innerHTML = '<p class="mut">Open a layout from <b>Layouts</b>, or <a href="#go=imp">read your existing plan</a> first.</p>'; return; }
+  const off = P.kind === 'office', dis = canEdit ? '' : 'disabled';
+  $('#stu').innerHTML = `<div class="stu"><div>
    <div class="card"><h3>1 · Layout</h3><label class="lb">Title</label><input id="p_title" value="${esc(P.title)}" ${dis}>
-    <div class="row" style="margin:10px 0 0"><span class="chip ${STATUS_CLS[P.status]||'x'}">${STATUS_NAME[P.status]||P.status}</span><span class="mut">${esc(P.no||'not saved yet')} · ${kindName(P.kind)}</span></div>
-    <div class="row" style="margin:10px 0 0"><button class="btn" id="b_save" ${dis}>Save</button>${P.id&&canEdit?`<select id="p_status" style="width:auto">${CFG.STATUS.map(s=>`<option value="${s}" ${P.status===s?'selected':''}>${STATUS_NAME[s]}</option>`).join('')}</select><button class="btn o sm" id="b_status">Set status</button>`:''}</div></div>
-   <div class="card"><h3>2 · Building and plan</h3><div class="frm">${num2('d_w','Width (m)','width',.5)}${num2('d_d','Total depth (m)','depth',.5)}${off?'':num2('d_h','Machine hall depth (m)','hallDepth',.5)}</div>
-    ${off?'':`<p class="mut" style="margin:6px 0 0">Quality room depth = total depth − hall depth = <b>${Math.max(0,P.dim.depth-P.dim.hallDepth).toFixed(1)} m</b>.</p>`}
-    <div style="margin-top:10px"><label class="lb">Picture of the existing plan (JPG or PNG) to trace over — it is shown on screen only and is not saved</label><input id="p_file" type="file" accept="image/*,.pdf,.dxf"><div class="mut" id="p_fn">${esc(P.source_file||'')}</div>
-     <div class="${underlay?'':'hide'}" id="op_row"><label class="lb">Picture strength</label><input id="rng_op" type="range" min="0" max="100" value="40"></div></div></div>
-   <div class="card"><h3>3 · Rules</h3><div class="frm">${off?'':num2('d_a','Central aisle (m)','aisle',.2)}${num2('d_o','Operator clearance (m)','opClearance',.1)}${num2('d_m','Maintenance corridor (m)','maintClearance',.1)}</div>
+    <div class="row" style="margin:10px 0 0"><span class="chip ${STATUS_CLS[P.status] || 'x'}">${STATUS_NAME[P.status] || P.status}</span><span class="mut">${esc(P.no || 'not saved yet')} · ${kindName(P.kind)}${P.source_file ? ' · from ' + esc(P.source_file) : ''}</span></div>
+    <div class="row" style="margin:10px 0 0"><button class="btn" id="b_save" ${dis}>Save</button>${P.id && canEdit ? `<select id="p_status" style="width:auto">${CFG.STATUS.map(s => `<option value="${s}" ${P.status === s ? 'selected' : ''}>${STATUS_NAME[s]}</option>`).join('')}</select><button class="btn o sm" id="b_status">Set status</button>` : ''}</div></div>
+   <div class="card"><h3>2 · Building (fixed)</h3><div class="frm">${num2('d_w', 'Width (m)', 'width', .5)}${num2('d_d', 'Total depth (m)', 'depth', .5)}${off ? '' : num2('d_h', 'Machine hall depth (m)', 'hallDepth', .5)}</div>
+    ${off ? '' : `<p class="mut" style="margin:6px 0 0">Quality room depth = total depth − hall depth = <b>${Math.max(0, P.dim.depth - P.dim.hallDepth).toFixed(1)} m</b>.</p>`}
+    <p class="mut" style="margin:6px 0 0">The building size and every machine size stay exactly as given. The designs only choose positions and turn a machine by 90° where needed.</p></div>
+   <div class="card"><h3>3 · Rules</h3><div class="frm">${off ? '' : num2('d_a', 'Central aisle (m)', 'aisle', .2)}${num2('d_o', 'Operator clearance (m)', 'opClearance', .1)}${num2('d_m', 'Maintenance corridor (m)', 'maintClearance', .1)}</div>
     <p class="mut" style="margin:6px 0 0">Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m, maintenance ${TARGETS.maint} m. A smaller value is allowed but shows as a gap.</p></div>
-   <div class="card"><h3>4 · ${off?'Rooms and zones':'Machines'} (${P.items.length})</h3>
-    <div style="max-height:46vh;overflow:auto"><table class="mt"><thead><tr>${off?'<th>Name</th><th>Kind</th>':'<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Width m</th><th>Depth m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
-    ${canEdit?`<div class="row" style="margin:8px 0 0"><button class="btn o sm" id="b_add">＋ Add ${off?'room':'machine'}</button>${armBtn('example','Use the example list','Press again to replace')}${armBtn('clear','Remove all','Press again to remove all')}</div>
-    <details style="margin-top:8px"><summary class="mut" style="cursor:pointer">Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off?'name, kind (public / open / private / service), width, depth':'id, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>`:''}</div>
+   <div class="card"><h3>4 · ${off ? 'Rooms and zones' : 'Machines'} (${P.items.length})</h3>
+    <div style="max-height:46vh;overflow:auto"><table class="mt"><thead><tr>${off ? '<th>Name</th><th>Kind</th>' : '<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Width m</th><th>Depth m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
+    ${canEdit ? `<div class="row" style="margin:8px 0 0"><button class="btn o sm" id="b_add">＋ Add ${off ? 'room' : 'machine'}</button>${armed === 'example' ? '<button class="btn d sm" data-do="example">Press again to replace</button>' : '<button class="btn o sm" data-arm="example">Use the example list</button>'}${armed === 'clear' ? '<button class="btn d sm" data-do="clear">Press again to remove all</button>' : '<button class="btn o sm" data-arm="clear">Remove all</button>'}</div>
+    <div class="mut" style="margin-top:6px">Cell group = the part family or work area a machine belongs to. Machines with the same cell group are kept together as one cell.</div>
+    <details style="margin-top:8px"><summary class="mut" style="cursor:pointer">Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off ? 'name, kind (public / open / private / service), width, depth' : 'id, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>` : ''}</div>
   </div><div>
-   <div class="otabs" id="otabs"></div><div id="kp"></div><div class="canvas" id="cv"></div><div id="lg"></div><div id="ck"></div>
-   <div class="row" style="margin-top:10px"><button class="btn o" id="b_dxf">⬇ Export DXF (Drawing Exchange Format)</button><a class="btn o" style="text-decoration:none" href="/it/cad.html${slug?'?co='+encodeURIComponent(slug):''}" target="_blank" rel="noopener">Open KMR CAD Draft</a><button class="btn" id="b_rep">Make the report →</button></div></div></div>`;
-  paintOpts()}
-function paintOpts(){
-  if(!P||!$('#otabs'))return;
-  if(!OPTS.length){$('#otabs').innerHTML='';$('#kp').innerHTML='';$('#cv').innerHTML='<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>';$('#lg').innerHTML='';$('#ck').innerHTML='';return}
-  const o=OPTS[P.sel];
-  $('#otabs').innerHTML=OPTS.map((x,i)=>`<button class="ot ${i===P.sel?'on':''}" data-opt="${i}"><b>${esc(x.name.split(':')[0])}: ${esc(x.short)}</b><span>${x.travel} m · ${x.util}% · ${x.placedN}/${x.total} placed · <span class="chip ${x.grade==='C'?'r':'g'}">${x.grade}</span></span></button>`).join('');
-  const k=(v,t,c)=>`<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
-  $('#kp').innerHTML=`<div class="kpis">${k(o.travel+' m',o.kind==='office'?'Walking distance (visitor + service routes)':'Material route per part','var(--b1)')}${k(o.util+'%','Floor utilisation (cells with gangways)','var(--b2)')}${k(o.saving+'%','Saving against the longest option','var(--g)')}${k(o.placedN+' / '+o.total,'Placed','var(--a)')}${k(o.grade,'Grade (rank by route length)',o.grade==='C'?'var(--r)':'var(--g)')}</div>`;
-  $('#cv').innerHTML=drawSVG(o,'dark','s');$('#lg').innerHTML=legendHTML(o);
-  $('#ck').innerHTML=`<table><tbody>${o.checks.map(c=>`<tr><td style="width:24px" class="${c.ok?'ok':'bad'}">${c.ok?'✔':'✖'}</td><td>${esc(c.name)}</td><td class="mut">${esc(c.txt)}</td></tr>`).join('')}</tbody></table>`+(o.noFit.length?`<p class="msg" style="margin-top:8px">Not placed: ${esc(o.noFit.map(m=>m.name).join(', '))}. Make the building bigger, reduce the clearances, or remove items to see them placed.</p>`:'')}
-function dirty(){P.dirty=true;clearTimeout(timer);timer=setTimeout(()=>{recalc();paintOpts();paintHead()},250)}
+   <div class="otabs" id="otabs"></div><div id="kp"></div><div class="canvas" id="cv"></div><div id="lg"></div><div id="ck"></div><div id="lgs"></div>
+   <div class="row" style="margin-top:10px"><button class="btn o" id="b_dxf">⬇ Export DXF (Drawing Exchange Format)</button><button class="btn o" id="b_cad">Open in KMR CAD Draft</button><button class="btn o" id="b_pdf1">⬇ Export PDF</button><button class="btn" id="b_rep">Make the report →</button></div></div></div>`;
+  paintOpts();
+}
+function paintOpts() {
+  if (!P || !$('#otabs')) return;
+  if (!OPTS.length) { $('#otabs').innerHTML = ''; $('#kp').innerHTML = ''; $('#cv').innerHTML = '<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>'; $('#lg').innerHTML = ''; $('#ck').innerHTML = ''; $('#lgs').innerHTML = ''; return; }
+  const o = OPTS[P.sel];
+  $('#otabs').innerHTML = OPTS.map((x, i) => `<button class="ot ${i === P.sel ? 'on' : ''}" data-opt="${i}"><b>${esc(x.name.split(':')[0])}${x.asIs ? '' : ': ' + esc(x.short)}</b><span>${x.travel} m · ${x.util}% · ${x.placedN}/${x.total} placed${x.vsCurrent != null ? ' · ' + (x.vsCurrent >= 0 ? '−' : '+') + Math.abs(x.vsCurrent) + '% vs current' : ''} ${x.asIs ? '<span class="chip b">today</span>' : `<span class="chip ${x.grade === 'C' ? 'r' : 'g'}">${x.grade}</span>`}</span></button>`).join('');
+  const k = (v, t, c) => `<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
+  $('#kp').innerHTML = `<div class="kpis">${k(o.travel + ' m', o.kind === 'office' ? 'Walking distance (visitor + service routes)' : 'Material route per part', 'var(--b2)')}${k(o.util + '%', 'Floor utilisation (cells with gangways)', 'var(--b1)')}${k(o.asIs ? '—' : (o.vsCurrent != null ? o.vsCurrent + '%' : o.saving + '%'), o.vsCurrent != null ? 'Route saving against your current layout' : 'Saving against the longest option', 'var(--g)')}${k(o.placedN + ' / ' + o.total, 'Placed', 'var(--a)')}${k(o.grade, 'Grade (rank by route length)', o.grade === 'C' ? 'var(--r)' : 'var(--g)')}</div>`;
+  $('#cv').innerHTML = drawSVG(o, 'dark', 's'); $('#lg').innerHTML = legendHTML(o);
+  $('#ck').innerHTML = `<table><tbody>${o.checks.map(c => `<tr><td style="width:24px" class="${c.ok ? 'ok' : 'bad'}">${c.ok ? '✔' : '✖'}</td><td>${esc(c.name)}</td><td class="mut">${esc(c.txt)}</td></tr>`).join('')}</tbody></table>` + (o.noFit.length ? `<p class="msg" style="margin-top:8px">Not placed: ${esc(o.noFit.map(m => m.name).join(', '))}. Make the building bigger, reduce the clearances, or remove items to see them placed.</p>` : '');
+  $('#lgs').innerHTML = o.legs && o.legs.length ? `<h4 style="margin:12px 0 4px">Route leg by leg (From → To, metres)</h4><table><thead><tr><th>From</th><th>To</th><th>Distance</th></tr></thead><tbody>${o.legs.map(l => `<tr><td>${esc(l.from)}</td><td>${esc(l.to)}</td><td>${l.m} m</td></tr>`).join('')}<tr><td colspan="2"><b>Total route per part</b></td><td><b>${o.travel} m</b></td></tr></tbody></table><p class="mut" style="margin:6px 0 0">Measured through the centre of each stage in process order. If your cells combine different machine types for one part family, the real walking inside a cell is shorter than this stage route shows.</p>` : '';
+}
+function dirty() { P.dirty = true; clearTimeout(timer); timer = setTimeout(() => { recalc(); paintOpts(); paintHead(); }, 250); }
+function paintHead() { const c = $('#co'); if (c && ctx) c.textContent = ctx.company + (P ? ' · ' + (P.no || 'new') + ' ' + P.title + (P.dirty ? '  (not saved)' : '') : ''); }
+
+/* ---------- open in KMR CAD, print / PDF ---------- */
+function openCAD() {
+  const o = OPTS[P.sel]; if (!o) return;
+  try { localStorage.setItem('kmr-layout-dxf', JSON.stringify({ name: (P.no || 'Layout') + ' ' + o.short, text: dxf(o, P.title), at: Date.now() })); } catch (e) { say('This browser blocks local storage, so the drawing cannot be handed to KMR CAD. Use Export DXF and open the file in KMR CAD instead.'); return; }
+  window.open('/it/cad.html?' + (DEMO ? 'demo=1' : 'kmr=1&co=' + encodeURIComponent(slug)) + '#go=layout', '_blank');
+}
+function printReport(onlyDrawing) {
+  if (!P || !OPTS.length) return;
+  if (!REPORT) REPORT = { ref: 'DRAFT', issued_at: new Date().toISOString(), issued_by: '', opt: P.sel };
+  const html = onlyDrawing ? reportPages().split('<!--break-->')[0] : reportPages();
+  $('#printroot').innerHTML = html;
+  try { if (window.KMRReport) KMRReport.set({ key: 'report', title: CFG.FORMAT.title, doc: (REPORT.ref !== 'DRAFT' ? REPORT.ref + ' · ' : '') + (P.no || '') + ' · ' + P.title, format: CFG.FORMAT.no, rev: CFG.FORMAT.rev, date: CFG.FORMAT.revDate, land: true }); } catch (e) { /* frame optional */ }
+  const t = document.title; document.title = (REPORT.ref !== 'DRAFT' ? REPORT.ref : (P.no || 'Layout'));
+  window.print(); setTimeout(() => { document.title = t; $('#printroot').innerHTML = ''; }, 800);
+}
 
 /* ---------- report ---------- */
-function pageWrap(body,i,n,ref){const F=CFG.FORMAT;return`<div class="page"><div class="ph"><div class="logo">${ctx&&ctx.logo_url?`<img src="${esc(ctx.logo_url)}" alt="${esc(ctx.company)}" crossorigin="anonymous">`:`<b>${esc(ctx?ctx.company:'')}</b>`}</div><div class="pt">${esc(F.title)}<small>${esc(P.title)} · ${esc(P.no||'')}</small></div><div class="rf">Report reference<b>${esc(ref)}</b>Issued ${dmy(REPORT.issued_at)}</div></div><div class="pb">${body}</div><div class="pf"><div>Format No. ${esc(F.no)} · Rev. ${esc(F.rev)} · Rev. date ${dmy(F.revDate)}</div><div style="text-align:center">${esc(ctx?ctx.company:'')} · ${esc(ref)}</div><div style="text-align:right">Page ${i} of ${n}</div></div></div>`}
-function reportPages(){
-  const o=OPTS[REPORT.opt],ref=REPORT.ref,ks=kpis(o),items=o.placed.concat(o.noFit.map(m=>({...m,x:null,y:null}))),per=24,pages=[];
-  pages.push(`<div class="two"><div>${drawSVG(o,'light','r1')}${legendHTML(o)}</div><div><table><tbody>
-   <tr><th>Layout</th><td>${esc(P.no||'')} · ${esc(P.title)}</td></tr><tr><th>Type</th><td>${kindName(P.kind)}</td></tr><tr><th>Building</th><td>${P.dim.width} m × ${P.dim.depth} m${P.kind==='office'?'':' (hall '+P.dim.hallDepth+' m)'}</td></tr><tr><th>Status</th><td>${STATUS_NAME[P.status]||P.status}</td></tr><tr><th>Source plan</th><td>${esc(P.source_file||'—')}</td></tr><tr><th>Option shown</th><td>${esc(o.name)}</td></tr><tr><th>Issued by</th><td>${esc(REPORT.issued_by||'')}</td></tr></tbody></table>
-   <p style="margin:8px 0 3px"><b>Key Performance Indicators (KPIs)</b></p><table><thead><tr><th>KPI</th><th>Value</th><th>Target</th><th></th></tr></thead><tbody>${ks.map(k=>`<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td><span class="chip ${k.ok?'g':'r'}">${k.ok?'Met':'Gap'}</span></td></tr>`).join('')}</tbody></table></div></div>`);
-  const mx=Math.max(...OPTS.map(x=>x.travel),1);
-  pages.push(`<p style="margin:0 0 4px"><b>The three options compared</b></p><table><thead><tr><th>Option</th><th>${P.kind==='office'?'Walking distance':'Route per part'}</th><th></th><th>Floor use</th><th>Saving</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x,i)=>`<tr><td>${esc(x.name)}${i===REPORT.opt?' <b>(shown)</b>':''}</td><td>${x.travel} m</td><td style="width:60mm"><div style="height:9px;background:#0ea5e9;width:${x.travel/mx*100}%"></div></td><td>${x.util}%</td><td>${x.saving}%</td><td>${x.placedN} / ${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table>
-   <p style="margin:10px 0 4px"><b>Checks on the option shown</b></p><table><tbody>${o.checks.map(c=>`<tr><td style="width:8mm">${c.ok?'✔':'✖'}</td><td>${esc(c.name)}</td><td>${esc(c.txt)}</td></tr>`).join('')}</tbody></table>
-   <p style="margin:8px 0 0">Route length and floor use are calculated from the machine sizes and rules in this layout (1:1 scale, metres). Grade is the rank of the options that place every item, by shortest route: A+, A, B+; C means an item is left out.</p>`);
-  for(let i=0;i<Math.max(1,Math.ceil(items.length/per));i++)pages.push(`<p style="margin:0 0 4px"><b>${P.kind==='office'?'Rooms':'Machines'} in the option shown</b> (${items.length}) — part ${i+1}</p><table><thead><tr><th>#</th>${P.kind==='office'?'<th>Room</th><th>Kind</th>':'<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Size (m)</th><th>Position x, y (m)</th><th>Turned</th></tr></thead><tbody>${items.slice(i*per,i*per+per).map((m,j)=>`<tr><td>${i*per+j+1}</td>${P.kind==='office'?`<td>${esc(m.name)}</td><td>${esc((KINDS[m.kind]||{}).n||'')}</td>`:`<td>${esc(m.id)}</td><td>${esc(m.name)}</td><td>${esc((TYPES[m.type]||{}).s||'')}</td><td>${esc(m.cell||'')}</td>`}<td>${r2(m.w)} × ${r2(m.h)}</td><td>${m.x==null?'<b>not placed</b>':r2(m.x)+', '+r2(m.y)}</td><td>${m.rot?'yes':''}</td></tr>`).join('')}</tbody></table>`);
-  pages.push(`<p style="margin:0 0 4px"><b>Standards this report supports</b></p><table><thead><tr><th>Standard</th><th>Clause / element</th></tr></thead><tbody>${STD.filter(r=>r[4]()!=='Not applicable').map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>
+function rpHead(ref) { return `<div class="rh"><div>${window.KMRReport && KMRReport.logoSrc() ? `<img src="${esc(KMRReport.logoSrc())}" alt="">` : `<b>${esc(ctx ? ctx.company : '')}</b>`}</div><div style="text-align:center"><b>${esc(CFG.FORMAT.title)}</b><br>${esc(P.no || '')} · ${esc(P.title)}</div><div style="text-align:right">Report ref. no.<br><b>${esc(ref)}</b></div></div>`; }
+function reportPages() {
+  const o = OPTS[REPORT ? REPORT.opt : P.sel], ref = REPORT ? REPORT.ref : 'DRAFT', ks = kpis(o), items = o.placed.concat(o.noFit.map(m => ({ ...m, x: null, y: null }))), per = 22, asis = OPTS.find(x => x.asIs), pages = [];
+  const pg = b => `<div class="rp">${rpHead(ref)}${b}</div>`;
+  pages.push(pg(`<div class="two"><div>${drawSVG(o, 'light', 'r1')}${legendHTML(o)}</div><div><table><tbody>
+   <tr><th>Layout</th><td>${esc(P.no || '')} · ${esc(P.title)}</td></tr><tr><th>Type</th><td>${kindName(P.kind)}</td></tr><tr><th>Building</th><td>${P.dim.width} m × ${P.dim.depth} m${P.kind === 'office' ? '' : ' (hall ' + P.dim.hallDepth + ' m)'}</td></tr><tr><th>Status</th><td>${STATUS_NAME[P.status] || P.status}</td></tr><tr><th>Source plan</th><td>${esc(P.source_file || '—')}</td></tr><tr><th>Option shown</th><td>${esc(o.name)}</td></tr><tr><th>Issued by</th><td>${esc(REPORT ? REPORT.issued_by : '')}</td></tr></tbody></table>
+   <h4>Key Performance Indicators (KPIs)</h4><table><thead><tr><th>KPI</th><th>Value</th><th>Target</th><th></th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td><b>${k.ok ? 'Met' : 'GAP'}</b></td></tr>`).join('')}</tbody></table></div></div>`));
+  pages[0] += '<!--break-->';
+  const mx = Math.max(...OPTS.map(x => x.travel), 1);
+  pages.push(pg(`<h4>The options compared</h4><table><thead><tr><th>Option</th><th>${P.kind === 'office' ? 'Walking distance' : 'Route per part'}</th><th></th><th>Floor use</th><th>Saving${asis ? ' vs current' : ''}</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map(x => `<tr><td>${esc(x.name)}${x === o ? ' <b>(shown)</b>' : ''}</td><td>${x.travel} m</td><td style="width:60mm"><div style="height:9px;background:#0ea5e9;width:${x.travel / mx * 100}%"></div></td><td>${x.util}%</td><td>${x.asIs ? '—' : (x.vsCurrent != null ? x.vsCurrent : x.saving) + '%'}</td><td>${x.placedN} / ${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table>
+   <div class="two" style="grid-template-columns:1fr 1fr;margin-top:6px"><div><h4>Checks on the option shown</h4><table><tbody>${o.checks.map(c => `<tr><td style="width:8mm">${c.ok ? '✔' : '✖'}</td><td>${esc(c.name)}</td><td>${esc(c.txt)}</td></tr>`).join('')}</tbody></table></div>
+   <div>${o.legs && o.legs.length ? `<h4>Route leg by leg</h4><table><thead><tr><th>From</th><th>To</th><th>m</th></tr></thead><tbody>${o.legs.map(l => `<tr><td>${esc(l.from)}</td><td>${esc(l.to)}</td><td>${l.m}</td></tr>`).join('')}</tbody></table>` : ''}</div></div>
+   <p style="margin:6px 0 0">Route length and floor use are calculated from the machine sizes and rules in this layout (1:1 scale, metres). Sizes are never changed. Grade ranks the new designs that place every item by shortest route: A+, A, B+, B; C means an item is left out.</p>`));
+  if (asis && o !== asis) pages.push(pg(`<h4>Current layout (read from the plan) and the option shown</h4><div class="two" style="grid-template-columns:1fr 1fr"><div><b>Current layout — route ${asis.travel} m, floor use ${asis.util}%</b>${drawSVG(asis, 'light', 'r2')}</div><div><b>${esc(o.short)} — route ${o.travel} m, floor use ${o.util}%</b>${drawSVG(o, 'light', 'r3')}</div></div>`));
+  for (let i = 0; i < Math.max(1, Math.ceil(items.length / per)); i++) pages.push(pg(`<h4>${P.kind === 'office' ? 'Rooms' : 'Machines'} in the option shown (${items.length}) — part ${i + 1}</h4><table><thead><tr><th>#</th>${P.kind === 'office' ? '<th>Room</th><th>Kind</th>' : '<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Size (m)</th><th>Position x, y (m)</th><th>Turned</th></tr></thead><tbody>${items.slice(i * per, i * per + per).map((m, j) => `<tr><td>${i * per + j + 1}</td>${P.kind === 'office' ? `<td>${esc(m.name)}</td><td>${esc((KINDS[m.kind] || {}).n || '')}</td>` : `<td>${esc(m.id)}</td><td>${esc(m.name)}</td><td>${esc((TYPES[m.type] || {}).s || '')}</td><td>${esc(m.cell || '')}</td>`}<td>${r2(m.w)} × ${r2(m.h)}</td><td>${m.x == null ? '<b>not placed</b>' : r2(m.x) + ', ' + r2(m.y)}</td><td>${m.rot ? 'yes' : ''}</td></tr>`).join('')}</tbody></table>`));
+  const rows = KMRStd.rows('layout');
+  pages.push(pg(`<h4>Standards this report supports</h4><table><thead><tr><th>Standard</th><th>Clause / element</th></tr></thead><tbody>${rows.map(r => `<tr><td>${esc((KMRStd.cat[r[0]] || [r[0]])[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>
    <div class="sg"><div>Prepared by (name, signature, date)</div><div>Checked by (name, signature, date)</div><div>Approved by (name, signature, date)</div></div>
-   <p style="margin:6px 0 3px"><b>Revision history of this report format ${esc(CFG.FORMAT.no)}</b></p><table><thead><tr><th>Rev.</th><th>Date</th><th>Change</th></tr></thead><tbody>${CFG.FORMAT.history.map(h=>`<tr><td>${esc(h.rev)}</td><td>${dmy(h.date)}</td><td>${esc(h.note)}</td></tr>`).join('')}</tbody></table>`);
-  return pages.map((b,i)=>pageWrap(b,i+1,pages.length,ref)).join('')}
-function paintRep(){
-  if(!P){$('#rep').innerHTML='<p class="mut">Open a layout from <b>Projects</b> first.</p>';return}
-  if(!OPTS.length){$('#rep').innerHTML='<p class="mut">Add machines or rooms in the Studio first.</p>';return}
-  const done=(P.history||[]).filter(h=>h.t==='report');
-  $('#rep').innerHTML=`<div class="row"><label class="lb" style="margin:0">Option to print</label><select id="r_opt" style="width:auto">${OPTS.map((x,i)=>`<option value="${i}" ${(REPORT?REPORT.opt:P.sel)===i?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" id="b_issue">Issue report with a new reference number</button>${REPORT?'<button class="btn o" id="b_print">Print / save as PDF</button>':''}</div>
-  <p class="mut" style="margin-top:0">Each issued report gets its own unique reference number. The customer logo is at the top left, and the format number, revision and page numbers are in the footer of every page.${done.length?` Issued so far for this layout: ${done.map(h=>esc(h.ref)).join(', ')}.`:''}</p>
-  ${REPORT?`<div style="overflow-x:auto"><div class="pages">${reportPages()}</div></div>`:''}`}
-async function issue(){
-  if(!P)return;if(P.dirty||!P.id){if(!(await save(true)))return}
-  const opt=+$('#r_opt').value;
-  try{const r=await api.rpc('kmr_layout_report',{p_slug:slug,p_id:P.id,p_option:opt+1});REPORT={...r,opt};const row=await api.rpc('kmr_layout_get',{p_slug:slug,p_id:P.id});P.history=row.history||[];paintRep();say('Report '+r.ref+' is ready. Press Print / save as PDF.',true)}catch(err){say(err.message)}}
-function printReport(){$('#printroot').innerHTML=reportPages();const t=document.title;document.title=REPORT.ref;window.print();setTimeout(()=>{$('#printroot').innerHTML='';document.title=t},500)}
+   <h4>Revision history of this report format ${esc(CFG.FORMAT.no)}</h4><table><thead><tr><th>Rev.</th><th>Date</th><th>Change</th></tr></thead><tbody>${CFG.FORMAT.history.map(h => `<tr><td>${esc(h.rev)}</td><td>${dmy(h.date)}</td><td>${esc(h.note)}</td></tr>`).join('')}</tbody></table>`));
+  return pages.join('');
+}
+function paintRep() {
+  if (!P) { $('#rep').innerHTML = '<p class="mut">Open a layout from <b>Layouts</b> first.</p>'; return; }
+  if (!OPTS.length) { $('#rep').innerHTML = '<p class="mut">Add machines or rooms in the Studio first.</p>'; return; }
+  const done = (P.history || []).filter(h => h.t === 'report');
+  $('#rep').innerHTML = `<div class="row"><label class="lb" style="margin:0">Option to print</label><select id="r_opt" style="width:auto">${OPTS.map((x, i) => `<option value="${i}" ${(REPORT ? REPORT.opt : P.sel) === i ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" id="b_issue">Issue report with a new reference number</button>${REPORT ? '<button class="btn o" id="b_print">⬇ Export PDF / Print</button>' : ''}</div>
+  <p class="mut" style="margin-top:0">Each issued report gets its own reference number. When you print or export PDF, the customer logo is at the top left, the reference number at the top right, and the format number, revision and page numbers are in the footer of every page. In the print window choose “Save as PDF”.${done.length ? ` Issued so far for this layout: ${done.map(h => esc(h.ref)).join(', ')}.` : ''}</p>
+  ${REPORT ? `<div>${reportPages().replace(/<!--break-->/g, '')}</div>` : ''}`;
+}
+async function issue() {
+  if (!P) return; if (P.dirty || !P.id) { if (!(await save(true))) return; }
+  const opt = +$('#r_opt').value;
+  try { const r = await api.rpc('kmr_layout_report', { p_id: P.id, p_option: opt + 1 }); REPORT = { ...r, opt }; const row = await api.rpc('kmr_layout_get', { p_id: P.id }); P.history = row.history || []; paintRep(); say('Report ' + r.ref + ' is ready. Press Export PDF / Print.', true); } catch (err) { say(err.message); }
+}
 
 /* ---------- presentation ---------- */
-const SL_STD=[
- [['ISO 9001:2015','7.1.3'],['IATF 16949:2016','7.1.3.1'],['VDA 6.3:2016','P4 / P6']],
- [['IATF 16949:2016','7.1.3.1'],['APQP','Phase 3 floor plan layout'],['ISO 9001:2015','7.1.3']],
- [['IATF 16949:2016','7.1.3.1'],['ISO 9001:2015','8.5.1'],['PPAP','Element 5 process flow diagram']],
- [['ISO 9001:2015','7.1.4'],['IATF 16949:2016','7.1.4.1, 8.5.1.5'],['VDA 6.3:2016','P6'],['MSA 4th ed.','measurement environment']],
- [['IATF 16949:2016','7.1.3.1 periodic review'],['ISO 9001:2015','10.2 corrective action']],
- [['AIAG-VDA FMEA','Step 2'],['Control Plan','measurement location'],['APQP','Phase 3'],['SPC','not applicable here']]];
-function presProject(){return P}
-function paintPre(){
-  if(!P||!OPTS.length){$('#pre').innerHTML='<p class="mut">Open a layout that has machines or rooms. The presentation shows the real data of that layout.</p>';return}
-  $('#pre').innerHTML=`<div class="row"><button class="btn" id="b_full">⛶ Start full screen presentation</button><span class="mut">Arrow keys or the buttons move between slides. The presentation stays in full screen; press Esc to leave.</span></div><div class="pbox" id="pbox" tabindex="0"></div>`;slide(SL)}
-function slide(i){
-  const b=$('#pbox');if(!b)return;SL=Math.max(0,Math.min(5,i));const o=OPTS[P.sel],ks=kpis(o),co=ctx?ctx.company:'',stdz=SL_STD[SL];
-  const gaps=ks.filter(k=>!k.ok);let body='',title='',sub='';
-  const kp=(v,t,c)=>`<div class="kpi" style="--c:${c}"><b>${esc(v)}</b><span>${esc(t)}</span></div>`;
-  if(SL===0){title='Layout programme — '+esc(co);sub='Real data from the saved layouts of this company';
-   const n=LIST.length;body=`<div style="flex:1"><div class="kpis">${kp(n,'Saved layouts','#7dd3fc')}${kp(LIST.filter(p=>p.status==='approved').length,'Approved','#4ade80')}${kp(LIST.filter(p=>p.status==='review').length,'In review','#fbbf24')}${kp(LIST.filter(p=>p.status==='draft').length,'Drafts','#94a3b8')}</div><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Status</th><th>Changed</th></tr></thead><tbody>${LIST.slice(0,7).map(p=>`<tr><td>${esc(p.no)}</td><td>${esc(p.title)}</td><td>${kindName(p.kind)}</td><td>${STATUS_NAME[p.status]||p.status}</td><td>${dmy(p.updated_at)}</td></tr>`).join('')}</tbody></table>${n>7?`<div class="sub">and ${n-7} more</div>`:''}</div>`}
-  if(SL===1){title=esc(P.no||'')+' · '+esc(P.title);sub=esc(o.name)+' — 1:1 scale, '+P.dim.width+' m × '+P.dim.depth+' m';
-   body=`<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">${drawSVG(o,'light','p'+SL)}</div><div style="width:22%;display:flex;flex-direction:column;gap:1vh">${kp(o.travel+' m',P.kind==='office'?'Walking distance':'Route per part','#7dd3fc')}${kp(o.util+'%','Floor utilisation','#c4b5fd')}${kp(o.placedN+' / '+o.total,'Placed','#fbbf24')}${kp(o.grade,'Grade','#4ade80')}</div>`}
-  if(SL===2){title='The three options compared';sub='Shorter route is better; floor use should sit between '+TARGETS.utilMin+'% and '+TARGETS.utilMax+'%';const mx=Math.max(...OPTS.map(x=>x.travel),1);
-   body=`<div style="flex:1"><table><thead><tr><th>Option</th><th>Route</th><th style="width:30%"></th><th>Floor use</th><th>Saving</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x,j)=>`<tr style="${j===P.sel?'background:#1e2a4a':''}"><td>${esc(x.name)}</td><td>${x.travel} m</td><td><div class="bar" style="width:${x.travel/mx*100}%"></div></td><td>${x.util}%</td><td>${x.saving}%</td><td>${x.placedN}/${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table></div>`}
-  if(SL===3){title='KPI gaps against targets';sub='Key Performance Indicators (KPIs) of the chosen option: '+esc(o.name);
-   body=`<div style="flex:1"><table><thead><tr><th>KPI</th><th>Value now</th><th>Target</th><th>Result</th></tr></thead><tbody>${ks.map(k=>`<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td style="color:${k.ok?'#4ade80':'#f87171'};font-weight:700">${k.ok?'Met':'GAP'}</td></tr>`).join('')}</tbody></table><div class="sub" style="margin-top:1vh">${gaps.length?gaps.length+' gap'+(gaps.length>1?'s':'')+' need an action plan (next slide).':'All KPIs meet their targets.'}</div></div>`}
-  if(SL===4){title='Action plans';sub='Each action names the KPI gap it closes';
-   const kopts=['<option value="">Choose the KPI gap…</option>'].concat(ks.map(k=>`<option value="${esc(k.name)}">${esc(k.name)}${k.ok?'':' — GAP'}</option>`)).join('');
-   body=`<div style="flex:1;min-width:0"><table><thead><tr><th>KPI gap</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${ACTIONS.slice(0,6).map(a=>`<tr><td>${esc(a.kpi||'—')}</td><td>${esc(a.title)}</td><td>${esc(a.owner||'')}</td><td>${dmy(a.due)}</td><td>${canEdit?`<select data-ast="${a.id}">${['Open','In progress','Done'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select>`:esc(a.status)}</td><td>${canEdit?`<button class="btn d sm" data-adel="${a.id}">✕</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" style="color:#94a3b8">No actions yet.</td></tr>'}${canEdit?`<tr><td><select id="a_kpi">${kopts}</select></td><td><input id="a_t" placeholder="What will be done"></td><td><input id="a_o" placeholder="Owner"></td><td><input id="a_d" type="date"></td><td></td><td><button class="btn sm" id="a_add">Add</button></td></tr>`:''}</tbody></table>${ACTIONS.length>6?`<div class="sub">and ${ACTIONS.length-6} more</div>`:''}</div>`}
-  if(SL===5){title='Standards covered';sub='Clauses behind this layout programme';
-   body=`<div style="flex:1"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>Evidence now</th></tr></thead><tbody>${STD.filter(r=>r[4]()!=='Not applicable').slice(0,9).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[4]())}</td></tr>`).join('')}</tbody></table></div>`}
-  b.innerHTML=`<div class="sl"><h2>${title}</h2><div class="sub">${sub}</div><div class="body">${body}</div></div><div class="sstd"><b>Standards for this slide:</b> ${stdz.map(s=>`<span class="s">${esc(s[0])} · ${esc(s[1])}</span>`).join('')}</div><div class="pnav"><button class="btn o sm" data-sl="${SL-1}" style="color:#fff;border-color:#fff8" ${SL===0?'disabled':''}>◀ Back</button><span>Slide ${SL+1} of 6 · ${esc(co)}</span><button class="btn sm" data-sl="${SL+1}" ${SL===5?'disabled':''}>Next ▶</button></div>`}
-async function addAction(){
-  const kpi=$('#a_kpi').value,t=$('#a_t').value.trim();if(!kpi){say('Choose which KPI gap this action is for.');return}if(!t){say('Write the action.');return}
-  const std={'Floor utilisation':'IATF 16949:2016 7.1.3.1','Machines / rooms placed':'ISO 9001:2015 7.1.3','Aisle and clearances':'IATF 16949:2016 7.1.4.1 / 8.5.1.5'}[kpi]||'IATF 16949:2016 7.1.3.1';
-  try{await api.rpc('kmr_pres_action_save',{p_slug:slug,p_code:'layout',p_app:'layout',p:{kpi,title:t,owner:$('#a_o').value.trim(),due:$('#a_d').value||'',standard:std}});await loadActions();slide(4)}catch(err){say(err.message)}}
+const SL_STD = [[['ISO 9001:2015', '7.1.3'], ['IATF 16949:2016', '7.1.3.1'], ['VDA 6.3:2016', 'P4 / P6']], [['IATF 16949:2016', '7.1.3.1'], ['APQP', 'Phase 3 floor plan layout'], ['ISO 9001:2015', '7.1.3']], [['IATF 16949:2016', '7.1.3.1 periodic review'], ['ISO 9001:2015', '6.3 planning of changes'], ['PPAP', 'Element 5 process flow diagram']], [['ISO 9001:2015', '7.1.4'], ['IATF 16949:2016', '7.1.4.1, 8.5.1.5'], ['VDA 6.3:2016', 'P6'], ['MSA 4th ed.', 'measurement environment']], [['IATF 16949:2016', '7.1.3.1 periodic review'], ['ISO 9001:2015', '10.2 corrective action']], [['AIAG-VDA FMEA', 'Step 2'], ['Control Plan', 'measurement location'], ['APQP', 'Phase 3']]];
+function paintPre() {
+  if (!P || !OPTS.length) { $('#pre').innerHTML = '<p class="mut">Open a layout that has machines or rooms. The presentation shows the real data of that layout.</p>'; return; }
+  $('#pre').innerHTML = `<div class="row"><button class="btn" id="b_full">⛶ Start full screen presentation</button><span class="mut">Arrow keys or the buttons move between slides. It stays in full screen; press Esc to leave.</span></div><div class="pbox" id="pbox" tabindex="0"></div>`; slide(SL);
+}
+function slide(i) {
+  const b = $('#pbox'); if (!b) return; SL = Math.max(0, Math.min(5, i)); const o = OPTS[P.sel], ks = kpis(o), co = ctx ? ctx.company : '', stdz = SL_STD[SL], gaps = ks.filter(k => !k.ok); let body = '', title = '', sub = '';
+  const kp = (v, t, c) => `<div class="kpi" style="--c:${c}"><b>${esc(v)}</b><span>${esc(t)}</span></div>`;
+  if (SL === 0) { title = 'Layout programme — ' + esc(co); sub = 'Real data from the saved layouts of this company'; body = `<div style="flex:1"><div class="kpis">${kp(LIST.length, 'Saved layouts', '#7dd3fc')}${kp(LIST.filter(p => p.status === 'approved').length, 'Approved', '#4ade80')}${kp(LIST.filter(p => p.status === 'review').length, 'In review', '#fbbf24')}${kp(LIST.filter(p => p.status === 'draft').length, 'Drafts', '#94a3b8')}</div><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Status</th><th>Changed</th></tr></thead><tbody>${LIST.slice(0, 7).map(p => `<tr><td>${esc(p.no)}</td><td>${esc(p.title)}</td><td>${kindName(p.kind)}</td><td>${STATUS_NAME[p.status] || p.status}</td><td>${dmy(p.updated_at)}</td></tr>`).join('')}</tbody></table>${LIST.length > 7 ? `<div class="sub">and ${LIST.length - 7} more</div>` : ''}</div>`; }
+  if (SL === 1) { title = esc(P.no || '') + ' · ' + esc(P.title); sub = esc(o.name) + ' — 1:1 scale, ' + P.dim.width + ' m × ' + P.dim.depth + ' m'; body = `<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">${drawSVG(o, 'light', 'p' + SL)}</div><div style="width:22%;display:flex;flex-direction:column;gap:1vh">${kp(o.travel + ' m', P.kind === 'office' ? 'Walking distance' : 'Route per part', '#7dd3fc')}${kp(o.util + '%', 'Floor utilisation', '#c4b5fd')}${kp(o.placedN + ' / ' + o.total, 'Placed', '#fbbf24')}${kp(o.grade, 'Grade', '#4ade80')}</div>`; }
+  if (SL === 2) { const asis = OPTS.find(x => x.asIs); title = asis ? 'Current layout against the new designs' : 'The designs compared'; sub = 'Shorter route is better; floor use should sit between ' + TARGETS.utilMin + '% and ' + TARGETS.utilMax + '%'; const mx = Math.max(...OPTS.map(x => x.travel), 1); body = `<div style="flex:1"><table><thead><tr><th>Option</th><th>Route</th><th style="width:28%"></th><th>Floor use</th><th>${asis ? 'vs current' : 'Saving'}</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x, j) => `<tr style="${j === P.sel ? 'background:#1e2a4a' : ''}"><td>${esc(x.name)}</td><td>${x.travel} m</td><td><div class="bar" style="width:${x.travel / mx * 100}%"></div></td><td>${x.util}%</td><td>${x.asIs ? '—' : (x.vsCurrent != null ? x.vsCurrent : x.saving) + '%'}</td><td>${x.placedN}/${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table></div>`; }
+  if (SL === 3) { title = 'KPI gaps against targets'; sub = 'Key Performance Indicators (KPIs) of the chosen option: ' + esc(o.name); body = `<div style="flex:1"><table><thead><tr><th>KPI</th><th>Value now</th><th>Target</th><th>Result</th></tr></thead><tbody>${ks.map(k => `<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td style="color:${k.ok ? '#4ade80' : '#f87171'};font-weight:700">${k.ok ? 'Met' : 'GAP'}</td></tr>`).join('')}</tbody></table><div class="sub" style="margin-top:1vh">${gaps.length ? gaps.length + ' gap' + (gaps.length > 1 ? 's' : '') + ' need an action plan (next slide).' : 'All KPIs meet their targets.'}</div></div>`; }
+  if (SL === 4) { title = 'Action plans'; sub = 'Each action names the KPI gap it closes'; const kopts = ['<option value="">Choose the KPI gap…</option>'].concat(ks.map(k => `<option value="${esc(k.name)}">${esc(k.name)}${k.ok ? '' : ' — GAP'}</option>`)).join('');
+    body = `<div style="flex:1;min-width:0"><table><thead><tr><th>KPI gap</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${ACTIONS.slice(0, 6).map(a => `<tr><td>${esc(a.kpi || '—')}</td><td>${esc(a.title)}</td><td>${esc(a.owner || '')}</td><td>${dmy(a.due)}</td><td>${canEdit ? `<select data-ast="${a.id}">${['Open', 'In progress', 'Done'].map(s => `<option ${a.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>` : esc(a.status)}</td><td>${canEdit ? `<button class="btn d sm" data-adel="${a.id}">✕</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="6" style="color:#94a3b8">No actions yet.</td></tr>'}${canEdit ? `<tr><td><select id="a_kpi">${kopts}</select></td><td><input id="a_t" placeholder="What will be done"></td><td><input id="a_o" placeholder="Owner"></td><td><input id="a_d" type="date"></td><td></td><td><button class="btn sm" id="a_add">Add</button></td></tr>` : ''}</tbody></table>${ACTIONS.length > 6 ? `<div class="sub">and ${ACTIONS.length - 6} more</div>` : ''}</div>`; }
+  if (SL === 5) { title = 'Standards covered'; sub = 'Clauses behind this layout programme'; const ev = evidence(); body = `<div style="flex:1"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>Evidence now</th></tr></thead><tbody>${KMRStd.rows('layout').slice(0, 9).map(r => `<tr><td>${esc((KMRStd.cat[r[0]] || [r[0]])[0])}</td><td>${esc(r[1])}</td><td>${esc(r[4] && ev[r[4]] ? ev[r[4]]() : '')}</td></tr>`).join('')}</tbody></table></div>`; }
+  b.innerHTML = `<div class="sl"><h2>${title}</h2><div class="sub">${sub}</div><div class="body">${body}</div></div><div class="sstd"><b>Standards for this slide:</b> ${stdz.map(s => `<span class="s">${esc(s[0])} · ${esc(s[1])}</span>`).join('')}</div><div class="pnav"><button class="btn o sm" data-sl="${SL - 1}" style="color:#fff;border-color:#fff8" ${SL === 0 ? 'disabled' : ''}>◀ Back</button><span>Slide ${SL + 1} of 6 · ${esc(co)}</span><button class="btn sm" data-sl="${SL + 1}" ${SL === 5 ? 'disabled' : ''}>Next ▶</button></div>`;
+}
+async function addAction() {
+  const kpi = $('#a_kpi').value, t = $('#a_t').value.trim(); if (!kpi) { say('Choose which KPI gap this action is for.'); return; } if (!t) { say('Write the action.'); return; }
+  const std = /utilisation/i.test(kpi) ? 'IATF 16949:2016 7.1.3.1' : /placed/i.test(kpi) ? 'ISO 9001:2015 7.1.3' : /clearance/i.test(kpi) ? 'IATF 16949:2016 7.1.4.1 / 8.5.1.5' : 'IATF 16949:2016 7.1.3.1';
+  try { await api.rpc('kmr_pres_action_save', { p_code: 'layout', p_app: 'layout', p: { kpi, title: t, owner: $('#a_o').value.trim(), due: $('#a_d').value || '', standard: std } }); await loadActions(); slide(4); } catch (err) { say(err.message); }
+}
 
-/* ---------- events ---------- */
-document.addEventListener('click',async e=>{
-  const t=e.target.closest('button,a,[data-t]');if(!t)return;const d=t.dataset;
-  try{
-  if(d.t&&t.classList.contains('tab'))return go(d.t);
-  if(d.arm){armed=d.arm;paintPrj();paintStu();setTimeout(()=>{if(armed===d.arm){armed=null;paintPrj();paintStu()}},4000);return}
-  if(d.new){const k=d.new.startsWith('factory')?'factory':'office';return newProject(k,d.new==='factory-ex'||k==='office')}
-  if(d.open)return openProject(d.open);
-  if(d.sample){await api.rpc('kmr_app_sample',{p_slug:slug,p_app:'layout',p_action:d.sample});await loadList();paintPrj();say('Sample layouts loaded.',true);return}
-  if(d.do){const a=d.do;armed=null;
-    if(a==='flush'){await api.rpc('kmr_app_sample',{p_slug:slug,p_app:'layout',p_action:'flush'});if(P&&P.sample)P=null;await loadList();paint();say('Sample layouts removed.',true)}
-    else if(a.startsWith('del')){const id=a.slice(3);await api.rpc('kmr_layout_delete',{p_slug:slug,p_id:id});if(P&&P.id===id){P=null;OPTS=[];REPORT=null}await loadList();paint();say('Layout deleted.',true)}
-    else if(a==='example'){P.items=JSON.parse(JSON.stringify(P.kind==='office'?SAMPLE_ROOMS:SAMPLE_MACHINES));dirty();paintStu()}
-    else if(a==='clear'){P.items=[];dirty();paintStu()}
-    return}
-  if(t.id==='b_save')return save();
-  if(t.id==='b_status'){const s=$('#p_status').value;await api.rpc('kmr_layout_status',{p_slug:slug,p_id:P.id,p_status:s});P.status=s;await loadList();paint();say('Status set to '+STATUS_NAME[s]+'.',true);return}
-  if(t.id==='b_add'){P.items.push(P.kind==='office'?{id:mkKey(),type:'office',kind:'open',name:'New room',w:4,h:3}:{id:'M-'+(P.items.length+1),type:'cnc',name:'New machine',w:2,h:1.5,cell:'Cell 1'});dirty();paintStu();return}
-  if(d.rm!==undefined){P.items.splice(+d.rm,1);dirty();paintStu();return}
-  if(t.id==='b_csv'){const rows=$('#csv').value.split(/\r?\n/).map(l=>l.split(/\t|,/).map(x=>x.trim())).filter(r=>r.length>=3&&r[0]);let n=0;
-    for(const r of rows){if(P.kind==='office'){const w=+r[2],h=+r[3];if(!(w>0&&h>0))continue;P.items.push({id:mkKey(),type:'office',kind:KINDS[r[1]]?r[1]:'open',name:r[0],w,h});n++}else{const w=+r[4],h=+r[5];if(!(w>0&&h>0))continue;P.items.push({id:r[0],name:r[1]||r[0],type:TYPES[r[2]]&&r[2]!=='office'?r[2]:'conv',cell:r[3]||'Cell 1',w,h});n++}}
-    say(n?n+' rows added.':'No rows were added. Check the column order and that sizes are numbers.',!!n);if(n){dirty();paintStu()}return}
-  if(d.opt!==undefined){P.sel=+d.opt;P.dirty=true;paintOpts();paintHead();return}
-  if(t.id==='b_dxf'){const o=OPTS[P.sel];download(`KMR_Layout_${(P.no||'new')}_${o.short.replace(/\W+/g,'')}_1to1.dxf`,dxf(o),'application/dxf');return}
-  if(t.id==='b_rep'){go('rep');return}
-  if(t.id==='b_issue')return issue();
-  if(t.id==='b_print')return printReport();
-  if(t.id==='b_full'){const b=$('#pbox');if(b.requestFullscreen)await b.requestFullscreen();b.focus();slide(SL);return}
-  if(d.sl!==undefined)return slide(+d.sl);
-  if(t.id==='a_add')return addAction();
-  if(d.adel){await api.rpc('kmr_pres_action_delete',{p_slug:slug,p_code:'layout',p_id:d.adel});await loadActions();slide(4);return}
-  }catch(err){say(err.message)}});
-document.addEventListener('input',e=>{const t=e.target;if(!P)return;
-  if(t.id==='p_title'){P.title=t.value;P.dirty=true;paintHead();return}
-  if(t.dataset.dim){P.dim[t.dataset.dim]=parseFloat(t.value)||0;dirty();if(t.dataset.dim==='hallDepth'||t.dataset.dim==='depth')paintStuQc();return}
-  if(t.dataset.i!==undefined){const m=P.items[+t.dataset.i],f=t.dataset.f;m[f]=(f==='w'||f==='h')?parseFloat(t.value):t.value;dirty();return}
-  if(t.id==='rng_op')paintOpts()});
-document.addEventListener('change',async e=>{const t=e.target;
-  if(t.dataset.i!==undefined&&P){const m=P.items[+t.dataset.i];m[t.dataset.f]=t.value;dirty();return}
-  if(t.dataset.ast){try{await api.rpc('kmr_pres_action_save',{p_slug:slug,p_code:'layout',p_app:'layout',p:{id:t.dataset.ast,status:t.value}});await loadActions()}catch(err){say(err.message)}return}
-  if(t.id==='r_opt'&&REPORT){REPORT=null;paintRep()}
-  if(t.id==='p_file'&&t.files[0]){const f=t.files[0];P.source_file=f.name;$('#p_fn').textContent=f.name;P.dirty=true;
-    if(f.type.startsWith('image/')){const r=new FileReader();r.onload=()=>{underlay=r.result;$('#op_row').classList.remove('hide');paintOpts()};r.readAsDataURL(f)}else say('This file type cannot be shown behind the drawing. Its name is saved; save the plan as a JPG or PNG to trace over it.')}});
-function paintStuQc(){const p=document.querySelector('#stu .mut b');if(p&&P.kind==='factory')p.textContent=Math.max(0,P.dim.depth-P.dim.hallDepth).toFixed(1)+' m'}
-document.addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test((e.target||{}).tagName))return;if(!$('#pbox')||$('#pre').classList.contains('hide'))return;if(e.key==='ArrowRight'||e.key==='PageDown')slide(SL+1);if(e.key==='ArrowLeft'||e.key==='PageUp')slide(SL-1)});
+/* ---------- screens, events ---------- */
+const TABS = ['std', 'prj', 'imp', 'stu', 'rep', 'pre'];
+function go(t) { if (!TABS.includes(t)) t = 'std'; document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); TABS.forEach(x => $('#' + x).classList.toggle('hide', x !== t)); if (location.hash !== '#go=' + t) history.replaceState(null, '', location.pathname + location.search + '#go=' + t); if (t === 'rep') paintRep(); if (t === 'pre') paintPre(); if (t === 'std') paintStd(); }
+function paint() { paintStd(); paintPrj(); paintImp(); paintStu(); paintRep(); paintPre(); paintHead(); }
+function route() { const n = window.KMRNav && KMRNav.pending(); go(n ? n.go : 'std'); }
+window.addEventListener('hashchange', route);
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button,a'); if (!t) return; const d = t.dataset;
+  try {
+    if (t.classList.contains('tab')) { e.preventDefault(); return go(d.t); }
+    if (t.tagName === 'A') return;
+    if (d.arm) { armed = d.arm; paintPrj(); paintStu(); setTimeout(() => { if (armed === d.arm) { armed = null; paintPrj(); paintStu(); } }, 4000); return; }
+    if (d.new) { const k = d.new.startsWith('factory') ? 'factory' : 'office'; return newProject(k, d.new === 'factory-ex' || k === 'office'); }
+    if (d.open) return openProject(d.open);
+    if (d.do) { const a = d.do; armed = null;
+      if (a.startsWith('del')) { const id = a.slice(3); await api.rpc('kmr_layout_delete', { p_id: id }); if (P && P.id === id) { P = null; OPTS = []; REPORT = null; } await loadList(); paint(); say('Layout deleted.', true); }
+      else if (a === 'example') { P.items = JSON.parse(JSON.stringify(P.kind === 'office' ? SAMPLE_ROOMS : SAMPLE_MACHINES)); dirty(); paintStu(); }
+      else if (a === 'clear') { P.items = []; dirty(); paintStu(); }
+      return; }
+    if (t.id === 'b_save') return save();
+    if (t.id === 'b_status') { const s = $('#p_status').value; await api.rpc('kmr_layout_status', { p_id: P.id, p_status: s }); P.status = s; await loadList(); paint(); say('Status set to ' + STATUS_NAME[s] + '.', true); return; }
+    if (t.id === 'b_add') { P.items.push(P.kind === 'office' ? { id: mkKey(), type: 'office', kind: 'open', name: 'New room', w: 4, h: 3 } : { id: 'M-' + (P.items.length + 1), type: 'cnc', name: 'New machine', w: 2, h: 1.5, cell: 'Cell 1' }); dirty(); paintStu(); return; }
+    if (d.rm !== undefined) { P.items.splice(+d.rm, 1); dirty(); paintStu(); return; }
+    if (t.id === 'b_csv') { const rows = $('#csv').value.split(/\r?\n/).map(l => l.split(/\t|,/).map(x => x.trim())).filter(r => r.length >= 3 && r[0]); let n = 0;
+      for (const r of rows) { if (P.kind === 'office') { const w = +r[2], h = +r[3]; if (!(w > 0 && h > 0)) continue; P.items.push({ id: mkKey(), type: 'office', kind: KINDS[r[1]] ? r[1] : 'open', name: r[0], w, h }); n++; } else { const w = +r[4], h = +r[5]; if (!(w > 0 && h > 0)) continue; P.items.push({ id: r[0], name: r[1] || r[0], type: TYPES[r[2]] && r[2] !== 'office' ? r[2] : 'conv', cell: r[3] || 'Cell 1', w, h }); n++; } }
+      say(n ? n + ' rows added.' : 'No rows were added. Check the column order and that sizes are numbers.', !!n); if (n) { dirty(); paintStu(); } return; }
+    if (d.opt !== undefined) { P.sel = +d.opt; P.dirty = true; paintOpts(); paintHead(); return; }
+    if (t.id === 'b_dxf') { const o = OPTS[P.sel]; download(`KMR_Layout_${(P.no || 'new')}_${o.short.replace(/\W+/g, '')}_1to1.dxf`, dxf(o, P.title), 'application/dxf'); return; }
+    if (t.id === 'b_cad') return openCAD();
+    if (t.id === 'b_pdf1') { REPORT = REPORT || null; return printReport(true); }
+    if (t.id === 'b_rep') return go('rep');
+    if (t.id === 'b_issue') return issue();
+    if (t.id === 'b_print') return printReport(false);
+    if (t.id === 'b_full') { const b = $('#pbox'); if (b.requestFullscreen) await b.requestFullscreen(); b.focus(); slide(SL); return; }
+    if (d.sl !== undefined) return slide(+d.sl);
+    if (t.id === 'a_add') return addAction();
+    if (d.adel) { await api.rpc('kmr_pres_action_delete', { p_code: 'layout', p_id: d.adel }); await loadActions(); slide(4); return; }
+    if (t.id === 'b_accept') return acceptImport();
+    if (t.id === 'b_trace') { TR = { mode: 'scale', pts: [], pxm: 0, bld: null, boxes: [] }; paintImp(); return; }
+    if (d.tm) { TR.mode = d.tm; paintImp(); return; }
+    if (t.id === 'tr_setscale') { const m = parseFloat($('#tr_m').value); if (!(m > 0)) { say('Type the real distance in metres.'); return; } const p = TR.pts; TR.pxm = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]) / m; TR.mode = 'bld'; paintImp(); return; }
+    if (d.trd !== undefined) { TR.boxes.splice(+d.trd, 1); paintImp(); return; }
+    if (t.id === 'tr_done') return trFinish();
+  } catch (err) { say(err.message); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.iv !== undefined && IM && IM.res) { const m = IM.res.items[+t.dataset.iv], f = t.dataset.f; m[f] = (f === 'w' || f === 'h') ? parseFloat(t.value) : t.value; if (f === 'type') m.cell = CELL_OF[m.type]; return; }
+  if (t.dataset.tn !== undefined) { TR.boxes[+t.dataset.tn].name = t.value; return; }
+  if (!P) return;
+  if (t.id === 'p_title') { P.title = t.value; P.dirty = true; paintHead(); return; }
+  if (t.dataset.dim) { P.dim[t.dataset.dim] = parseFloat(t.value) || 0; dirty(); if (t.dataset.dim === 'hallDepth' || t.dataset.dim === 'depth') { const p = document.querySelector('#stu .mut b'); if (p && P.kind === 'factory') p.textContent = Math.max(0, P.dim.depth - P.dim.hallDepth).toFixed(1) + ' m'; } return; }
+  if (t.dataset.i !== undefined) { const m = P.items[+t.dataset.i], f = t.dataset.f; m[f] = (f === 'w' || f === 'h') ? parseFloat(t.value) : t.value; if (f === 'w' || f === 'h') { delete m.ax; delete m.ay; } dirty(); }
+});
+document.addEventListener('change', async e => {
+  const t = e.target;
+  if (t.id === 'plan_file') return onPlanFile(t.files[0]);
+  if (t.id === 'im_unit') { IM.unit = t.value; reinterp(); return paintImp(); }
+  if (t.id === 'im_scale') { IM.scale = parseFloat(t.value) || 100; reinterp(); return paintImp(); }
+  if (t.id === 'im_realw') { IM.realW = parseFloat(t.value) || 0; reinterp(); return paintImp(); }
+  if (t.dataset.ik !== undefined) { IM.res.items[+t.dataset.ik].keep = t.checked; return paintImp(); }
+  if (t.dataset.iv !== undefined && IM && IM.res) { if (t.dataset.f === 'type') paintImp(); return; }
+  if (t.dataset.tt !== undefined) { TR.boxes[+t.dataset.tt].type = t.value; return; }
+  if (t.dataset.i !== undefined && P) { const m = P.items[+t.dataset.i]; m[t.dataset.f] = t.value; dirty(); return; }
+  if (t.dataset.ast) { try { await api.rpc('kmr_pres_action_save', { p_code: 'layout', p_app: 'layout', p: { id: t.dataset.ast, status: t.value } }); await loadActions(); } catch (err) { say(err.message); } return; }
+  if (t.id === 'r_opt' && REPORT) { REPORT = null; paintRep(); }
+});
+/* tracing with the mouse or finger */
+document.addEventListener('pointerdown', e => {
+  if (!TR || !e.target.closest || !e.target.closest('#tr_svg')) return; e.preventDefault(); const p = trPoint(e);
+  if (TR.mode === 'scale') { TR.pts = TR.pts.length >= 2 ? [p] : TR.pts.concat([p]); paintImp(); return; }
+  TR.start = p; TR.drag = { x: p[0], y: p[1], w: 0, h: 0 };
+});
+document.addEventListener('pointermove', e => { if (!TR || !TR.start) return; const p = trPoint(e), s = TR.start; TR.drag = { x: Math.min(s[0], p[0]), y: Math.min(s[1], p[1]), w: Math.abs(p[0] - s[0]), h: Math.abs(p[1] - s[1]) }; const sv = $('#tr_svg'); let r = sv.querySelector('#tr_drag'); if (!r) { r = document.createElementNS('http://www.w3.org/2000/svg', 'rect'); r.id = 'tr_drag'; r.setAttribute('fill', '#0ea5e955'); r.setAttribute('stroke', '#0ea5e9'); sv.append(r); } Object.entries({ x: TR.drag.x, y: TR.drag.y, width: TR.drag.w, height: TR.drag.h }).forEach(([k, v]) => r.setAttribute(k, v)); });
+document.addEventListener('pointerup', () => { if (!TR || !TR.start) return; const d = TR.drag; TR.start = null; TR.drag = null; if (d && d.w > 4 && d.h > 4) { if (TR.mode === 'bld') TR.bld = d; else if (TR.mode === 'mach') TR.boxes.push({ ...d, type: 'conv' }); } paintImp(); });
+document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test((e.target || {}).tagName)) return; if (!$('#pbox') || $('#pre').classList.contains('hide')) return; if (e.key === 'ArrowRight' || e.key === 'PageDown') slide(SL + 1); if (e.key === 'ArrowLeft' || e.key === 'PageUp') slide(SL - 1); });
 
-/* ---------- sign in and start ---------- */
-const isPub=k=>{if(k.startsWith('sb_publishable_'))return true;try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='anon'}catch{return false}},KRX=/sb_publishable_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}/g;
-async function findKey(){const c=sessionStorage.getItem('kmr_pub_key');if(c)return c;
-try{const r=await fetch('/it/console/api/public-config');if(r.ok){const j=await r.json();if(j.key&&isPub(j.key)){if(j.url)CFG.SUPABASE_URL=j.url;sessionStorage.setItem('kmr_pub_key',j.key);return j.key}}}catch{}
-for(const pg of['/it/company-config.js','/it/sales.html','/it/capacity.html','/it/balloon.html','/it/pd.html','/it/index.html','/it/']){try{const r=await fetch(pg);if(!r.ok)continue;const t=await r.text();let k=(t.match(KRX)||[]).find(isPub);if(!k)for(const m of t.matchAll(/<script[^>]+src=["']([^"']+)["']/g)){const u=new URL(m[1],location.origin+pg);if(u.origin!==location.origin)continue;try{k=((await(await fetch(u)).text()).match(KRX)||[]).find(isPub)}catch{}if(k)break}if(k){sessionStorage.setItem('kmr_pub_key',k);return k}}catch{}}
-throw new Error('Could not find the KMR public key. Please contact KMR support.')}
-function loginForm(){document.querySelector('.tabs').style.display='none';$('#std').innerHTML=`<div style="max-width:340px;margin:10px auto"><h3>Sign in to Factory &amp; Office Layout Studio</h3><p class="mut">Use your KMR Apps email and password.</p><label class="mut">Email</label><input id="le" type="email" autocomplete="username" inputmode="email"><label class="mut" style="margin-top:8px;display:block">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="row" style="margin-top:12px"><button class="btn" id="lg">Sign in</button></div><p class="mut" style="font-size:12px">Forgot your password? Use the reset option on the <a href="/it/">KMR sign-in page</a>.</p></div>`;
- const go2=async()=>{try{const{error}=await sb.auth.signInWithPassword({email:$('#le').value.trim(),password:$('#lp').value});if(error)throw new Error(error.message);location.reload()}catch(err){say(err.message)}};$('#lg').onclick=go2;$('#lp').addEventListener('keydown',e=>{if(e.key==='Enter')go2()})}
-async function boot(){try{
-  if(!DEMO){const{createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');sb=createClient(CFG.SUPABASE_URL,await findKey());const{data:{session}}=await sb.auth.getSession();if(!session){loginForm();return}
-   if(!slug){const r=(document.referrer.match(/\/it\/app\/([^/?#]+)/)||[])[1];if(r)slug=decodeURIComponent(r).toLowerCase()}if(!slug)throw new Error('Open Layout Studio from your company’s KMR Apps page.')}
-  ctx=await api.rpc('kmr_layout_context',{p_slug:slug});if(!ctx)throw new Error('You do not have access to Layout Studio, or the subscription is not active.');
-  canEdit=['admin','editor'].includes(ctx.role);isStaff=!!ctx.is_staff;$('#role').textContent=ctx.role;$('#bco').textContent=String(ctx.company).toUpperCase();$('#back').href=DEMO?'#':'/it/app/'+encodeURIComponent(slug);$('#back').classList.remove('hide');
-  await loadList();paint();
-  const nv=window.KMRNav&&KMRNav.pending();if(nv&&TABS.includes(nv.go))go(nv.go)
- }catch(err){say(err.message)}}
-
-/* ---------- try-out mode without a database: ?demo=1 ---------- */
-function demo(){
-  const iso=n=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);let seq=2,rseq=0,acts=[];
-  const mk=(no,title,kind,items,dim,status)=>{const opts=evaluate(items,dim,kind);return{id:'d'+no,no,title,kind,concept:kind==='office'?'office-ergonomic':'cellular-u',dimensions:dim,source_file:'',machines:items,options:opts.map(x=>({name:x.name,short:x.short,key:x.key,travel:x.travel,util:x.util,saving:x.saving,grade:x.grade,placed:x.placedN,total:x.total,noFit:x.noFit.length})),selected_option:3,status,history:[],sample:true,updated_at:iso(-2)+'T10:00:00Z',created_at:iso(-5)}};
-  let S=[mk('LAY-S-0001','Example machine shop — 41 machines','factory',SAMPLE_MACHINES,{width:24,depth:36,hallDepth:30,qcDepth:6,aisle:2.8,opClearance:1.2,maintClearance:1.5},'approved'),mk('LAY-S-0002','Example office floor','office',SAMPLE_ROOMS,{...DEFAULT_DIM},'review')];
-  const sum=r=>({id:r.id,no:r.no,title:r.title,kind:r.kind,concept:r.concept,dimensions:r.dimensions,source_file:r.source_file,machine_count:r.machines.length,options_count:r.options.length,options:r.options,selected_option:r.selected_option,status:r.status,sample:r.sample,updated_at:r.updated_at,created_at:r.created_at});
-  return{async rpc(f,a){
-   if(f==='kmr_layout_context')return{role:'admin',company:'Demo Engineering (sample data)',logo_url:'',is_staff:true};
-   if(f==='kmr_layout_list')return S.map(sum);
-   if(f==='kmr_layout_get')return JSON.parse(JSON.stringify(S.find(x=>x.id===a.p_id)));
-   if(f==='kmr_layout_save'){const p=a.p;let r=S.find(x=>x.id===p.id);if(!r){r={id:'d'+(seq),no:'LAY-'+String(seq++).padStart(4,'0'),status:'draft',history:[],sample:false,created_at:iso(0)};S.unshift(r)}Object.assign(r,{title:p.title,kind:p.kind,concept:p.concept,dimensions:p.dimensions,source_file:p.source_file,machines:p.machines,options:p.options,selected_option:p.selected_option,updated_at:new Date().toISOString()});return{ok:true,id:r.id,no:r.no}}
-   if(f==='kmr_layout_delete'){S=S.filter(x=>x.id!==a.p_id);return{ok:true}}
-   if(f==='kmr_layout_status'){S.find(x=>x.id===a.p_id).status=a.p_status;return{ok:true}}
-   if(f==='kmr_layout_report'){const r=S.find(x=>x.id===a.p_id),ref='LAY-R-DEMO-'+String(++rseq).padStart(4,'0');r.history.push({t:'report',ref,at:new Date().toISOString(),by:'demo'});return{ref,issued_at:new Date().toISOString(),issued_by:'demo',no:r.no}}
-   if(f==='kmr_pres_actions_get')return acts.slice();
-   if(f==='kmr_pres_action_save'){const p=a.p;if(p.id){Object.assign(acts.find(x=>x.id===p.id),p)}else acts.unshift({...p,id:'a'+Math.random()});return'ok'}
-   if(f==='kmr_pres_action_delete'){acts=acts.filter(x=>x.id!==a.p_id);return null}
-   if(f==='kmr_app_sample')return{}
-   return null}}}
-boot();
-</script></body></html>
+/* ---------- sample (demo) data, same calls as the database functions ---------- */
+(function () {
+  const iso = n => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10); let seq = 2, rseq = 0, acts = [];
+  const mk = (no, title, kind, items, dim, status) => { const opts = evaluate(items, dim, kind); return { id: 'd' + no, no, title, kind, concept: kind === 'office' ? 'office-ergonomic' : 'straight-flow', dimensions: dim, source_file: '', machines: items, options: opts.map(x => ({ name: x.name, short: x.short, key: x.key, travel: x.travel, util: x.util, saving: x.saving, grade: x.grade, placed: x.placedN, total: x.total, noFit: x.noFit.length })), selected_option: 3, status, history: [], sample: true, updated_at: iso(-2) + 'T10:00:00Z', created_at: iso(-5) }; };
+  let S = null; const init = () => S || (S = [mk('LAY-S-0001', 'Example machine shop — 41 machines', 'factory', SAMPLE_MACHINES, { width: 24, depth: 36, hallDepth: 30, qcDepth: 6, aisle: 2.8, opClearance: 1.2, maintClearance: 1.5 }, 'approved'), mk('LAY-S-0002', 'Example office floor', 'office', SAMPLE_ROOMS, { ...DEFAULT_DIM }, 'review')]);
+  const sum = r => ({ id: r.id, no: r.no, title: r.title, kind: r.kind, concept: r.concept, dimensions: r.dimensions, source_file: r.source_file, machine_count: r.machines.length, options_count: r.options.length, options: r.options, selected_option: r.selected_option, status: r.status, sample: r.sample, updated_at: r.updated_at, created_at: r.created_at });
+  window.QP_DEMO = {
+    kmr_layout_context: () => ({ role: 'admin', company: 'Demo Engineering (sample data)', is_staff: false }),
+    kmr_layout_list: () => init().map(sum),
+    kmr_layout_get: a => init().find(x => x.id === a.p_id),
+    kmr_layout_save: a => { init(); const p = a.p; let r = S.find(x => x.id === p.id); if (!r) { r = { id: 'd' + seq, no: 'LAY-' + String(seq++).padStart(4, '0'), status: 'draft', history: [], sample: false, created_at: iso(0) }; S.unshift(r); } Object.assign(r, { title: p.title, kind: p.kind, concept: p.concept, dimensions: p.dimensions, source_file: p.source_file, machines: p.machines, options: p.options, selected_option: p.selected_option, updated_at: new Date().toISOString() }); return { ok: true, id: r.id, no: r.no }; },
+    kmr_layout_delete: a => { init(); S = S.filter(x => x.id !== a.p_id); return { ok: true }; },
+    kmr_layout_status: a => { init().find(x => x.id === a.p_id).status = a.p_status; return { ok: true }; },
+    kmr_layout_report: a => { const r = init().find(x => x.id === a.p_id), ref = 'LAY-R-DEMO-' + String(++rseq).padStart(4, '0'); r.history.push({ t: 'report', ref, at: new Date().toISOString(), by: 'demo' }); return { ref, issued_at: new Date().toISOString(), issued_by: 'demo', no: r.no }; },
+    kmr_pres_actions_get: () => acts.slice(),
+    kmr_pres_action_save: a => { const p = a.p; if (p.id) Object.assign(acts.find(x => x.id === p.id), p); else acts.unshift({ ...p, id: 'a' + Math.random(), status: 'Open' }); return 'ok'; },
+    kmr_pres_action_delete: a => { acts = acts.filter(x => x.id !== a.p_id); return null; }
+  };
+})();
+(async function () {
+  try {
+    if (!(await QP.init('layout', 'kmr_layout_context'))) return;
+    ctx = QP.ctx; canEdit = QP.canEdit; slug = QP.slug; DEMO = QP.DEMO;
+    await loadList(); paint(); route();
+  } catch (err) { say(err.message); }
+})();
+</script>
+<script src="/it/apps/back.js"></script>
+</body></html>
