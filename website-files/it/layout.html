@@ -98,7 +98,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .studio .pc{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}@media(max-width:1200px){.studio .pc{grid-template-columns:1fr}}
 .studio .pc>div{border:1px solid #26304d;border-radius:12px;padding:10px 12px;background:#101a30}.studio .pc h4{margin:0 0 6px;font-size:13px}.studio .pc ul{margin:0;padding-left:18px}.studio .pc li{margin:3px 0;font-size:13px}
 .studio .pc .good h4{color:#34d399}.studio .pc .badc h4{color:#f87171}
-.studio .mx td,.studio .mx th{text-align:center}.studio .mx td:first-child,.studio .mx th:first-child{text-align:left}
+.studio .mx td,.studio .mx th{text-align:center}.studio .mx td:first-child,.studio .mx th:first-child,.studio .mx td:nth-child(2),.studio .mx th:nth-child(2){text-align:left}
 .rp .ab{display:grid;grid-template-columns:150px 1fr 30px;gap:6px;align-items:center;margin:3px 0}.rp .ab .tr{height:8px;background:#e2e8f0}.rp .ab .tr i{display:block;height:100%}
 .rp ul{margin:2px 0;padding-left:16px}
 
@@ -791,8 +791,8 @@ function regTable(o) {
   rows.push(['Exit doors kept clear', a.R.doorClear + ' m free in front', a.blocked.length ? a.blocked.map(d => d.n).join(', ') + ' blocked' : 'all clear', !a.blocked.length, 'Factories Act 1948 s.38 (doors, passages kept free); OSHA 1910.37']);
   rows.push(['Escape / main aisle width', '≥ ' + a.aisleNeed.toFixed(1) + ' m', a.aisleW.toFixed(1) + ' m', a.aisleW >= a.aisleNeed, 'OSHA 1910.36: exit routes at least 0.71 m (28 in), practice 1.2 m+; Factories Act 1948 s.32 passages']);
   if (!off) {
-    rows.push(['Operator side free', '≥ ' + o.G.op + ' m', a.noOp.length ? a.noOp.length + ' machines without' : 'all machines have one', !a.noOp.length, 'Factories Act 1948 s.21–22 (machinery safety, working space); ISO 9001 7.1.4']);
-    rows.push(['Maintenance side free', '≥ ' + o.G.maint + ' m', a.noMt.length ? a.noMt.length + ' machines without' : 'all machines have one', !a.noMt.length, 'IATF 16949 8.5.1.5 (maintenance); machine maker\'s manual']);
+    rows.push(['Operator side free', '≥ ' + o.G.op + ' m', a.noOp.length ? a.noOp.length + (a.noOp.length === 1 ? ' machine without' : ' machines without') : 'all machines have one', !a.noOp.length, 'Factories Act 1948 s.21–22 (machinery safety, working space); ISO 9001 7.1.4']);
+    rows.push(['Maintenance side free', '≥ ' + o.G.maint + ' m', a.noMt.length ? a.noMt.length + (a.noMt.length === 1 ? ' machine without' : ' machines without') : 'all machines have one', !a.noMt.length, 'IATF 16949 8.5.1.5 (maintenance); machine maker\'s manual']);
     rows.push(['Pedestrian / truck separation', 'aisle ≥ ' + HANDLING[a.R.handling].need.toFixed(1) + ' m for ' + HANDLING[a.R.handling].n.toLowerCase(), a.aisleW.toFixed(1) + ' m', a.aisleW >= HANDLING[a.R.handling].need, 'OSHA 1910.176 (aisles safe clearance); marked walkways']);
     rows.push(['Scrap kept apart from dispatch', 'separate doors', 'RS 2 scrap and RS 3 dispatch are separate', true, 'ISO 9001 8.7 / IATF 16949 8.7 (nonconforming product control)']);
   }
