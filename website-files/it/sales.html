@@ -879,6 +879,7 @@ function paintImport() {
   $('#ibody').innerHTML = cards + `<p style="margin:12px 0 6px"><b>${IMP.recs.length}</b> rows read · <b style="color:var(--green)">${nUp}</b> will update · <b style="color:var(--amber)">${nCk}</b> need your check · <b>${nNo}</b> not in the plan (skipped, e.g. scrap). Change the part in the list if a row is matched wrongly.</p>
     ${W.issues.length ? `<div class="msg">${esc([...new Set(W.issues)].slice(0, 4).join(' · '))}</div>` : ''}
     <div class="scroll" style="max-height:44vh"><table><thead><tr><th title="Serial number">S.No</th><th>Customer (in file)</th><th>Part (in file)</th><th class="n">Qty in file</th><th>Update this part in the plan</th><th class="n">Already in app (month)</th><th class="n">After update (month)</th><th>Result</th></tr></thead><tbody>${body || '<tr><td colspan="8" class="mut">No part rows found. Open “Columns look wrong? Change” and pick the part number and quantity columns.</td></tr>'}</tbody></table></div>`;
+  $('#isub').textContent = 'Updating: ' + (ctx && ctx.company || '') + ' · ' + monthLabel(M);
   $('#isum').textContent = chg ? `${chg} despatch entr${chg > 1 ? 'ies' : 'y'} will be written` : 'Nothing to update yet';
   $('#iapply').disabled = !chg; $('#iapply').textContent = chg ? `Update despatch (${chg})` : 'Update despatch';
 }
@@ -903,7 +904,7 @@ async function applyImport() {
     say(`Despatch updated for ${new Set(rows.map(r => r.line_id)).size} part(s) from ${IMP.files.length} file(s) (${days.map(d => d.split('-').reverse().join('-')).join(', ')}).`, true);
   } catch (err) { isay(err.message); } finally { b.disabled = false; }
 }
-$('#invfile').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; if (f.length) importFiles(f).catch(err => say(err.message)); });
+document.addEventListener('change', e => { const t = e.target; if (t.id !== 'invfile') return; const f = [...t.files]; t.value = ''; if (f.length) importFiles(f).catch(err => say(err.message)); });
 document.addEventListener('click', e => {
   const t = e.target;
   if (t.id === 'upinv') $('#invfile').click();
