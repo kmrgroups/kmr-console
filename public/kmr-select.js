@@ -6,7 +6,7 @@
    A <select multiple> works as a multi-select list. Values, events and form behaviour are unchanged. */
 (function () {
   if (window.__kmrSelect) return; window.__kmrSelect = 1;
-  var pop = null, cur = null, SEP = ", ";
+  var pop = null, cur = null, SEP = ", ", openW = 0, popPlace = null;
   function css() {
     if (document.getElementById("kmr-sel-css")) return;
     var s = document.createElement("style"); s.id = "kmr-sel-css";
@@ -15,11 +15,11 @@
       ".kmr-sp input[type=search]:focus{border-color:#2563eb}.kmr-sp .kl{overflow:auto;flex:1;padding:0 4px 6px}" +
       ".kmr-sp .ko{padding:7px 10px;border-radius:5px;cursor:pointer;display:flex;gap:8px;align-items:center}.kmr-sp .ko.hi{background:rgba(37,99,235,.16)}.kmr-sp .ko.on{font-weight:700}" +
       ".kmr-sp .kg{padding:6px 10px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;opacity:.65}.kmr-sp .kf{display:flex;gap:10px;align-items:center;padding:6px 10px;border-top:1px solid rgba(128,128,128,.3);font-size:12.5px}" +
-      ".kmr-sp .kf button{font:inherit;padding:4px 10px;border-radius:6px;border:1px solid rgba(128,128,128,.55);background:transparent;color:inherit;cursor:pointer}.kmr-sp .kn{padding:10px;opacity:.7}.kmr-sp .kx{width:16px;text-align:center}";
+      ".kmr-sp .kf button{font:inherit;padding:4px 10px;border-radius:6px;border:1px solid rgba(128,128,128,.55);background:transparent;color:inherit;cursor:pointer}.kmr-sp .kn{padding:10px;opacity:.7}.kmr-sp .ko{min-height:40px;touch-action:manipulation}.kmr-sp input[type=search]{font-size:16px}.kmr-sp .kx{width:16px;text-align:center}";
     document.head.appendChild(s);
   }
   function ok(sel) { return sel && sel.tagName === "SELECT" && !sel.disabled && !sel.hasAttribute("data-native") && !(sel.size > 1) && !sel.closest(".kmr-sp"); }
-  function close() { if (pop) { pop.remove(); pop = null; } cur = null; }
+  function close() { if (pop) { pop.remove(); pop = null; } if (popPlace && window.visualViewport) { window.visualViewport.removeEventListener("resize", popPlace); window.visualViewport.removeEventListener("scroll", popPlace); } popPlace = null; cur = null; }
   function fire(sel) { sel.dispatchEvent(new Event("input", { bubbles: true })); sel.dispatchEvent(new Event("change", { bubbles: true })); }
   function items(sel) {
     var out = [];
@@ -44,8 +44,19 @@
     document.body.appendChild(pop);
     var w = Math.max(r.width, 240); pop.style.width = Math.min(w, window.innerWidth - 16) + "px";
     var left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8); pop.style.left = left + "px";
-    var below = window.innerHeight - r.bottom, h = Math.min(340, Math.max(below, r.top) - 12);
-    pop.style.maxHeight = Math.max(160, h) + "px"; if (below >= 220 || below >= r.top) pop.style.top = (r.bottom + 2) + "px"; else pop.style.bottom = (window.innerHeight - r.top + 2) + "px";
+    var vv = window.visualViewport, small = window.innerWidth <= 640 || (window.matchMedia && matchMedia("(pointer:coarse)").matches);
+    openW = window.innerWidth;
+    function place() {
+      if (!pop) return;
+      if (small) {   /* phone: sheet at the top of the visible area, so the keyboard never hides the list */
+        var vh = vv ? vv.height : window.innerHeight, top = vv ? vv.offsetTop : 0, lft = vv ? vv.offsetLeft : 0, vw = vv ? vv.width : window.innerWidth;
+        pop.style.left = (lft + 8) + "px"; pop.style.width = (vw - 16) + "px"; pop.style.bottom = "auto"; pop.style.top = (top + 8) + "px";
+        pop.style.maxHeight = Math.max(160, Math.min(vh - 16, vh * 0.7)) + "px"; return;
+      }
+      var below = window.innerHeight - r.bottom, h = Math.min(340, Math.max(below, r.top) - 12);
+      pop.style.maxHeight = Math.max(160, h) + "px"; if (below >= 220 || below >= r.top) pop.style.top = (r.bottom + 2) + "px"; else pop.style.bottom = (window.innerHeight - r.top + 2) + "px";
+    }
+    place(); popPlace = place; if (vv) { vv.addEventListener("resize", place); vv.addEventListener("scroll", place); }
     var inp = pop.querySelector("input[type=search]"), list = pop.querySelector(".kl"), done = pop.querySelector(".kd"), hi = 0, vis = [];
     var all = items(sel);
     function sync() { done.style.display = multi ? "flex" : "none"; }
@@ -101,15 +112,17 @@
     setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (x) { inp.focus(); } }, 0);
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  var lastOpen = 0;
   document.addEventListener("mousedown", function (e) {
     var t = e.target; if (pop && !t.closest(".kmr-sp") && t !== cur) close();
-    if (e.button !== 0) return; var sel = t.closest && t.closest("select"); if (ok(sel)) { e.preventDefault(); sel.focus(); open(sel); }
+    if (e.button !== 0) return; var sel = t.closest && t.closest("select"); if (ok(sel)) { e.preventDefault(); lastOpen = Date.now(); open(sel); }
   }, true);
-  document.addEventListener("click", function (e) { var sel = e.target.closest && e.target.closest("select"); if (ok(sel)) { e.preventDefault(); if (!pop) open(sel); } }, true);
+  document.addEventListener("click", function (e) { var sel = e.target.closest && e.target.closest("select"); if (ok(sel)) { e.preventDefault(); if (!pop && Date.now() - lastOpen > 600) open(sel); } }, true);
   document.addEventListener("keydown", function (e) {
     var sel = e.target; if (!ok(sel) || pop) return;
     if (e.key === "Enter" || e.key === " " || e.key === "F4" || (e.altKey && (e.key === "ArrowDown" || e.key === "ArrowUp"))) { e.preventDefault(); open(sel); }
   }, true);
-  window.addEventListener("resize", close); window.addEventListener("scroll", function (e) { if (pop && !(e.target && e.target.closest && e.target.closest(".kmr-sp"))) close(); }, true);
+  window.addEventListener("resize", function () { if (pop && window.innerWidth !== openW) close(); });   /* keyboard opening only changes height - keep the list open */
+  window.addEventListener("scroll", function (e) { if (!pop) return; var t = e.target; if (t && t.closest && t.closest(".kmr-sp")) return; if (t === document || t === window || t === document.documentElement) return; close(); }, true);
   window.KMRSelect = { open: open, close: close };
 })();
