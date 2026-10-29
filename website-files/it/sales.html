@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="/it/apps/kmr-ui.js"></script>
 <script src="/it/apps/kmr-select.js" defer></script>
+<script src="/it/apps/kmr-import.js" defer></script>
 <title>Sales Flow · KMR Apps</title>
 <style>
 :root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--brand:#7c3aed;--brand2:#db2777;--green:#16a34a;--amber:#f59e0b;--red:#dc2626;--blue:#2563eb;--side:#130a3a}
@@ -114,6 +115,12 @@ footer{text-align:center;color:var(--mut);font-size:12px;padding:6px 0 18px}
     <div><label>Status</label><select id="a_status"></select></div>
   </div></div>
   <div class="ft"><button class="btn ghost" id="a_cancel">Cancel</button><button class="btn" id="a_save">Save action plan</button></div>
+</div></div>
+<input type="file" id="invfile" class="hide" multiple accept=".xls,.xlsx,.xlsm,.csv">
+<div class="modal" id="imodal"><div class="in" style="width:min(1180px,97vw)">
+  <div class="hd"><b>Upload invoice data → Daily despatch</b><div style="flex:1"></div><span class="mut" id="isub"></span></div>
+  <div class="bd"><div id="imsg"></div><div id="ibody"></div></div>
+  <div class="ft"><span class="mut" id="isum" style="margin-right:auto"></span><button class="btn ghost" id="icancel">Cancel</button><button class="btn" id="iapply">Update despatch</button></div>
 </div></div>
 <div class="modal" id="parts"><div class="in">
   <div class="hd"><b>Add parts from Operations Master</b><div style="flex:1"></div><input id="q" placeholder="Search customer, part no. or name" style="width:280px"></div>
@@ -380,7 +387,7 @@ function renderDaily() {
     else if (p && d < t) { bg = 'var(--red)'; tx = '#fff'; } else if (p) bg = '#94a3b833';
     return `<td style="background:${bg};color:${tx}" title="${d}: planned ${fmt(p, Number.isInteger(p) ? 0 : 2)} · despatched ${fmt(a)}">${a ? fmt(a) : p ? '·' : ''}</td>`; }).join('')}</tr>`).join('');
   $('#daily').innerHTML = `<div class="row"><b>Daily despatch</b><input type="date" id="dday" min="${M}-01" max="${M}-${dim(M)}" value="${day}">
-      <span class="mut">Enter what actually left the plant on this date.</span><div style="flex:1"></div>${canEdit ? '<button class="btn ghost" id="addu">＋ Add part not in plan</button><button class="btn" id="saved">Save day</button>' : ''}</div>
+      <span class="mut">Enter what actually left the plant on this date.</span><div style="flex:1"></div>${canEdit ? '<button class="btn ghost" id="upinv" title="Read the invoice / sales report from your ERP (Excel or CSV) and fill the despatch automatically">⬆ Upload invoice data</button><button class="btn ghost" id="addu">＋ Add part not in plan</button><button class="btn" id="saved">Save day</button>' : ''}</div>
     ${rows.length ? `<p class="mut" style="margin:-6px 0 10px;font-size:12px"><b>Planned this day</b> = the month’s customer demand spread over its delivery schedule: <b>Daily</b> → demand ÷ working days (Mon–Sat) · <b>Weekly</b> → demand ÷ number of that weekday in the month · <b>Specific date</b> → the full quantity on that date. Shown in whole pieces; the days always add up to the demand.</p><div class="scroll" style="max-height:40vh"><table><thead><tr><th>Customer</th><th>Part</th><th class="n" title="Month demand spread over the delivery schedule (see the note above)">Planned this day ⓘ</th><th class="n">Month despatched / demand</th><th class="n">Pending</th><th class="n">Despatched this day</th><th>Status</th></tr></thead><tbody>${body}</tbody></table></div>
     <h3 style="margin:18px 0 6px;font-size:13px">Month tracker</h3>
     <div class="legend"><span><span class="chip g">n</span> met plan</span><span><span class="chip a">n</span> less than plan</span><span><span class="chip b">n</span> unplanned day</span><span><span class="chip r">·</span> planned, nothing despatched</span><span>· = planned, upcoming</span></div>
@@ -770,6 +777,154 @@ async function boot() {
     const h = (window.KMRNav && KMRNav.pending() || { go: location.hash.slice(1) }).go; if (['dash', 'plan', 'daily', 'loss', 'act'].includes(h)) document.querySelector(`[data-t=${h}]`).click();
   } catch (err) { say(err.message); $('#co').textContent = ''; }
 }
+
+/* ======== Upload invoice data (reads any ERP report layout; see apps/kmr-import.js) ======== */
+const IMP = { files: [], recs: [] };
+const newKey = p => 'new|' + KMRImport.norm(p.part_code) + '|' + p.buyer_code;
+const isay = (t, ok) => { $('#imsg').innerHTML = t ? `<div class="msg ${ok ? 'ok' : ''}">${esc(t)}</div>` : ''; };
+async function loadXLSX() {
+  if (window.XLSX) return;
+  for (const u of ['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js']) {
+    try { await new Promise((ok, no) => { const s = document.createElement('script'); s.src = u; s.onload = ok; s.onerror = no; document.head.appendChild(s); }); if (window.XLSX) return; } catch (e) { /* try next */ }
+  }
+  throw new Error('Could not load the Excel reader. Check the internet connection and try again.');
+}
+function impDefaults(fo) {
+  const per = fo.p.period || {}, mStart = M + '-01', mEnd = M + '-' + pad(dim(M)), t = todayStr();
+  fo.mode = fo.p.mode;
+  fo.to = per.to || (t.slice(0, 7) === M ? t : mEnd);
+  fo.from = per.from && per.from > mStart ? per.from : mStart;
+  if (fo.from > fo.to) fo.from = mStart;
+}
+function impReparse(fo) { fo.p = KMRImport.parseSheet(fo.sheets[fo.si].rows, fo.ov); impDefaults(fo); }
+function fileMonth(fo) {
+  if (fo.mode !== 'daily') return fo.to.slice(0, 7);
+  const c = {}; fo.p.records.forEach(r => { if (r.date) c[r.date.slice(0, 7)] = (c[r.date.slice(0, 7)] || 0) + 1; });
+  return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || M;
+}
+async function importFiles(fl) {
+  if (!canEdit) return say('You can view Sales Flow but not change it. Ask your administrator for editor access.');
+  if (!window.KMRImport) throw new Error('The import reader did not load. Refresh the page and try again.');
+  say('Reading the file…', true); await loadXLSX(); IMP.files = [];
+  for (const f of fl) {
+    let wb; try { wb = XLSX.read(await f.arrayBuffer(), { type: 'array' }); } catch (e) { say(`${f.name} could not be read - use an Excel (.xls / .xlsx) or CSV file.`); continue; }
+    const sheets = wb.SheetNames.map(n => ({ name: n, rows: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }) }));
+    const fo = { name: f.name, sheets, si: 0, ov: null, edit: false }; let best = -1;
+    sheets.forEach((s, i) => { const n = KMRImport.parseSheet(s.rows).records.length; if (n > best) { best = n; fo.si = i; } });
+    impReparse(fo); IMP.files.push(fo);
+  }
+  if (!IMP.files.length) return;
+  const fm = fileMonth(IMP.files[0]);                    // open the month the report belongs to
+  if (fm !== M) { M = fm; $('#month').value = M; await load(); IMP.files.forEach(impDefaults); }
+  say('');
+  if (!PARTS.length) { try { PARTS = await api.rpc('kmr_sf_parts', { p_slug: slug }); } catch (e) { PARTS = []; } }
+  impRemap(); $('#imodal').classList.add('on'); isay(''); paintImport();
+}
+function impRemap() {
+  IMP.recs = [];
+  IMP.files.forEach((fo, fi) => fo.p.records.forEach((rec, ri) => {
+    const m = KMRImport.matchRecord(rec, lines, PARTS);
+    IMP.recs.push({ fi, ri, m, choice: m.status === 'ok' ? m.line.id : m.status === 'new' ? 'new' : 'skip' });
+  }));
+}
+function impItems() {
+  const items = [];
+  IMP.recs.forEach(x => {
+    if (x.choice === 'skip') return; const fo = IMP.files[x.fi], r = fo.p.records[x.ri];
+    items.push({ line_id: x.choice === 'new' ? newKey(x.m.part) : x.choice, qty: r.qty, mode: fo.mode, date: r.date || fo.to, from: fo.from, to: fo.to, replace: !!fo.replace });
+  });
+  return items;
+}
+function paintImport() {
+  const W = KMRImport.buildWrites(impItems(), desp, { month: M, today: todayStr() }), L = KMRImport.colName;
+  const lineLbl = l => `${l.buyer_name} · ${l.part_code}`;
+  const cards = IMP.files.map((fo, fi) => {
+    const c = fo.p.cols || {}, hdr = fo.sheets[fo.si].rows[fo.p.headerRow] || [], cn = k => c[k] != null ? `column ${L(c[k])}` : '—';
+    const outM = fo.mode === 'daily' ? fo.p.records.filter(r => r.date && r.date.slice(0, 7) !== M).length : 0;
+    const ncol = Math.max(...fo.sheets[fo.si].rows.slice(0, 40).map(r => r.length), 1);
+    const opts = (sel, none) => `<option value="">${none}</option>` + Array.from({ length: ncol }, (_, i) => `<option value="${i}" ${sel === i ? 'selected' : ''}>${L(i)}${txtCell(hdr[i]) ? ' — ' + esc(txtCell(hdr[i])) : ''}</option>`).join('');
+    const fix = fo.edit ? `<div class="frm" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr));margin-top:10px">
+        <div><label>Heading row number</label><input type="number" min="1" data-ifx="${fi}:row" value="${(fo.p.headerRow >= 0 ? fo.p.headerRow : 0) + 1}"></div>
+        <div><label>Part number column *</label><select data-ifx="${fi}:part">${opts(c.part, '— choose —')}</select></div>
+        <div><label>Quantity column *</label><select data-ifx="${fi}:qty">${opts(c.qty, '— choose —')}</select></div>
+        <div><label>Customer column</label><select data-ifx="${fi}:cust">${opts(c.cust, 'From “Customer :” lines / none')}</select></div>
+        <div><label>Date column</label><select data-ifx="${fi}:date">${opts(c.date, 'None (period total)')}</select></div>
+        <div><label>Part name column</label><select data-ifx="${fi}:name">${opts(c.name, 'None')}</select></div>
+        <div style="align-self:end"><button class="btn sm" data-ifxgo="${fi}">Read again</button></div></div>` : '';
+    return `<div class="box" style="margin-bottom:10px"><div class="row" style="margin:0 0 6px"><b>📄 ${esc(fo.name)}</b><span class="mut">${esc(fo.p.title)}</span>
+        ${fo.sheets.length > 1 ? `<select data-isheet="${fi}">${fo.sheets.map((s, i) => `<option value="${i}" ${i === fo.si ? 'selected' : ''}>Sheet: ${esc(s.name)}</option>`).join('')}</select>` : ''}
+        <div style="flex:1"></div><button class="btn ghost sm" data-ifix="${fi}">${fo.edit ? 'Hide column settings' : 'Columns look wrong? Change'}</button></div>
+      <div class="mut" style="font-size:12px">Read automatically — part number: ${cn('part')} · quantity: ${cn('qty')} · customer: ${c.cust != null ? cn('cust') : 'from “Customer :” lines'} · date: ${c.date != null ? cn('date') : 'none'} · ${fo.p.records.length} rows found</div>
+      ${fo.mode === 'daily'
+        ? `<div style="margin-top:6px">Every row has its own date, so each quantity goes on <b>its own date</b>.${outM ? ` <span style="color:var(--red)">${outM} row(s) outside ${monthLabel(M)} will be skipped.</span>` : ''}</div>`
+        : `<div style="margin-top:6px">This report gives <b>totals for a period</b> (no day-wise split). Period: <input type="date" data-ifrom="${fi}" value="${fo.from}" max="${fo.to}"> to <input type="date" data-ito="${fi}" value="${fo.to}" max="${todayStr()}"> — the quantity is put on <b>${fo.to.split('-').reverse().join('-')}</b>; anything already entered for earlier days of the period is kept, only the difference is added.
+          <label style="display:block;margin-top:4px"><input type="checkbox" data-irep="${fi}" ${fo.replace ? 'checked' : ''}> This file is the master — clear the daily entries already made in this period and use the file’s totals</label>${fo.to.slice(0, 7) !== M ? ` <span style="color:var(--red)">This date is not in ${monthLabel(M)} — change the month at the top or fix the date.</span>` : ''}</div>`}
+      ${fo.p.warnings.length ? `<div class="mut" style="color:var(--red);font-size:12px">${esc(fo.p.warnings.slice(0, 3).join(' · '))}</div>` : ''}${fix}</div>`;
+  }).join('');
+  const body = IMP.recs.map((x, i) => {
+    const fo = IMP.files[x.fi], r = fo.p.records[x.ri], id = x.choice === 'new' ? newKey(x.m.part) : x.choice, pr = W.per[id] || {};
+    const pool = x.m.status === 'ok' ? x.m.cands : lines, o = [`<option value="skip" ${x.choice === 'skip' ? 'selected' : ''}>— Do not update —</option>`];
+    if (x.m.status === 'new') o.push(`<option value="new" ${x.choice === 'new' ? 'selected' : ''}>＋ Add to this month’s plan (${esc(x.m.part.buyer_name)}) as unplanned sale</option>`);
+    pool.forEach(l => o.push(`<option value="${l.id}" ${x.choice === l.id ? 'selected' : ''}>${esc(lineLbl(l))}</option>`));
+    let chip;
+    if (x.choice === 'skip') chip = x.m.status === 'check' ? '<span class="chip a">Check customer</span>' : '<span class="chip x" title="Not a part of this month’s plan or the Operations Master">Not in plan</span>';
+    else if (pr.low) chip = `<span class="chip a" title="Already entered for the period: ${fmt(pr.low)} - nothing is changed for this part">File is less than entered - not changed</span>`;
+    else if (x.choice === 'new') chip = '<span class="chip u">New in plan</span>'; else chip = '<span class="chip g">Will update</span>';
+    return `<tr><td>${i + 1}</td><td>${esc(r.customer)}</td><td><b>${esc(r.part)}</b><br><span class="mut">${esc(r.name)}</span></td><td class="n">${fmt(r.qty, 2)}</td>
+      <td style="min-width:260px"><select data-ich="${i}" style="width:100%">${o.join('')}</select></td>
+      <td class="n">${x.choice === 'skip' ? '' : fmt(pr.before)}</td><td class="n">${x.choice === 'skip' ? '' : `<b>${fmt(pr.after)}</b>`}</td><td>${chip}</td></tr>`;
+  }).join('');
+  const nUp = IMP.recs.filter(x => x.choice !== 'skip').length, nCk = IMP.recs.filter(x => x.choice === 'skip' && x.m.status === 'check').length, nNo = IMP.recs.filter(x => x.choice === 'skip' && x.m.status !== 'check').length;
+  const chg = W.rows.filter(r => r.qty !== r.before).length;
+  $('#ibody').innerHTML = cards + `<p style="margin:12px 0 6px"><b>${IMP.recs.length}</b> rows read · <b style="color:var(--green)">${nUp}</b> will update · <b style="color:var(--amber)">${nCk}</b> need your check · <b>${nNo}</b> not in the plan (skipped, e.g. scrap). Change the part in the list if a row is matched wrongly.</p>
+    ${W.issues.length ? `<div class="msg">${esc([...new Set(W.issues)].slice(0, 4).join(' · '))}</div>` : ''}
+    <div class="scroll" style="max-height:44vh"><table><thead><tr><th title="Serial number">S.No</th><th>Customer (in file)</th><th>Part (in file)</th><th class="n">Qty in file</th><th>Update this part in the plan</th><th class="n">Already in app (month)</th><th class="n">After update (month)</th><th>Result</th></tr></thead><tbody>${body || '<tr><td colspan="8" class="mut">No part rows found. Open “Columns look wrong? Change” and pick the part number and quantity columns.</td></tr>'}</tbody></table></div>`;
+  $('#isum').textContent = chg ? `${chg} despatch entr${chg > 1 ? 'ies' : 'y'} will be written` : 'Nothing to update yet';
+  $('#iapply').disabled = !chg; $('#iapply').textContent = chg ? `Update despatch (${chg})` : 'Update despatch';
+}
+const txtCell = v => v == null ? '' : String(v).trim().slice(0, 22);
+async function applyImport() {
+  const b = $('#iapply'); b.disabled = true;
+  try {
+    const items = impItems(), need = new Map();
+    IMP.recs.forEach(x => { if (x.choice === 'new') need.set(newKey(x.m.part), x.m.part); });
+    if (need.size) {
+      await api.rpc('kmr_sf_save_lines', { p_slug: slug, p: [...need.values()].map(p => ({ month: M + '-01', buyer_code: p.buyer_code, buyer_name: p.buyer_name, part_code: p.part_code, part_name: p.part_name,
+        price: +p.price || 0, currency: p.currency, uom: p.uom, demand_qty: 0, sched_type: 'daily', sched_date: null, sched_weekday: null })) });
+      await load();
+      need.forEach((p, k) => { const l = lines.find(z => KMRImport.norm(z.part_code) === KMRImport.norm(p.part_code) && z.buyer_code === p.buyer_code); items.forEach(it => { if (it.line_id === k && l) it.line_id = l.id; }); });
+    }
+    const W = KMRImport.buildWrites(items.filter(it => !String(it.line_id).startsWith('new|')), desp, { month: M, today: todayStr() });
+    const rows = W.rows.filter(r => r.qty !== r.before), note = 'Invoice upload: ' + IMP.files.map(f => f.name).join(', ').slice(0, 150);
+    if (!rows.length) { isay('Nothing to change - the app already has these quantities.', true); return; }
+    await api.rpc('kmr_sf_save_despatch', { p_slug: slug, p_rows: rows.map(r => ({ line_id: r.line_id, day: r.day, qty: r.qty, note })) });
+    const days = [...new Set(rows.map(r => r.day))].sort(); await load();
+    $('#imodal').classList.remove('on'); document.querySelector('[data-t=daily]').click();
+    say(`Despatch updated for ${new Set(rows.map(r => r.line_id)).size} part(s) from ${IMP.files.length} file(s) (${days.map(d => d.split('-').reverse().join('-')).join(', ')}).`, true);
+  } catch (err) { isay(err.message); } finally { b.disabled = false; }
+}
+$('#invfile').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; if (f.length) importFiles(f).catch(err => say(err.message)); });
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.id === 'upinv') $('#invfile').click();
+  else if (t.id === 'icancel') $('#imodal').classList.remove('on');
+  else if (t.id === 'iapply') applyImport();
+  else if (t.dataset.ifix != null && t.dataset.ifix !== '') { const fo = IMP.files[+t.dataset.ifix]; fo.edit = !fo.edit; paintImport(); }
+  else if (t.dataset.ifxgo != null) {
+    const fi = +t.dataset.ifxgo, fo = IMP.files[fi], g = k => document.querySelector(`[data-ifx="${fi}:${k}"]`).value, ix = k => g(k) === '' ? null : +g(k);
+    if (ix('part') == null || ix('qty') == null) return isay('Choose the part number column and the quantity column.');
+    isay(''); fo.ov = { headerRow: Math.max(+g('row') - 1, 0), part: ix('part'), qty: ix('qty'), customer: ix('cust'), date: ix('date'), name: ix('name') };
+    impReparse(fo); fo.edit = true; impRemap(); paintImport();
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.ich != null) { IMP.recs[+t.dataset.ich].choice = t.value; paintImport(); }
+  else if (t.dataset.ifrom != null) { IMP.files[+t.dataset.ifrom].from = t.value; paintImport(); }
+  else if (t.dataset.irep != null) { IMP.files[+t.dataset.irep].replace = t.checked; paintImport(); }
+  else if (t.dataset.ito != null) { IMP.files[+t.dataset.ito].to = t.value; paintImport(); }
+  else if (t.dataset.isheet != null) { const fo = IMP.files[+t.dataset.isheet]; fo.si = +t.value; fo.ov = null; impReparse(fo); impRemap(); paintImport(); }
+});
 
 /* ======== demo backend (open sales.html?demo=1 to try the screens without a database) ======== */
 function demoApi() {
