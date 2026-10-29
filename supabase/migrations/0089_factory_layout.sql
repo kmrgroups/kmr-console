@@ -91,7 +91,7 @@ begin
         'id', p.id, 'no', p.no, 'title', p.title, 'kind', p.kind, 'concept', p.concept,
         'dimensions', p.dimensions, 'source_file', p.source_file,
         'machine_count', jsonb_array_length(p.machines),
-        'options_count', jsonb_array_length(p.options),
+        'options_count', jsonb_array_length(p.options), 'options', p.options,
         'selected_option', p.selected_option,
         'status', p.status, 'sample', p.sample,
         'created_by', p.created_by, 'created_at', p.created_at, 'updated_at', p.updated_at
