@@ -1,717 +1,668 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>KMR Layout Studio — 1:1 Factory & Office Layout Generator</title>
-  <script src="/it/apps/sso.js"></script>
-  <script src="/it/apps/kmr-ui.js"></script>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
-  <style>
-    :root { --bg: #090d16; --card: #111827; --border: #1f293d; --ink: #f3f4f6; --mut: #9ca3af; }
-    body { background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, sans-serif; }
-    .cell-badge { font-weight: 600; font-size: 10px; padding: 2px 7px; border-radius: 9999px; text-transform: uppercase; }
-    .badge-cnc { background-color: #3b82f620; color: #60a5fa; border: 1px solid #3b82f660; }
-    .badge-vmc { background-color: #8b5cf620; color: #c084fc; border: 1px solid #8b5cf660; }
-    .badge-conv { background-color: #f59e0b20; color: #fbbf24; border: 1px solid #f59e0b60; }
-    .badge-msa { background-color: #10b98120; color: #34d399; border: 1px solid #10b98160; }
-    .badge-finish { background-color: #ec489920; color: #f472b6; border: 1px solid #ec489960; }
-    .badge-office { background-color: #06b6d420; color: #22d3ee; border: 1px solid #06b6d460; }
-  </style>
-</head>
-<body class="antialiased min-h-screen flex flex-col">
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/kmr-ui.js"></script>
+<title>Factory & Office Layout Studio · KMR Apps</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0ea5e9;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto}.tab{border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;cursor:pointer}.tab.on{background:var(--card);color:var(--b2);box-shadow:0 -2px 0 var(--b2) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%}input[type=range]{padding:0}
+.btn{border:0;border-radius:9px;padding:8px 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer}.btn.o{background:none;color:var(--b2);border:1px solid var(--b2)}.btn.d{background:none;color:var(--r);border:1px solid var(--r)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row input,.row select{width:auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b2))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}.v{--c:var(--b2)}
+.mut{color:var(--mut)}.hide{display:none!important}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}.card h3{margin:0 0 8px;font-size:14px}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}.frm label,.lb{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
+.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
+/* studio */
+.stu{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:14px;align-items:start}@media(max-width:980px){.stu{grid-template-columns:1fr}}
+.otabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.ot{border:1px solid var(--line);border-radius:12px;padding:8px 12px;background:var(--card);cursor:pointer;text-align:left;min-width:190px}.ot.on{border-color:var(--b2);box-shadow:0 0 0 2px var(--b2) inset}.ot b{display:block;font-size:13px}.ot span{font-size:12px;color:var(--mut)}
+.canvas{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#0b1120;padding:8px;max-height:78vh}
+.mt input,.mt select{padding:4px 6px;font-size:12px}.mt td,.mt th{padding:3px 4px}.mt{min-width:0}
+.ok{color:var(--g);font-weight:700}.bad{color:var(--r);font-weight:700}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin:8px 0}.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+/* report pages */
+.pages{display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.page{width:297mm;height:210mm;background:#fff;color:#000;padding:9mm 11mm;box-sizing:border-box;display:flex;flex-direction:column;box-shadow:0 2px 12px #0003;font-size:11px;line-height:1.35;overflow:hidden}
+.page .ph{display:grid;grid-template-columns:62mm 1fr 62mm;gap:6mm;align-items:center;border-bottom:2px solid #0c1a3a;padding-bottom:3mm;margin-bottom:3mm}
+.page .logo{height:16mm;display:flex;align-items:center}.page .logo img{max-height:16mm;max-width:60mm}.page .logo b{font-size:14px;border:1px solid #000;padding:3mm 4mm}
+.page .pt{text-align:center;font-size:17px;font-weight:700}.page .pt small{display:block;font-size:11px;font-weight:400;color:#334155}
+.page .rf{border:1px solid #000;padding:2mm 3mm;font-size:10px}.page .rf b{font-size:13px;display:block}
+.page .pb{flex:1;min-height:0;overflow:hidden}.page .pf{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm;border-top:1px solid #000;padding-top:2mm;margin-top:2mm;font-size:9.5px;color:#111}
+.page table{font-size:10px}.page th,.page td{border-bottom:1px solid #cbd5e1;padding:2px 5px}.page th{color:#334155;background:#f1f5f9}
+.page .two{display:grid;grid-template-columns:1fr 92mm;gap:6mm;height:100%}.page .two svg{max-height:138mm;width:100%;height:auto}
+.page .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:8mm;margin-top:6mm}.page .sg div{border-top:1px solid #000;padding-top:2mm;height:20mm}
+.page .chip{color:#fff}
+@page{size:A4 landscape;margin:0}
+@media print{body{background:#fff;padding:0}body>*:not(#printroot){display:none!important}#printroot{display:block!important}.page{box-shadow:none;page-break-after:always;break-after:page}}
+#printroot{display:none}
+/* presentation */
+.pbox{background:#0c1a3a;color:#fff;aspect-ratio:16/9;width:100%;max-width:1100px;display:flex;flex-direction:column;border-radius:12px;overflow:hidden;position:relative}
+.pbox:fullscreen{max-width:none;width:100vw;height:100vh;border-radius:0;aspect-ratio:auto}
+.sl{flex:1;min-height:0;display:flex;flex-direction:column;padding:2.2vh 3vw 1.2vh;font-size:clamp(11px,2.1vh,22px);overflow:hidden}
+.pbox:not(:fullscreen) .sl{font-size:clamp(10px,1.45vw,15px)}
+.sl h2{margin:0 0 1.2vh;font-size:1.7em}.sl .sub{color:#94a3b8;font-size:.85em;margin-bottom:1.2vh}
+.sl .body{flex:1;min-height:0;display:flex;gap:2vw;overflow:hidden}.sl .body>*{min-width:0}
+.sl table{color:#e8ecf8;font-size:.82em}.sl th{color:#94a3b8;border-bottom:1px solid #26304d}.sl td{border-bottom:1px solid #26304d;padding:.35em .5em}
+.sl .kpi{background:#141a2e;border-color:#26304d}.sl .kpi b{font-size:1.9em}.sl .kpi span{color:#94a3b8}
+.sl svg{max-height:100%;max-width:100%;height:auto;width:auto;background:#fff;border-radius:8px}
+.sl input,.sl select{background:#141a2e;border-color:#26304d;color:#fff;padding:.3em .4em;font-size:.85em}
+.sstd{background:#06102a;border-top:1px solid #26304d;padding:1vh 3vw;font-size:clamp(9px,1.5vh,14px);color:#cbd5e1;display:flex;gap:.6em;flex-wrap:wrap;align-items:center}.sstd b{color:#7dd3fc}.sstd span.s{border:1px solid #334155;border-radius:99px;padding:.1em .7em}
+.pnav{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:.8vh 3vw;background:#06102a}.pnav .btn{padding:.35em .9em}
+.bar{height:1.1em;border-radius:4px;background:linear-gradient(90deg,#0ea5e9,#7c3aed)}.bar.t{background:#f59e0b}
+</style></head><body>
+<header><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><button class="tab on" data-t="std">Standards alignment</button><button class="tab" data-t="prj">Projects</button><button class="tab" data-t="stu">Studio</button><button class="tab" data-t="rep">Report</button><button class="tab" data-t="pre">Presentation</button></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="prj" class="hide"></section><section id="stu" class="hide"></section><section id="rep" class="hide"></section><section id="pre" class="hide"></section></div></main>
+<div id="printroot"></div>
+<a class="back hide" id="back" href="#">← <span id="bco"></span> · KMR Apps</a>
+<script>
+/* ENGINE — pure functions, no screen access. Units: metres. y grows downwards (north = 0). */
+const TYPES = {
+  cnc:    { n: 'CNC turning (Computer Numerical Control lathe)', s: 'CNC turning', c: '#2563eb', o: 1 },
+  vmc:    { n: 'Machining centre (vertical / horizontal)', s: 'Machining centre', c: '#7c3aed', o: 2 },
+  conv:   { n: 'Conventional machine', s: 'Conventional', c: '#d97706', o: 3 },
+  msa:    { n: 'Quality / measurement table', s: 'Quality table', c: '#059669', o: 4 },
+  finish: { n: 'Finishing, assembly and packing', s: 'Finish & pack', c: '#db2777', o: 5 },
+  office: { n: 'Office room', s: 'Office room', c: '#0891b2', o: 6 }
+};
+const KINDS = {
+  public:  { n: 'Public (visitors, meetings)', c: '#0284c7' },
+  open:    { n: 'Open workspace', c: '#0891b2' },
+  private: { n: 'Private cabin', c: '#7c3aed' },
+  service: { n: 'Service (pantry, restrooms, server)', c: '#64748b' }
+};
+const FACTORY_CONCEPTS = [
+  { key: 'cellular-u',     name: 'Option A: Dual U-cells (lean group technology)', short: 'U-cells' },
+  { key: 'cellular-heavy', name: 'Option B: Heavy machines on the walls + central island', short: 'Heavy perimeter' },
+  { key: 'straight-flow',  name: 'Option C: Straight one-piece flow, north to south', short: 'Straight flow' }
+];
+const OFFICE_VARIANTS = [
+  { key: 'office-ergonomic', name: 'Option A: Visitors at the entrance, quiet cabins at the back', short: 'Public first', order: ['public', 'service', 'open', 'private'] },
+  { key: 'office-ergonomic', name: 'Option B: Visitors and cabins together, open floor at the back', short: 'Cabins near entrance', order: ['public', 'private', 'service', 'open'] },
+  { key: 'office-ergonomic', name: 'Option C: Open floor at the entrance, services beside it', short: 'Open floor first', order: ['open', 'service', 'public', 'private'] }
+];
+const DEFAULT_DIM = { width: 20, depth: 30, hallDepth: 24, qcDepth: 5.4, aisle: 2.8, opClearance: 1.2, maintClearance: 1.5 };
+const TARGETS = { saving: 15, utilMin: 40, utilMax: 70, aisle: 2.8, op: 1.2, maint: 1.5 };
+const WALL = 0.5, GAP = 0.3, AISLE_SIDE = 0.3;
 
-  <!-- Top App Bar -->
-  <header class="bg-slate-900 border-b border-slate-800 px-5 py-3 flex flex-wrap items-center justify-between gap-4 select-none">
-    <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white text-base shadow-sm">
-        📐
-      </div>
-      <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-base font-bold tracking-tight text-white">KMR Layout Studio</h1>
-          <span class="text-[10px] bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded font-mono font-semibold">1:1 GENERATOR</span>
-        </div>
-        <p class="text-xs text-slate-400">Transform Line Concepts into 1:1 Scale Lean Cellular & Office Layouts</p>
-      </div>
-    </div>
+const r1 = n => Math.round(n * 10) / 10;
+const r2 = n => Math.round(n * 100) / 100;
+const num = (v, d) => { const n = parseFloat(v); return isFinite(n) && n > 0 ? n : d; };
+const area = m => m.w * m.h;
+const manhattan = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
 
-    <!-- Global Actions -->
-    <div class="flex items-center gap-2">
-      <button onclick="exportDXF()" class="px-3.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg flex items-center gap-1.5 transition">
-        💾 Export DXF
-      </button>
-      <button onclick="openInKMRCAD()" class="px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg flex items-center gap-1.5 shadow-sm transition">
-        🚀 Open in KMR CAD
-      </button>
-      <a href="/it/cad.html" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition">Back to CAD</a>
-    </div>
-  </header>
+/* Shelf-pack items in rows across one or more x-segments. Rotates an item by 90 degrees when that is the only way it fits. */
+function packRows(items, segs, y0, yMax, gx, rowGap) {
+  const placed = [], noFit = [];
+  let y = y0, i = 0;
+  const bw = Math.max(...segs.map(s => s[1] - s[0]));
+  const queue = items.map(m => {
+    let w = m.w, h = m.h, rot = false;
+    if (w > bw + 1e-9 && h <= bw + 1e-9) { const t = w; w = h; h = t; rot = true; }
+    return { m, w, h, rot };
+  });
+  const fits = q => q.w <= bw + 1e-9;
+  const rest = queue.filter(q => { if (!fits(q)) { noFit.push(q.m); return false; } return true; });
+  while (i < rest.length) {
+    let rowH = 0, rowItems = [];
+    for (const s of segs) {
+      let x = s[0];
+      while (i < rest.length) {
+        const q = rest[i];
+        if (x + q.w > s[1] + 1e-9) break;
+        rowItems.push({ q, x }); x += q.w + gx; rowH = Math.max(rowH, q.h); i++;
+      }
+    }
+    if (!rowItems.length) { noFit.push(rest[i].m); i++; continue; }
+    if (y + rowH > yMax + 1e-9) { for (const r of rowItems) noFit.push(r.q.m); while (i < rest.length) noFit.push(rest[i++].m); break; }
+    for (const r of rowItems) placed.push(Object.assign({}, r.q.m, { x: r2(r.x), y: r2(y), w: r.q.w, h: r.q.h, rot: r.q.rot }));
+    y += rowH + rowGap;
+  }
+  return { placed, noFit, yEnd: y };
+}
 
-  <!-- Main Studio Workspace -->
-  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden">
+/* One U-cell block: two rows facing each other around an operator gangway, flow goes along row A and back along row B. */
+function packBlock(items, x0, x1, y0, yMax, op, maint, label) {
+  const bw = x1 - x0, noFit = [], placed = [];
+  items = items.slice().sort((a, b) => b.h - a.h);
+  const norm = items.map(m => { let w = m.w, h = m.h, rot = false; if (w > bw + 1e-9 && h <= bw + 1e-9) { w = m.h; h = m.w; rot = true; } return { m, w, h, rot }; });
+  const ok = norm.filter(q => { if (q.w > bw + 1e-9) { noFit.push(q.m); return false; } return true; });
+  const rows = []; let cur = [], cw = 0;
+  for (const q of ok) {
+    if (cur.length && cw + GAP + q.w > bw + 1e-9) { rows.push(cur); cur = []; cw = 0; }
+    cw += (cur.length ? GAP : 0) + q.w; cur.push(q);
+  }
+  if (cur.length) rows.push(cur);
+  if (rows.length === 1 && rows[0].length >= 2) { const r = rows[0], k = Math.ceil(r.length / 2); rows.splice(0, 1, r.slice(0, k), r.slice(k)); }
+  let y = y0; const blocks = [];
+  for (let b = 0; b < rows.length; b += 2) {
+    const rA = rows[b], rB = rows[b + 1];
+    const hA = Math.max(...rA.map(q => q.h)), hB = rB ? Math.max(...rB.map(q => q.h)) : 0;
+    const bh = hA + (rB ? op + hB : 0);
+    if (y + bh > yMax + 1e-9) { for (const r of rows.slice(b)) for (const q of r) noFit.push(q.m); break; }
+    let x = x0;
+    for (const q of rA) { placed.push(Object.assign({}, q.m, { x: r2(x), y: r2(y), w: q.w, h: q.h, rot: q.rot })); x += q.w + GAP; }
+    const wA = x - GAP - x0;
+    let wB = 0;
+    if (rB) {
+      x = x0;
+      for (const q of rB.slice().reverse()) { placed.push(Object.assign({}, q.m, { x: r2(x), y: r2(y + hA + op), w: q.w, h: q.h, rot: q.rot })); x += q.w + GAP; }
+      wB = x - GAP - x0;
+    }
+    blocks.push({ x: r2(x0 - 0.15), y: r2(y - 0.15), w: r2(Math.max(wA, wB) + 0.3), h: r2(bh + 0.3), label });
+    y += bh + maint;
+  }
+  return { placed, noFit, yEnd: y, blocks };
+}
 
-    <!-- Left Controls Panel -->
-    <aside class="w-full lg:w-96 bg-slate-900/90 border-r border-slate-800 p-4 space-y-5 overflow-y-auto max-h-[calc(100vh-60px)]">
+function cellsOf(items) {
+  const map = new Map();
+  for (const m of items) { const k = (m.cell || 'Other').trim() || 'Other'; if (!map.has(k)) map.set(k, []); map.get(k).push(m); }
+  const list = [...map.entries()].map(([name, ms]) => {
+    ms.sort((a, b) => ((TYPES[a.type] || {}).o || 9) - ((TYPES[b.type] || {}).o || 9));
+    return { name, ms, area: ms.reduce((s, m) => s + area(m), 0), o: Math.min(...ms.map(m => (TYPES[m.type] || {}).o || 9)) };
+  });
+  return list;
+}
 
-      <!-- Step 1: Upload Existing Plan -->
-      <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Step 1 · Input Plan</span>
-          <span class="text-[11px] text-slate-400">PDF / JPG / DXF</span>
-        </div>
-        
-        <div class="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-3 text-center cursor-pointer transition bg-slate-900/50" onclick="document.getElementById('plan-file-input').click()">
-          <input type="file" id="plan-file-input" class="hidden" accept=".pdf,.png,.jpg,.jpeg,.dxf" onchange="handleFileUpload(event)">
-          <div class="text-2xl mb-1">📄</div>
-          <div id="file-name-label" class="text-xs font-medium text-slate-200">Drop PDF, Drawing or Image here</div>
-          <div class="text-[11px] text-slate-500 mt-0.5">Click to browse file</div>
-        </div>
+function geometry(dim) {
+  const W = num(dim.width, 20), D = num(dim.depth, 30);
+  let Hh = num(dim.hallDepth, 24); if (Hh > D - 1) Hh = Math.max(1, D - 1);
+  const aisle = num(dim.aisle, 2.8), op = num(dim.opClearance, 1.2), maint = num(dim.maintClearance, 1.5);
+  const qcDepth = Math.max(0, D - Hh);
+  const west = [WALL, W / 2 - aisle / 2 - AISLE_SIDE], east = [W / 2 + aisle / 2 + AISLE_SIDE, W - WALL];
+  return { W, D, Hh, aisle, op, maint, qcDepth, west, east, yMin: WALL, yMax: Hh - WALL,
+    inbound: [W / 2, 0], dispatch: [W, Math.max(2, Hh - 2)], scrap: [0, Math.max(2, Hh - 2)], d1: [W / 2, Hh] };
+}
 
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <label class="text-slate-400 block mb-1">Building Width (m)</label>
-            <input type="number" id="inp-width" value="20.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
-          </div>
-          <div>
-            <label class="text-slate-400 block mb-1">Total Depth (m)</label>
-            <input type="number" id="inp-depth" value="30.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
-          </div>
-        </div>
+function layoutQC(items, G) {
+  const qc = items.filter(m => m.type === 'msa');
+  if (!qc.length) return { placed: [], noFit: [] };
+  const r = packRows(qc, [[WALL, G.W - WALL]], G.Hh + 0.7, G.D - WALL, GAP, G.op);
+  return { placed: r.placed, noFit: r.noFit };
+}
 
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <label class="text-slate-400 block mb-1">Hall Depth (m)</label>
-            <input type="number" id="inp-hall" value="24.0" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
-          </div>
-          <div>
-            <label class="text-slate-400 block mb-1">QC/Office Bay (m)</label>
-            <input type="number" id="inp-qc" value="5.4" step="0.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-mono" onchange="updateDimensions()">
-          </div>
-        </div>
-      </div>
+function layoutU(items, G) {
+  const cells = cellsOf(items).sort((a, b) => a.o - b.o || b.area - a.area);
+  const bays = [{ seg: G.west, y: G.yMin }, { seg: G.east, y: G.yMin }];
+  return placeCells(cells, bays, G);
+}
 
-      <!-- Step 2: Layout Type & Requirements -->
-      <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 space-y-3">
-        <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Step 2 · Transformation Rules</span>
+/* place each cell as U-cell blocks in the bay with more free depth; a cell that does not fit goes to the other bay */
+function placeCells(cells, bays, G) {
+  const placed = [], noFit = [], blocks = [];
+  for (const c of cells) {
+    const order = bays[0].y <= bays[1].y ? [bays[0], bays[1]] : [bays[1], bays[0]];
+    let left = c.ms;
+    for (const b of order) {
+      if (!left.length) break;
+      if (b.seg[1] - b.seg[0] < 1.0) continue;
+      const r = packBlock(left, b.seg[0], b.seg[1], b.y, G.yMax, G.op, G.maint, c.name);
+      placed.push(...r.placed); blocks.push(...r.blocks);
+      if (r.placed.length) b.y = r.yEnd;
+      left = r.noFit;
+    }
+    noFit.push(...left);
+  }
+  return { placed, noFit, blocks };
+}
 
-        <div>
-          <label class="text-xs text-slate-400 block mb-1">Layout Mode</label>
-          <select id="sel-mode" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white" onchange="handleModeChange()">
-            <option value="factory">🏭 Factory Shop Floor (Machines & Cells)</option>
-            <option value="office">🏢 Office & Management Floor Plan</option>
-          </select>
-        </div>
+function boundsBlock(list, label, pad) {
+  const p = pad === undefined ? 0.15 : pad;
+  const x0 = Math.min(...list.map(m => m.x)), y0 = Math.min(...list.map(m => m.y));
+  const x1 = Math.max(...list.map(m => m.x + m.w)), y1 = Math.max(...list.map(m => m.y + m.h));
+  return { x: r2(x0 - p), y: r2(y0 - p), w: r2(x1 - x0 + 2 * p), h: r2(y1 - y0 + 2 * p), label };
+}
 
-        <div>
-          <label class="text-xs text-slate-400 block mb-1">Target Concept</label>
-          <select id="sel-concept" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-white">
-            <option value="cellular-u">U-Shaped Cellular (Lean Group Technology)</option>
-            <option value="cellular-heavy">Heavy Perimeter + Central Sub-Assembly</option>
-            <option value="straight-flow">Linear One-Piece Through-Flow</option>
-          </select>
-        </div>
+function layoutHeavy(items, G) {
+  const isHeavy = m => area(m) >= 9 || Math.max(m.w, m.h) >= 4.5;
+  const heavy = items.filter(isHeavy).sort((a, b) => area(b) - area(a)), light = items.filter(m => !isHeavy(m));
+  const placed = [], noFit = [], blocks = [];
+  const cols = [{ side: 'w', list: [], w: 0, y: G.yMin }, { side: 'e', list: [], w: 0, y: G.yMin }];
+  for (const m of heavy) {
+    const c = cols[0].y <= cols[1].y ? cols[0] : cols[1];
+    const seg = c.side === 'w' ? G.west : G.east;
+    const rot = m.w > m.h, w = rot ? m.h : m.w, h = rot ? m.w : m.h;
+    if (w > seg[1] - seg[0] + 1e-9 || c.y + h > G.yMax + 1e-9) { noFit.push(m); continue; }
+    const x = c.side === 'w' ? seg[0] : seg[1] - w;
+    const p = Object.assign({}, m, { x: r2(x), y: r2(c.y), w, h, rot });
+    placed.push(p); c.list.push(p); c.w = Math.max(c.w, w); c.y += h + G.op;
+  }
+  for (const c of cols) if (c.list.length) blocks.push(boundsBlock(c.list, 'Heavy machines — ' + (c.side === 'w' ? 'west' : 'east') + ' wall'));
+  const cells = cellsOf(light).sort((a, b) => a.o - b.o || b.area - a.area);
+  const bays = [
+    { seg: [G.west[0] + cols[0].w + (cols[0].w ? G.maint : 0), G.west[1]], y: G.yMin },
+    { seg: [G.east[0], G.east[1] - cols[1].w - (cols[1].w ? G.maint : 0)], y: G.yMin }
+  ];
+  const r = placeCells(cells, bays, G);
+  return { placed: placed.concat(r.placed), noFit: noFit.concat(r.noFit), blocks: blocks.concat(r.blocks) };
+}
 
-        <div class="space-y-2 text-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-slate-400">Central Gangway Width</span>
-            <span id="lbl-aisle" class="text-white font-mono font-bold">2.8 m</span>
-          </div>
-          <input type="range" id="rng-aisle" min="2.0" max="4.0" step="0.2" value="2.8" class="w-full accent-blue-500" oninput="document.getElementById('lbl-aisle').textContent = this.value + ' m'; generateOptions();">
-        </div>
+function layoutStraight(items, G) {
+  const placed = [], noFit = [], blocks = [];
+  let y = G.yMin, n = 0;
+  for (const t of ['cnc', 'vmc', 'conv', 'finish']) {
+    const ms = items.filter(m => m.type === t);
+    if (!ms.length) continue;
+    n++;
+    const r = packRows(ms, [G.west, G.east], y, G.yMax, GAP, G.op);
+    placed.push(...r.placed); noFit.push(...r.noFit);
+    for (const side of [0, 1]) {
+      const part = r.placed.filter(p => (p.x + p.w / 2 < G.W / 2) === (side === 0));
+      if (part.length) blocks.push(boundsBlock(part, 'Stage ' + n + ': ' + TYPES[t].s));
+    }
+    if (r.placed.length) y = r.yEnd - G.op + G.maint;
+  }
+  return { placed, noFit, blocks };
+}
 
-        <div class="space-y-2 text-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-slate-400">Min. Operator Clearance</span>
-            <span class="text-white font-mono font-bold">1.2 m</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-slate-400">Rear Maintenance Corridor</span>
-            <span class="text-white font-mono font-bold">1.5 m</span>
-          </div>
-        </div>
-      </div>
+function centroid(list) {
+  const a = list.reduce((s, m) => s + area(m), 0);
+  if (!a) return null;
+  return [list.reduce((s, m) => s + area(m) * (m.x + m.w / 2), 0) / a, list.reduce((s, m) => s + area(m) * (m.y + m.h / 2), 0) / a];
+}
 
-      <!-- Step 3: Asset Inventory Preset -->
-      <div class="bg-slate-800/60 border border-slate-700/80 rounded-xl p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Step 3 · Machine Inventory</span>
-          <span id="asset-count" class="text-xs font-mono font-bold text-white">62 Assets</span>
-        </div>
-        <p class="text-[11px] text-slate-400">
-          Loaded from AutoCAD Drawing: 23 CNC Lathes, 12 VMC/HMC Centers, 27 Conventional stations, 5 Quality tables.
-        </p>
-        <button onclick="generateOptions()" class="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition flex items-center justify-center gap-2">
-          ✨ Generate 1:1 Layout Options
-        </button>
-      </div>
+function factoryOption(items, dim, idx) {
+  const G = geometry(dim), concept = FACTORY_CONCEPTS[idx];
+  const hall = items.filter(m => m.type !== 'msa');
+  const lay = idx === 0 ? layoutU(hall, G) : idx === 1 ? layoutHeavy(hall, G) : layoutStraight(hall, G);
+  const qc = layoutQC(items, G);
+  const placed = lay.placed.concat(qc.placed), noFit = lay.noFit.concat(qc.noFit);
+  const pts = [G.inbound];
+  const hallPlaced = lay.placed;
+  const stage = t => centroid(hallPlaced.filter(m => m.type === t));
+  let travel = 0, prev = G.inbound, viaD1 = false;
+  const route = [G.inbound];
+  const go = (p, d1) => { if (!p) return; if (d1) { travel += manhattan(prev, G.d1) + manhattan(G.d1, p); route.push(G.d1, p); } else { travel += manhattan(prev, p); route.push(p); } prev = p; };
+  go(stage('cnc')); go(stage('vmc')); go(stage('conv'));
+  const qcC = centroid(qc.placed);
+  if (qcC) { go(qcC, true); }
+  const fin = stage('finish');
+  if (fin) { if (qcC) { travel += manhattan(prev, G.d1) + manhattan(G.d1, fin); route.push(G.d1, fin); prev = fin; } else go(fin); }
+  travel += manhattan(prev, G.dispatch); route.push(G.dispatch);
+  const hallArea = G.W * G.Hh;
+  const util = hallArea ? (lay.blocks || []).reduce((s, b) => s + b.w * b.h, 0) / hallArea * 100 : 0;
+  return { idx, key: concept.key, name: concept.name, short: concept.short, kind: 'factory', G, placed, noFit, blocks: lay.blocks || [], route, travel: r1(travel), util: r1(util), total: items.length, placedN: placed.length };
+}
 
-      <!-- Background Image Opacity Overlay Slider -->
-      <div id="bg-overlay-card" class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-3 space-y-2 hidden">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-300">Underlay Plan Opacity</span>
-          <span id="lbl-opacity" class="font-mono text-white">40%</span>
-        </div>
-        <input type="range" id="rng-opacity" min="0" max="100" value="40" class="w-full accent-blue-500" oninput="updateUnderlayOpacity(this.value)">
-      </div>
+function officeOption(items, dim, idx) {
+  const W = num(dim.width, 20), D = num(dim.depth, 30), cw = 2.0, v = OFFICE_VARIANTS[idx];
+  const G = { W, D, cw, entrance: [W / 2, D] };
+  const bays = [{ seg: [0.3, W / 2 - cw / 2], load: 0, list: [] }, { seg: [W / 2 + cw / 2, W - 0.3], load: 0, list: [] }];
+  const sorted = items.slice().sort((a, b) => v.order.indexOf(a.kind) - v.order.indexOf(b.kind) || area(b) - area(a));
+  for (const m of sorted) { const b = bays[0].load <= bays[1].load ? bays[0] : bays[1]; b.list.push(m); b.load += area(m); }
+  const placed = [], noFit = [];
+  for (const b of bays) {
+    const r = packRows(b.list, [b.seg], 0.3, D - 0.3, 0.2, 0.2);
+    for (const p of r.placed) placed.push(Object.assign(p, { y: r2(D - p.y - p.h) }));
+    noFit.push(...r.noFit);
+  }
+  const c = m => [m.x + m.w / 2, m.y + m.h / 2];
+  const pub = placed.filter(m => m.kind === 'public'), opn = placed.filter(m => m.kind === 'open'), svc = placed.filter(m => m.kind === 'service');
+  let travel = pub.reduce((s, m) => s + manhattan(G.entrance, c(m)), 0);
+  if (svc.length) travel += opn.reduce((s, m) => s + Math.min(...svc.map(q => manhattan(c(m), c(q)))), 0);
+  const floor = W * D - cw * D;
+  const util = floor ? placed.reduce((s, m) => s + area(m), 0) / floor * 100 : 0;
+  return { idx, key: v.key, name: v.name, short: v.short, kind: 'office', G, placed, noFit, blocks: [], route: [G.entrance], travel: r1(travel), util: r1(util), total: items.length, placedN: placed.length };
+}
 
-    </aside>
-
-    <!-- Main Canvas Viewport -->
-    <main class="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-
-      <!-- Subheader: Options Tabs & KPI Bar -->
-      <div class="bg-slate-900/90 border-b border-slate-800 px-5 py-2.5 flex flex-wrap items-center justify-between gap-4 select-none">
-        <!-- Option Tabs -->
-        <div class="flex items-center gap-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button id="tab-opt1" onclick="selectOption(1)" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition">
-            Option A: Dual U-Cells
-          </button>
-          <button id="tab-opt2" onclick="selectOption(2)" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition">
-            Option B: Heavy Perimeter
-          </button>
-          <button id="tab-opt3" onclick="selectOption(3)" class="px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition">
-            Option C: Linear Flow
-          </button>
-        </div>
-
-        <!-- Live Lean KPIs -->
-        <div class="flex items-center gap-4 text-xs">
-          <div class="flex items-center gap-1.5">
-            <span class="text-slate-500">Travel Distance:</span>
-            <span id="kpi-travel" class="font-mono font-bold text-emerald-400">182 m</span>
-          </div>
-          <div class="w-px h-4 bg-slate-800"></div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-slate-500">Floor Utilization:</span>
-            <span id="kpi-util" class="font-mono font-bold text-blue-400">51.4%</span>
-          </div>
-          <div class="w-px h-4 bg-slate-800"></div>
-          <div class="flex items-center gap-1.5">
-            <span class="text-slate-500">Scale:</span>
-            <span class="font-mono font-bold text-slate-300">1m = 40px (1:1)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Scrollable / Zoomable Layout Canvas -->
-      <div class="flex-1 overflow-auto p-6 flex justify-center items-start relative select-none">
-        
-        <!-- Scaled SVG Drawing Container -->
-        <div id="canvas-wrapper" class="relative border-2 border-slate-800 rounded-xl bg-slate-900 shadow-2xl overflow-hidden">
-          
-          <!-- Optional Uploaded Background Image / PDF Underlay -->
-          <img id="bg-underlay" class="absolute inset-0 w-full h-full object-contain pointer-events-none opacity-40 hidden" alt="Underlay">
-
-          <!-- Interactive SVG 1:1 Engine -->
-          <svg id="layout-svg" viewBox="0 0 880 1280" class="w-[880px] h-[1280px] font-sans"></svg>
-        </div>
-
-      </div>
-
-    </main>
-
-  </div>
-
-  <script>
-    // State
-    let currentOption = 1;
-    let layoutMode = 'factory';
-    let bWidth = 20.0;
-    let bDepth = 30.0;
-    let hallDepth = 24.0;
-    let qcDepth = 5.4;
-    let scale = 40.0; // 1 meter = 40 pixels
-
-    // Factory Machine Assets (EPI Machine Shop)
-    const factoryMachines = [
-      // Cell 1: CNC Turning
-      { id: 'NEJ-04', type: 'cnc', name: 'NEJ-04', w: 3.70, h: 2.30, cell: 'CNC Turning' },
-      { id: 'B-20', type: 'cnc', name: 'B-20', w: 3.50, h: 2.50, cell: 'CNC Turning' },
-      { id: 'NEB-102', type: 'cnc', name: 'NEB 102', w: 2.80, h: 2.00, cell: 'CNC Turning' },
-      { id: 'B-08', type: 'cnc', name: 'B-08', w: 3.70, h: 2.50, cell: 'CNC Turning' },
-      { id: 'B-82', type: 'cnc', name: 'B-82', w: 2.95, h: 1.80, cell: 'CNC Turning' },
-      { id: 'NE1.5-1', type: 'cnc', name: 'NE 1.5 #1', w: 1.50, h: 1.30, cell: 'CNC Turning' },
-      { id: 'NE1.5-2', type: 'cnc', name: 'NE 1.5 #2', w: 1.50, h: 1.30, cell: 'CNC Turning' },
-      { id: 'NM1.7', type: 'cnc', name: 'NM 1.7', w: 1.50, h: 1.30, cell: 'CNC Turning' },
-      { id: 'NE-61', type: 'cnc', name: 'NE-61', w: 2.00, h: 1.40, cell: 'CNC Turning' },
-      { id: 'NE44', type: 'cnc', name: 'NE44', w: 3.00, h: 2.30, cell: 'CNC Turning' },
-      { id: 'B-19', type: 'cnc', name: 'B-19', w: 2.60, h: 1.54, cell: 'CNC Turning' },
-      { id: 'B-01', type: 'cnc', name: 'B-01', w: 1.80, h: 1.70, cell: 'CNC Turning' },
-      { id: 'B-07', type: 'cnc', name: 'B-07', w: 2.30, h: 1.30, cell: 'CNC Turning' },
-      { id: 'NET21', type: 'cnc', name: 'NET 21', w: 2.30, h: 1.60, cell: 'CNC Turning' },
-      
-      // Cell 2: VMC & HMC Prismatic
-      { id: 'HMC', type: 'vmc', name: 'HMC NEJ-01', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
-      { id: 'B-02-1', type: 'vmc', name: 'VMC B-02 #1', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
-      { id: 'B-02-2', type: 'vmc', name: 'VMC B-02 #2', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
-      { id: 'B-02-3', type: 'vmc', name: 'VMC B-02 #3', w: 3.20, h: 2.30, cell: 'VMC / HMC' },
-      { id: 'B-86', type: 'vmc', name: 'BED MILL B-86', w: 6.00, h: 2.20, cell: 'VMC / HMC' },
-      { id: 'B-92', type: 'vmc', name: 'VMC B-92', w: 4.00, h: 2.20, cell: 'VMC / HMC' },
-      { id: 'B-51', type: 'vmc', name: 'VMC B-51', w: 3.90, h: 2.50, cell: 'VMC / HMC' },
-      { id: 'B-74-1', type: 'vmc', name: 'TAP B-74 #1', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
-      { id: 'B-74-2', type: 'vmc', name: 'TAP B-74 #2', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
-      { id: 'B-74-3', type: 'vmc', name: 'TAP B-74 #3', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
-      { id: 'B-74-4', type: 'vmc', name: 'TAP B-74 #4', w: 2.10, h: 1.30, cell: 'VMC / HMC' },
-
-      // Cell 3: Conventional & Second-Op
-      { id: 'GT-LT', type: 'conv', name: 'GT / VT / LT Bank', w: 3.70, h: 1.50, cell: 'Conventional' },
-      { id: 'B-88', type: 'conv', name: 'B-88 Grinder', w: 1.80, h: 1.30, cell: 'Conventional' },
-      { id: 'B-89', type: 'conv', name: 'B-89 Grinder', w: 1.80, h: 1.30, cell: 'Conventional' },
-      { id: 'B-58', type: 'conv', name: 'B-58 Drill', w: 1.37, h: 0.97, cell: 'Conventional' },
-      { id: 'B-59', type: 'conv', name: 'B-59 Drill', w: 1.00, h: 0.80, cell: 'Conventional' },
-      { id: 'B-60', type: 'conv', name: 'B-60 Drill', w: 1.00, h: 0.80, cell: 'Conventional' },
-      { id: 'B-61', type: 'conv', name: 'B-61 Drill', w: 1.00, h: 0.80, cell: 'Conventional' },
-      { id: 'B-62', type: 'conv', name: 'B-62 Drill', w: 1.37, h: 0.99, cell: 'Conventional' },
-      { id: 'B-64', type: 'conv', name: 'B-64 Tap', w: 1.14, h: 0.90, cell: 'Conventional' },
-
-      // Cell 4: Quality & MSA
-      { id: 'IC-STUD', type: 'msa', name: 'IC STUD 3 TABLE (CMM)', w: 4.10, h: 0.60, cell: 'Quality / MSA' },
-      { id: '2-TABLE', type: 'msa', name: '2 TABLE (Air/Bore)', w: 3.00, h: 0.60, cell: 'Quality / MSA' },
-      { id: 'SRSE', type: 'msa', name: '3 TABLE (SRSE PARTS)', w: 4.40, h: 0.60, cell: 'Quality / MSA' },
-
-      // Cell 5: Surface & Assembly
-      { id: 'PARKAR', type: 'finish', name: 'PARKAR ARIA (Tanks)', w: 3.00, h: 2.20, cell: 'Finish & Pack' },
-      { id: 'ROTOR', type: 'finish', name: 'HOUSING & T-ROTOR ASSY', w: 6.40, h: 2.40, cell: 'Finish & Pack' },
-      { id: 'DRIVE-S', type: 'finish', name: 'DRIVE S AR Line', w: 2.50, h: 0.60, cell: 'Finish & Pack' },
-      { id: 'PACK', type: 'finish', name: 'PACK TABLE & BOX', w: 1.90, h: 1.00, cell: 'Finish & Pack' }
+function evaluate(items, dim, kind) {
+  const opts = [0, 1, 2].map(i => kind === 'office' ? officeOption(items, dim, i) : factoryOption(items, dim, i));
+  const maxT = Math.max(...opts.map(o => o.travel));
+  const okOpts = opts.filter(o => !o.noFit.length).sort((a, b) => a.travel - b.travel);
+  const grades = ['A+', 'A', 'B+'];
+  for (const o of opts) {
+    o.saving = maxT > 0 ? r1((maxT - o.travel) / maxT * 100) : 0;
+    const rank = okOpts.indexOf(o);
+    o.grade = o.noFit.length ? 'C' : (rank < 0 ? 'C' : grades[rank]);
+    const d = num(dim.aisle, 2.8), op = num(dim.opClearance, 1.2), mt = num(dim.maintClearance, 1.5);
+    o.checks = [
+      { k: 'fit', name: 'Every machine / room has a place', ok: !o.noFit.length, txt: o.noFit.length ? o.noFit.length + ' left out: ' + o.noFit.slice(0, 6).map(m => m.name).join(', ') + (o.noFit.length > 6 ? ' …' : '') : 'All ' + o.total + ' placed' },
+      { k: 'aisle', name: 'Central aisle at least ' + TARGETS.aisle + ' m', ok: kind === 'office' ? true : d >= TARGETS.aisle - 1e-9, txt: kind === 'office' ? 'Office corridor is 2.0 m' : d.toFixed(1) + ' m set' },
+      { k: 'op', name: 'Operator clearance at least ' + TARGETS.op + ' m', ok: op >= TARGETS.op - 1e-9, txt: op.toFixed(1) + ' m set' },
+      { k: 'maint', name: 'Maintenance corridor at least ' + TARGETS.maint + ' m', ok: mt >= TARGETS.maint - 1e-9, txt: mt.toFixed(1) + ' m set' },
+      { k: 'util', name: 'Floor use between ' + TARGETS.utilMin + '% and ' + TARGETS.utilMax + '%', ok: o.util >= TARGETS.utilMin && o.util <= TARGETS.utilMax, txt: o.util.toFixed(1) + '%' }
     ];
-
-    // Office Furniture & Rooms Preset
-    const officeRooms = [
-      { id: 'BOSS', type: 'office', name: 'Executive Cabin (MD)', w: 4.50, h: 3.80, x: 2.0, y: 2.0 },
-      { id: 'CONF-1', type: 'office', name: 'Board Conference Room (12p)', w: 6.00, h: 4.50, x: 7.0, y: 2.0 },
-      { id: 'CONF-2', type: 'office', name: 'Meeting Room 2 (6p)', w: 4.00, h: 3.50, x: 13.5, y: 2.0 },
-      { id: 'DESKS', type: 'office', name: 'Open Workstation Pod (16 Desks)', w: 11.00, h: 6.50, x: 2.0, y: 7.5 },
-      { id: 'PANTRY', type: 'office', name: 'Pantry & Dining Room', w: 4.50, h: 4.0, x: 14.0, y: 7.5 },
-      { id: 'SERVER', type: 'office', name: 'IT Server & Documentation Vault', w: 3.50, h: 3.0, x: 14.0, y: 12.5 },
-      { id: 'TOILETS', type: 'office', name: 'Men & Women Restrooms', w: 4.50, h: 3.5, x: 14.0, y: 16.5 }
-    ];
-
-    function handleModeChange() {
-      layoutMode = document.getElementById('sel-mode').value;
-      const countEl = document.getElementById('asset-count');
-      if (layoutMode === 'office') {
-        countEl.textContent = '7 Office Zones';
-      } else {
-        countEl.textContent = '62 Machine Assets';
-      }
-      generateOptions();
-    }
-
-    function selectOption(opt) {
-      currentOption = opt;
-      [1, 2, 3].forEach(i => {
-        const btn = document.getElementById('tab-opt' + i);
-        if (i === opt) {
-          btn.className = 'px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white shadow-sm transition';
-        } else {
-          btn.className = 'px-3.5 py-1.5 text-xs font-medium rounded-lg text-slate-400 hover:text-white transition';
-        }
-      });
-      render();
-    }
-
-    function updateDimensions() {
-      bWidth = parseFloat(document.getElementById('inp-width').value) || 20.0;
-      bDepth = parseFloat(document.getElementById('inp-depth').value) || 30.0;
-      hallDepth = parseFloat(document.getElementById('inp-hall').value) || 24.0;
-      qcDepth = parseFloat(document.getElementById('inp-qc').value) || 5.4;
-      render();
-    }
-
-    function handleFileUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      document.getElementById('file-name-label').textContent = file.name;
-      
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          const underlay = document.getElementById('bg-underlay');
-          underlay.src = evt.target.result;
-          underlay.classList.remove('hidden');
-          document.getElementById('bg-overlay-card').classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      } else {
-        alert('File ' + file.name + ' uploaded. Blueprint envelope calibrated.');
-      }
-    }
-
-    function updateUnderlayOpacity(val) {
-      document.getElementById('lbl-opacity').textContent = val + '%';
-      document.getElementById('bg-underlay').style.opacity = val / 100;
-    }
-
-    function generateOptions() {
-      // Re-computes layout placements according to selection
-      render();
-    }
-
-    function render() {
-      const svg = document.getElementById('layout-svg');
-      const aisle = parseFloat(document.getElementById('rng-aisle').value) || 2.8;
-
-      if (layoutMode === 'office') {
-        renderOfficeLayout(svg);
-        return;
-      }
-
-      // Factory Layout Render
-      // Envelope: bWidth x bDepth at 40px/m
-      const wPx = bWidth * scale;
-      const hPx = bDepth * scale;
-      const hallPx = hallDepth * scale;
-      const qcPx = qcDepth * scale;
-
-      // Update viewBox
-      svg.setAttribute('viewBox', `0 0 ${wPx + 80} ${hPx + 80}`);
-      svg.style.width = `${wPx + 80}px`;
-      svg.style.height = `${hPx + 80}px`;
-
-      let optionTitle = 'Option A: Dual U-Cells (Lean Group Technology)';
-      let travelMeters = '182 m';
-      let util = '51.4%';
-
-      if (currentOption === 2) {
-        optionTitle = 'Option B: Heavy Perimeter Machining + Central Assembly';
-        travelMeters = '210 m';
-        util = '54.2%';
-      } else if (currentOption === 3) {
-        optionTitle = 'Option C: Straight Linear Flow (Inbound North ➔ Outbound South)';
-        travelMeters = '235 m';
-        util = '49.8%';
-      }
-
-      document.getElementById('kpi-travel').textContent = travelMeters;
-      document.getElementById('kpi-util').textContent = util;
-
-      svg.innerHTML = `
-        <defs>
-          <pattern id="grid-1m" width="40" height="40" patternUnits="userSpaceOnUse">
-            <rect width="40" height="40" fill="none" stroke="#1f293d" stroke-width="0.5"/>
-          </pattern>
-          <pattern id="grid-5m" width="200" height="200" patternUnits="userSpaceOnUse">
-            <rect width="200" height="200" fill="none" stroke="#334155" stroke-width="1.0" opacity="0.6"/>
-          </pattern>
-        </defs>
-
-        <rect width="100%" height="100%" fill="#070a13" />
-        <rect width="100%" height="100%" fill="url(#grid-1m)" />
-        <rect width="100%" height="100%" fill="url(#grid-5m)" />
-
-        <!-- Exterior Building Boundary (20.0m x 30.0m) -->
-        <g transform="translate(40, 40)">
-          <rect width="${wPx}" height="${hPx}" fill="#0b1120" stroke="#475569" stroke-width="3" rx="4" />
-
-          <!-- Dimension Labels -->
-          <text x="${wPx / 2}" y="-12" fill="#38bdf8" font-size="11" font-family="monospace" font-weight="bold" text-anchor="middle">
-            WIDTH: ${bWidth.toFixed(1)}m (${(bWidth * 1000).toFixed(0)} mm)
-          </text>
-          <text x="-12" y="${hPx / 2}" fill="#38bdf8" font-size="11" font-family="monospace" font-weight="bold" transform="rotate(-90 -12 ${hPx / 2})" text-anchor="middle">
-            DEPTH: ${bDepth.toFixed(1)}m (${(bDepth * 1000).toFixed(0)} mm)
-          </text>
-
-          <!-- Hall / QC Wall Divider -->
-          <line x1="8" y1="${hallPx}" x2="${wPx - 8}" y2="${hallPx}" stroke="#475569" stroke-width="3" />
-          <rect x="${wPx / 2 - 60}" y="${hallPx - 5}" width="120" height="10" fill="#0b1120" stroke="#38bdf8" stroke-dasharray="2,2" />
-          <text x="${wPx / 2}" y="${hallPx + 2}" fill="#38bdf8" font-size="8" font-weight="bold" text-anchor="middle">ACCESS D1</text>
-
-          <!-- Rolling Shutters (RS 3.6m = 144px) -->
-          <rect x="-6" y="40" width="10" height="144" fill="#0284c7" stroke="#38bdf8" rx="2" />
-          <text x="-14" y="112" fill="#38bdf8" font-size="9" font-weight="bold" transform="rotate(-90 -14 112)" text-anchor="middle">RS 1 (3.6m INBOUND)</text>
-
-          <rect x="-6" y="520" width="10" height="144" fill="#d97706" stroke="#f59e0b" rx="2" />
-          <text x="-14" y="592" fill="#f59e0b" font-size="9" font-weight="bold" transform="rotate(-90 -14 592)" text-anchor="middle">RS 2 (3.6m SCRAP)</text>
-
-          <rect x="${wPx - 4}" y="520" width="10" height="144" fill="#db2777" stroke="#ec4899" rx="2" />
-          <text x="${wPx + 16}" y="592" fill="#ec4899" font-size="9" font-weight="bold" transform="rotate(90 ${wPx + 16} 592)" text-anchor="middle">RS 3 (3.6m DISPATCH)</text>
-
-          <!-- Central Logistics Highway (aisle m = aisle * 40 px) -->
-          <rect x="${(wPx - aisle * scale) / 2}" y="10" width="${aisle * scale}" height="${hallPx - 15}" fill="#1e293b25" stroke="#475569" stroke-dasharray="4,4" />
-          <text x="${wPx / 2}" y="${hallPx / 2}" fill="#475569" font-size="12" font-weight="bold" transform="rotate(-90 ${wPx / 2} ${hallPx / 2})" text-anchor="middle" letter-spacing="4">
-            ${aisle.toFixed(1)}m CENTRAL TRANSPORT AISLE
-          </text>
-
-          <!-- Render Option Specific Machines -->
-          ${renderOptionMachines(currentOption, wPx, hallPx, aisle)}
-
-          <!-- DEDICATED QUALITY CONTROL ROOM (Front Bay: 19.6m x 5.4m) -->
-          <g transform="translate(10, ${hallPx + 10})">
-            <rect width="${wPx - 20}" height="${qcPx - 15}" fill="#064e3b20" stroke="#10b981" stroke-width="1.5" rx="4" />
-            <text x="${(wPx - 20) / 2}" y="20" fill="#6ee7b7" font-size="11" font-weight="bold" text-anchor="middle">
-              QUALITY CONTROL & MSA ROOM — ${(bWidth - 0.4).toFixed(1)}m × ${qcDepth.toFixed(1)}m (${((bWidth - 0.4) * qcDepth).toFixed(1)} m²)
-            </text>
-
-            <!-- CMM Granite Table: 4.10m x 0.60m = 164px x 24px -->
-            <rect x="20" y="45" width="164" height="40" fill="#059669" stroke="#34d399" rx="4" />
-            <text x="102" y="68" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">IC STUD 3 (CMM 4.1×0.6m)</text>
-
-            <!-- Air/Bore Table: 3.00m x 0.60m = 120px x 24px -->
-            <rect x="200" y="45" width="120" height="40" fill="#10b981" stroke="#34d399" rx="4" />
-            <text x="260" y="68" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">2 TABLE (Bore 3.0×0.6m)</text>
-
-            <!-- SRSE Table: 4.40m x 0.60m = 176px x 24px -->
-            <rect x="335" y="45" width="176" height="40" fill="#10b981" stroke="#34d399" rx="4" />
-            <text x="423" y="68" fill="#000" font-size="9" font-weight="bold" text-anchor="middle">3 TABLE SRSE (4.4×0.6m)</text>
-
-            <!-- Vault -->
-            <rect x="530" y="45" width="220" height="130" fill="#04785730" stroke="#10b981" rx="4" />
-            <text x="640" y="105" fill="#6ee7b7" font-size="10" font-weight="bold" text-anchor="middle">GAUGE CALIBRATION VAULT</text>
-            <text x="640" y="122" fill="#a7f3d0" font-size="8" text-anchor="middle">& Quality Cabin (5.5m × 3.2m)</text>
-          </g>
-
-        </g>
-      `;
-    }
-
-    function renderOptionMachines(opt, wPx, hallPx, aisle) {
-      let html = '';
-      const leftBayW = (wPx - aisle * scale) / 2;
-      const rightBayX = wPx / 2 + (aisle * scale) / 2;
-
-      if (opt === 1) {
-        // Option 1: Dual U-Cells (Lean Group Technology)
-        // West Bay: CNC Turning Cell 1 & Conventional Cell 3
-        html += `
-          <!-- West Bay CNC Turning Dual U-Cells -->
-          <g transform="translate(20, 40)">
-            <!-- Raw Cutting -->
-            <rect x="0" y="0" width="${172}" height="${64}" fill="#475569" stroke="#64748b" rx="4"/>
-            <text x="86" y="36" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">RAW MACHINE (4.3×1.6m)</text>
-            
-            <!-- U-Cell 1 -->
-            <rect x="0" y="75" width="${148}" height="${92}" fill="#2563eb" stroke="#60a5fa" rx="4"/>
-            <text x="74" y="125" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">NEJ-04 (3.7×2.3m)</text>
-
-            <rect x="155" y="75" width="${140}" height="${100}" fill="#2563eb" stroke="#60a5fa" rx="4"/>
-            <text x="225" y="130" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">B-20 (3.5×2.5m)</text>
-
-            <rect x="0" y="180" width="${112}" height="${80}" fill="#1d4ed8" stroke="#3b82f6" rx="4"/>
-            <text x="56" y="225" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">NEB 102 (2.8×2.0m)</text>
-
-            <rect x="120" y="185" width="${148}" height="${100}" fill="#1d4ed8" stroke="#3b82f6" rx="4"/>
-            <text x="194" y="240" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">B-08 (3.7×2.5m)</text>
-
-            <rect x="0" y="270" width="${118}" height="${72}" fill="#1e40af" stroke="#3b82f6" rx="4"/>
-            <text x="59" y="310" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">B-82 (2.95×1.8m)</text>
-
-            <!-- Lathes Gang -->
-            <rect x="125" y="295" width="${60}" height="${52}" fill="#1e40af" rx="3"/><text x="155" y="325" fill="#fff" font-size="8" text-anchor="middle">NE1.5</text>
-            <rect x="190" y="295" width="${60}" height="${52}" fill="#1e40af" rx="3"/><text x="220" y="325" fill="#fff" font-size="8" text-anchor="middle">NE1.5</text>
-            <rect x="125" y="355" width="${60}" height="${52}" fill="#1e40af" rx="3"/><text x="155" y="385" fill="#fff" font-size="8" text-anchor="middle">NM1.7</text>
-            <rect x="190" y="355" width="${80}" height="${56}" fill="#1e40af" rx="3"/><text x="230" y="385" fill="#fff" font-size="8" text-anchor="middle">NE-61</text>
-          </g>
-
-          <!-- West Mid: Conventional & 2nd Op -->
-          <g transform="translate(20, 480)">
-            <rect x="0" y="0" width="${148}" height="${60}" fill="#d97706" stroke="#fbbf24" rx="4"/>
-            <text x="74" y="34" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">GT / VT / LT Bank (3.7×1.5m)</text>
-
-            <rect x="155" y="0" width="${65}" height="${52}" fill="#b45309" rx="3"/><text x="187" y="30" fill="#fff" font-size="8" text-anchor="middle">B-88</text>
-            <rect x="225" y="0" width="${65}" height="${52}" fill="#b45309" rx="3"/><text x="257" y="30" fill="#fff" font-size="8" text-anchor="middle">B-89</text>
-
-            <!-- Bench Drill Bank -->
-            <rect x="0" y="70" width="${280}" height="${40}" fill="#f59e0b20" stroke="#f59e0b" rx="4"/>
-            <text x="140" y="94" fill="#fbbf24" font-size="9" font-weight="bold" text-anchor="middle">Bench Drill / Tap Bank (B-58..B-65)</text>
-          </g>
-
-          <!-- East Bay: Cell 2 VMC/HMC + Cell 5 Finish/Assy -->
-          <g transform="translate(${rightBayX + 10}, 40)">
-            <!-- HMC & Heavy VMC -->
-            <rect x="0" y="0" width="${128}" height="${92}" fill="#6d28d9" stroke="#a78bfa" rx="4"/>
-            <text x="64" y="50" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">HMC NEJ-01 (3.2×2.3m)</text>
-
-            <rect x="135" y="0" width="${128}" height="${92}" fill="#7c3aed" stroke="#a78bfa" rx="4"/>
-            <text x="199" y="50" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">VMC B-02 #1 (3.2×2.3m)</text>
-
-            <rect x="0" y="100" width="${128}" height="${92}" fill="#7c3aed" stroke="#a78bfa" rx="4"/>
-            <text x="64" y="150" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">VMC B-02 #2 (3.2×2.3m)</text>
-
-            <rect x="135" y="100" width="${128}" height="${92}" fill="#7c3aed" stroke="#a78bfa" rx="4"/>
-            <text x="199" y="150" fill="#fff" font-size="9" font-weight="bold" text-anchor="middle">VMC B-02 #3 (3.2×2.3m)</text>
-
-            <!-- Bed Mill 6m x 2.2m = 240px x 88px -->
-            <rect x="0" y="200" width="${240}" height="${88}" fill="#5b21b6" stroke="#c084fc" rx="6"/>
-            <text x="120" y="248" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">BED MILL B-86 (6.0m × 2.2m)</text>
-
-            <rect x="0" y="295" width="${160}" height="${88}" fill="#8b5cf6" rx="4"/>
-            <text x="80" y="342" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">VMC B-92 (4.0×2.2m)</text>
-
-            <!-- 4 Tapping Centers -->
-            <g transform="translate(0, 395)">
-              <rect x="0" width="60" height="52" fill="#a855f7" rx="3"/><text x="30" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #1</text>
-              <rect x="65" width="60" height="52" fill="#a855f7" rx="3"/><text x="95" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #2</text>
-              <rect x="130" width="60" height="52" fill="#a855f7" rx="3"/><text x="160" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #3</text>
-              <rect x="195" width="60" height="52" fill="#a855f7" rx="3"/><text x="225" y="30" fill="#fff" font-size="8" text-anchor="middle">B-74 #4</text>
-            </g>
-
-            <!-- Cell 5: Finish & Assembly -->
-            <rect x="0" y="465" width="${260}" height="${60}" fill="#be185d" stroke="#f472b6" rx="4"/>
-            <text x="130" y="500" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">PARKERIZING LINE (PARKAR ARIA)</text>
-
-            <!-- Housing Rotor -->
-            <rect x="0" y="535" width="${256}" height="${80}" fill="#db2777" stroke="#f472b6" rx="6"/>
-            <text x="128" y="580" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">HOUSING & T-ROTOR SUB-ASSY (6.4×2.4m)</text>
-          </g>
-        `;
-      } else if (opt === 2) {
-        // Option 2: Heavy Perimeter + Central Island
-        html += `
-          <!-- Perimeter Heavy VMC/HMC Flow -->
-          <g transform="translate(20, 40)">
-            <rect x="0" y="0" width="240" height="88" fill="#5b21b6" stroke="#c084fc" rx="4"/>
-            <text x="120" y="48" fill="#fff" font-size="11" font-weight="bold" text-anchor="middle">BED MILL B-86 (North Wall)</text>
-            
-            <rect x="250" y="0" width="160" height="88" fill="#8b5cf6" rx="4"/>
-            <text x="330" y="48" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">VMC B-92 (North Wall)</text>
-          </g>
-          <g transform="translate(20, 140)">
-            <rect x="0" y="0" width="128" height="92" fill="#6d28d9" rx="4"/><text x="64" y="50" fill="#fff" font-size="9" text-anchor="middle">HMC NEJ-01</text>
-            <rect x="0" y="100" width="128" height="92" fill="#7c3aed" rx="4"/><text x="64" y="150" fill="#fff" font-size="9" text-anchor="middle">VMC B-02 #1</text>
-            <rect x="0" y="200" width="128" height="92" fill="#7c3aed" rx="4"/><text x="64" y="250" fill="#fff" font-size="9" text-anchor="middle">VMC B-02 #2</text>
-            <rect x="0" y="300" width="128" height="92" fill="#7c3aed" rx="4"/><text x="64" y="350" fill="#fff" font-size="9" text-anchor="middle">VMC B-02 #3</text>
-          </g>
-          <g transform="translate(${rightBayX - 60}, 140)">
-            <rect x="0" y="0" width="256" height="80" fill="#db2777" rx="4"/><text x="128" y="45" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">CENTRAL ASSEMBLY POD (6.4×2.4m)</text>
-            <rect x="0" y="90" width="220" height="60" fill="#be185d" rx="4"/><text x="110" y="125" fill="#fff" font-size="9" text-anchor="middle">PARKERIZING TANKS</text>
-          </g>
-        `;
-      } else {
-        // Option 3: Linear One-Piece Flow
-        html += `
-          <!-- Direct Straight Inbound-to-Outbound Linear Cells -->
-          <g transform="translate(30, 40)">
-            <text x="200" y="20" fill="#38bdf8" font-size="11" font-weight="bold">STAGE 1: BILLET & ROUGH TURNING</text>
-            <rect x="0" y="30" width="172" height="64" fill="#475569" rx="4"/><text x="86" y="66" fill="#fff" font-size="9" text-anchor="middle">RAW CUTTING</text>
-            <rect x="180" y="30" width="148" height="92" fill="#2563eb" rx="4"/><text x="254" y="80" fill="#fff" font-size="9" text-anchor="middle">NEJ-04</text>
-          </g>
-          <g transform="translate(30, 180)">
-            <text x="200" y="20" fill="#c084fc" font-size="11" font-weight="bold">STAGE 2: PRISMATIC MILLING</text>
-            <rect x="0" y="30" width="240" height="88" fill="#5b21b6" rx="4"/><text x="120" y="78" fill="#fff" font-size="10" text-anchor="middle">BED MILL B-86</text>
-            <rect x="250" y="30" width="128" height="92" fill="#6d28d9" rx="4"/><text x="314" y="80" fill="#fff" font-size="9" text-anchor="middle">HMC NEJ-01</text>
-          </g>
-          <g transform="translate(30, 340)">
-            <text x="200" y="20" fill="#f472b6" font-size="11" font-weight="bold">STAGE 3: ASSEMBLY & PACKING</text>
-            <rect x="0" y="30" width="256" height="80" fill="#db2777" rx="4"/><text x="128" y="75" fill="#fff" font-size="10" text-anchor="middle">HOUSING ROTOR ASSY</text>
-          </g>
-        `;
-      }
-
-      return html;
-    }
-
-    function renderOfficeLayout(svg) {
-      // 1:1 Scale Office Floor Plan
-      const wPx = bWidth * scale;
-      const hPx = bDepth * scale;
-
-      svg.setAttribute('viewBox', `0 0 ${wPx + 80} ${hPx + 80}`);
-      svg.style.width = `${wPx + 80}px`;
-      svg.style.height = `${hPx + 80}px`;
-
-      document.getElementById('kpi-travel').textContent = 'Direct Aisle';
-      document.getElementById('kpi-util').textContent = '68.0% (Ergonomic)';
-
-      svg.innerHTML = `
-        <defs>
-          <pattern id="grid-office" width="40" height="40" patternUnits="userSpaceOnUse">
-            <rect width="40" height="40" fill="none" stroke="#1f293d" stroke-width="0.5"/>
-          </pattern>
-        </defs>
-
-        <rect width="100%" height="100%" fill="#070a13" />
-        <rect width="100%" height="100%" fill="url(#grid-office)" />
-
-        <g transform="translate(40, 40)">
-          <!-- Outer Office Boundary -->
-          <rect width="${wPx}" height="${hPx}" fill="#0f172a" stroke="#06b6d4" stroke-width="3" rx="4" />
-          
-          <text x="${wPx / 2}" y="-12" fill="#22d3ee" font-size="12" font-family="monospace" font-weight="bold" text-anchor="middle">
-            OFFICE FLOOR PLAN (1:1 SCALE — ${bWidth}m × ${bDepth}m)
-          </text>
-
-          <!-- Central Corridor -->
-          <rect x="${wPx / 2 - 40}" y="10" width="80" height="${hPx - 20}" fill="#1e293b40" stroke="#334155" stroke-dasharray="4,4" />
-          <text x="${wPx / 2}" y="${hPx / 2}" fill="#64748b" font-size="11" font-weight="bold" transform="rotate(-90 ${wPx / 2} ${hPx / 2})" text-anchor="middle" letter-spacing="4">
-            2.0m CENTRAL OFFICE CORRIDOR
-          </text>
-
-          <!-- Executive Cabins North-West -->
-          <rect x="20" y="20" width="${4.5 * scale}" height="${3.8 * scale}" fill="#083344" stroke="#06b6d4" stroke-width="1.5" rx="6"/>
-          <text x="${20 + 2.25 * scale}" y="${20 + 1.9 * scale}" fill="#e0f2fe" font-size="11" font-weight="bold" text-anchor="middle">EXECUTIVE CABIN (MD)</text>
-          <text x="${20 + 2.25 * scale}" y="${20 + 1.9 * scale + 15}" fill="#38bdf8" font-size="9" text-anchor="middle">4.5m × 3.8m (Ensuite)</text>
-
-          <!-- Conference Room North-East -->
-          <rect x="${wPx - 6.0 * scale - 20}" y="20" width="${6.0 * scale}" height="${4.5 * scale}" fill="#0c4a6e" stroke="#0284c7" stroke-width="1.5" rx="6"/>
-          <text x="${wPx - 3.0 * scale - 20}" y="${20 + 2.25 * scale}" fill="#f0f9ff" font-size="12" font-weight="bold" text-anchor="middle">BOARD CONFERENCE ROOM</text>
-          <text x="${wPx - 3.0 * scale - 20}" y="${20 + 2.25 * scale + 16}" fill="#7dd3fc" font-size="9" text-anchor="middle">6.0m × 4.5m (16-Seat Oval Table)</text>
-
-          <!-- Open Workstation Pod -->
-          <rect x="20" y="${3.8 * scale + 40}" width="${(bWidth / 2 - 3) * scale}" height="${8.0 * scale}" fill="#164e63" stroke="#0891b2" stroke-width="1.5" rx="6"/>
-          <text x="${20 + ((bWidth / 2 - 3) * scale) / 2}" y="${3.8 * scale + 80}" fill="#cffafe" font-size="12" font-weight="bold" text-anchor="middle">OPEN WORKSPACE (24 WORKSTATIONS)</text>
-          <text x="${20 + ((bWidth / 2 - 3) * scale) / 2}" y="${3.8 * scale + 96}" fill="#67e8f9" font-size="9" text-anchor="middle">Ergonomic modular pods with data cabling</text>
-
-          <!-- Meeting Room 2 -->
-          <rect x="${wPx - 5.0 * scale - 20}" y="${4.5 * scale + 40}" width="${5.0 * scale}" height="${3.5 * scale}" fill="#1e293b" stroke="#475569" rx="4"/>
-          <text x="${wPx - 2.5 * scale - 20}" y="${4.5 * scale + 60}" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">MEETING ROOM 2 (8-Seat)</text>
-
-          <!-- Dining & Pantry -->
-          <rect x="${wPx - 5.0 * scale - 20}" y="${4.5 * scale + 40 + 3.5 * scale + 20}" width="${5.0 * scale}" height="${4.0 * scale}" fill="#1e293b" stroke="#475569" rx="4"/>
-          <text x="${wPx - 2.5 * scale - 20}" y="${4.5 * scale + 40 + 3.5 * scale + 60}" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">PANTRY & CAFETERIA (5.0×4.0m)</text>
-
-          <!-- Restrooms South-East -->
-          <rect x="${wPx - 5.0 * scale - 20}" y="${hPx - 4.0 * scale - 20}" width="${5.0 * scale}" height="${4.0 * scale}" fill="#334155" stroke="#64748b" rx="4"/>
-          <text x="${wPx - 2.5 * scale - 20}" y="${hPx - 2.0 * scale - 20}" fill="#fff" font-size="10" font-weight="bold" text-anchor="middle">RESTROOMS (MEN / WOMEN)</text>
-
-          <!-- Reception & Waiting Area South-West Entrance -->
-          <rect x="20" y="${hPx - 4.5 * scale - 20}" width="${(bWidth / 2 - 3) * scale}" height="${4.5 * scale}" fill="#082f49" stroke="#0284c7" rx="6"/>
-          <text x="${20 + ((bWidth / 2 - 3) * scale) / 2}" y="${hPx - 2.5 * scale - 20}" fill="#bae6fd" font-size="12" font-weight="bold" text-anchor="middle">MAIN RECEPTION & VISITOR LOUNGE</text>
-        </g>
-      `;
-    }
-
-    // DXF Exporter
-    function exportDXF() {
-      // Creates a clean, standard AutoCAD DXF R12 text file
-      let dxf = "0\nSECTION\n2\nHEADER\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n0\nLAYER\n2\nWALLS\n62\n7\n0\nLAYER\n2\nMACHINES\n62\n1\n0\nLAYER\n2\nAISLES\n62\n4\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n";
-
-      // Outer boundary
-      dxf += `0\nLINE\n8\nWALLS\n10\n0\n20\n0\n11\n${bWidth * 1000}\n21\n0\n`;
-      dxf += `0\nLINE\n8\nWALLS\n10\n${bWidth * 1000}\n20\n0\n11\n${bWidth * 1000}\n21\n${bDepth * 1000}\n`;
-      dxf += `0\nLINE\n8\nWALLS\n10\n${bWidth * 1000}\n20\n${bDepth * 1000}\n11\n0\n21\n${bDepth * 1000}\n`;
-      dxf += `0\nLINE\n8\nWALLS\n10\n0\n20\n${bDepth * 1000}\n11\n0\n21\n0\n`;
-
-      // Machine boxes in mm
-      factoryMachines.forEach((m, idx) => {
-        let x = 1000 + (idx % 4) * 4500;
-        let y = 2000 + Math.floor(idx / 4) * 3500;
-        let w = m.w * 1000;
-        let h = m.h * 1000;
-
-        dxf += `0\nLINE\n8\nMACHINES\n10\n${x}\n20\n${y}\n11\n${x + w}\n21\n${y}\n`;
-        dxf += `0\nLINE\n8\nMACHINES\n10\n${x + w}\n20\n${y}\n11\n${x + w}\n21\n${y + h}\n`;
-        dxf += `0\nLINE\n8\nMACHINES\n10\n${x + w}\n20\n${y + h}\n11\n${x}\n21\n${y + h}\n`;
-        dxf += `0\nLINE\n8\nMACHINES\n10\n${x}\n20\n${y + h}\n11\n${x}\n21\n${y}\n`;
-        dxf += `0\nTEXT\n8\nMACHINES\n10\n${x + 200}\n20\n${y + h / 2}\n40\n250\n1\n${m.name}\n`;
-      });
-
-      dxf += "0\nENDSEC\n0\nEOF\n";
-
-      const blob = new Blob([dxf], { type: "application/dxf" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `KMR_Layout_${layoutMode}_Option${currentOption}_1to1.dxf`;
-      a.click();
-    }
-
-    function openInKMRCAD() {
-      window.location.href = `/it/cad.html?demo=1#action=import-layout`;
-    }
-
-    // Default initialization
-    render();
-  </script>
-</body>
-</html>
+  }
+  return opts;
+}
+
+/* The key performance indicators of one chosen option and their gaps against the targets. */
+function kpis(opt) {
+  const c = k => opt.checks.find(x => x.k === k);
+  return [
+    { k: 'saving', name: 'Travel saving against the longest option', val: opt.saving.toFixed(1) + '%', target: '≥ ' + TARGETS.saving + '%', ok: opt.saving >= TARGETS.saving - 1e-9 },
+    { k: 'util', name: 'Floor utilisation', val: opt.util.toFixed(1) + '%', target: TARGETS.utilMin + '–' + TARGETS.utilMax + '%', ok: c('util').ok },
+    { k: 'fit', name: 'Machines / rooms placed', val: opt.placedN + ' of ' + opt.total, target: 'all', ok: c('fit').ok },
+    { k: 'clear', name: 'Aisle and clearances', val: c('aisle').txt + ' / ' + c('op').txt + ' / ' + c('maint').txt, target: '≥ ' + TARGETS.aisle + ' / ' + TARGETS.op + ' / ' + TARGETS.maint + ' m', ok: c('aisle').ok && c('op').ok && c('maint').ok }
+  ];
+}
+/* END ENGINE */
+
+const SAMPLE_MACHINES=[
+{id:'NEJ-04',type:'cnc',name:'NEJ-04',w:3.7,h:2.3,cell:'CNC Turning'},{id:'B-20',type:'cnc',name:'B-20',w:3.5,h:2.5,cell:'CNC Turning'},{id:'NEB-102',type:'cnc',name:'NEB 102',w:2.8,h:2.0,cell:'CNC Turning'},{id:'B-08',type:'cnc',name:'B-08',w:3.7,h:2.5,cell:'CNC Turning'},{id:'B-82',type:'cnc',name:'B-82',w:2.95,h:1.8,cell:'CNC Turning'},{id:'NE1.5-1',type:'cnc',name:'NE 1.5 #1',w:1.5,h:1.3,cell:'CNC Turning'},{id:'NE1.5-2',type:'cnc',name:'NE 1.5 #2',w:1.5,h:1.3,cell:'CNC Turning'},{id:'NM1.7',type:'cnc',name:'NM 1.7',w:1.5,h:1.3,cell:'CNC Turning'},{id:'NE-61',type:'cnc',name:'NE-61',w:2.0,h:1.4,cell:'CNC Turning'},{id:'NE44',type:'cnc',name:'NE44',w:3.0,h:2.3,cell:'CNC Turning'},{id:'B-19',type:'cnc',name:'B-19',w:2.6,h:1.54,cell:'CNC Turning'},{id:'B-01',type:'cnc',name:'B-01',w:1.8,h:1.7,cell:'CNC Turning'},{id:'B-07',type:'cnc',name:'B-07',w:2.3,h:1.3,cell:'CNC Turning'},{id:'NET21',type:'cnc',name:'NET 21',w:2.3,h:1.6,cell:'CNC Turning'},
+{id:'HMC',type:'vmc',name:'HMC NEJ-01',w:3.2,h:2.3,cell:'VMC / HMC'},{id:'B-02-1',type:'vmc',name:'VMC B-02 #1',w:3.2,h:2.3,cell:'VMC / HMC'},{id:'B-02-2',type:'vmc',name:'VMC B-02 #2',w:3.2,h:2.3,cell:'VMC / HMC'},{id:'B-02-3',type:'vmc',name:'VMC B-02 #3',w:3.2,h:2.3,cell:'VMC / HMC'},{id:'B-86',type:'vmc',name:'BED MILL B-86',w:6.0,h:2.2,cell:'VMC / HMC'},{id:'B-92',type:'vmc',name:'VMC B-92',w:4.0,h:2.2,cell:'VMC / HMC'},{id:'B-51',type:'vmc',name:'VMC B-51',w:3.9,h:2.5,cell:'VMC / HMC'},{id:'B-74-1',type:'vmc',name:'TAP B-74 #1',w:2.1,h:1.3,cell:'VMC / HMC'},{id:'B-74-2',type:'vmc',name:'TAP B-74 #2',w:2.1,h:1.3,cell:'VMC / HMC'},{id:'B-74-3',type:'vmc',name:'TAP B-74 #3',w:2.1,h:1.3,cell:'VMC / HMC'},{id:'B-74-4',type:'vmc',name:'TAP B-74 #4',w:2.1,h:1.3,cell:'VMC / HMC'},
+{id:'GT-LT',type:'conv',name:'GT / VT / LT Bank',w:3.7,h:1.5,cell:'Conventional'},{id:'B-88',type:'conv',name:'B-88 Grinder',w:1.8,h:1.3,cell:'Conventional'},{id:'B-89',type:'conv',name:'B-89 Grinder',w:1.8,h:1.3,cell:'Conventional'},{id:'B-58',type:'conv',name:'B-58 Drill',w:1.37,h:0.97,cell:'Conventional'},{id:'B-59',type:'conv',name:'B-59 Drill',w:1.0,h:0.8,cell:'Conventional'},{id:'B-60',type:'conv',name:'B-60 Drill',w:1.0,h:0.8,cell:'Conventional'},{id:'B-61',type:'conv',name:'B-61 Drill',w:1.0,h:0.8,cell:'Conventional'},{id:'B-62',type:'conv',name:'B-62 Drill',w:1.37,h:0.99,cell:'Conventional'},{id:'B-64',type:'conv',name:'B-64 Tap',w:1.14,h:0.9,cell:'Conventional'},
+{id:'IC-STUD',type:'msa',name:'IC STUD 3 TABLE (CMM)',w:4.1,h:0.6,cell:'Quality / MSA'},{id:'2-TABLE',type:'msa',name:'2 TABLE (Air/Bore)',w:3.0,h:0.6,cell:'Quality / MSA'},{id:'SRSE',type:'msa',name:'3 TABLE (SRSE PARTS)',w:4.4,h:0.6,cell:'Quality / MSA'},
+{id:'PARKAR',type:'finish',name:'PARKAR ARIA (Tanks)',w:3.0,h:2.2,cell:'Finish & Pack'},{id:'ROTOR',type:'finish',name:'HOUSING & T-ROTOR ASSY',w:6.4,h:2.4,cell:'Finish & Pack'},{id:'DRIVE-S',type:'finish',name:'DRIVE S AR Line',w:2.5,h:0.6,cell:'Finish & Pack'},{id:'PACK',type:'finish',name:'PACK TABLE & BOX',w:1.9,h:1.0,cell:'Finish & Pack'}];
+const SAMPLE_ROOMS=[
+{id:'BOSS',type:'office',kind:'private',name:'Executive cabin (MD)',w:4.5,h:3.8},{id:'CONF-1',type:'office',kind:'public',name:'Board conference room (12 seats)',w:6.0,h:4.5},{id:'CONF-2',type:'office',kind:'public',name:'Meeting room 2 (6 seats)',w:4.0,h:3.5},{id:'DESKS',type:'office',kind:'open',name:'Open workstation pod (16 desks)',w:11.0,h:6.5},{id:'RECEP',type:'office',kind:'public',name:'Reception and visitor lounge',w:5.0,h:4.5},{id:'PANTRY',type:'office',kind:'service',name:'Pantry and dining',w:4.5,h:4.0},{id:'SERVER',type:'office',kind:'service',name:'IT server and documentation vault',w:3.5,h:3.0},{id:'TOILETS',type:'office',kind:'service',name:'Restrooms (men / women)',w:4.5,h:3.5}];
+
+const CFG={SUPABASE_URL:'https://dehlcusptkzfhqvpfyjh.supabase.co',
+ FORMAT:{no:'KMR/LAY/F-01',title:'Factory & Office Layout Report',rev:'00',revDate:'2026-10-29',history:[{rev:'00',date:'2026-10-29',note:'First issue of this report format'}]},
+ PX:40,STATUS:['draft','review','approved','superseded']};
+const STATUS_NAME={draft:'Draft',review:'In review',approved:'Approved',superseded:'Superseded'},STATUS_CLS={draft:'x',review:'a',approved:'g',superseded:'v'};
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const qs=new URLSearchParams(location.search),DEMO=qs.has('demo');let slug=(qs.get('co')||'').toLowerCase(),sb,ctx=null,canEdit=false,isStaff=false;
+const today=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'}),dmy=d=>d?String(d).slice(0,10).split('-').reverse().join('-'):'—';
+let LIST=[],P=null,OPTS=[],REPORT=null,ACTIONS=[],SL=0,underlay='',armed=null,timer=null;
+const say=(t,ok)=>{$('#msg').innerHTML=t?`<div class="msg ${ok?'ok':''}">${esc(t)}</div>`:'';if(t)window.scrollTo(0,0);if(ok)setTimeout(()=>say(''),3500)};
+const api=DEMO?demo():{async rpc(f,a){const{data,error}=await sb.rpc(f,a);if(error)throw new Error(error.message);return data}};
+const kindName=k=>k==='office'?'Office floor plan':'Factory machine shop';
+const mkKey=()=>'n'+Math.random().toString(36).slice(2,8);
+
+/* ---------- standards (Standards alignment screen) ---------- */
+const STD=[
+['ISO 9001:2015','7.1.3 Infrastructure','Provide and maintain the buildings, equipment and transport needed to make conforming product.','Every machine and room is registered with its size and placed on a 1:1 metric plan. The plan is saved, given a number and controlled by status (Draft, In review, Approved).',()=>`${LIST.length} saved layouts, ${LIST.filter(p=>p.status==='approved').length} approved`],
+['ISO 9001:2015','7.1.4 Environment for the operation of processes','Provide a suitable working environment.','Operator clearance, central aisle and maintenance corridor are checked on every option and shown as pass or gap.',()=>P?`Open layout: ${OPTS[P.sel]?OPTS[P.sel].checks.filter(c=>c.ok).length+' of '+OPTS[P.sel].checks.length+' checks pass':'—'}`:'Open a layout to see its checks'],
+['ISO 9001:2015','8.5.1 Control of production and service provision','Production under controlled conditions, including suitable infrastructure.','The material route of each part (inbound door, cells, quality room, dispatch door) is drawn and measured in metres.',()=>P&&OPTS[P.sel]?`Route length ${OPTS[P.sel].travel} m`:'—'],
+['IATF 16949:2016','7.1.3.1 Plant, facility and equipment planning','Plant layouts must optimise material travel, material handling and value-added use of floor space; use lean methods; review the effectiveness of existing operations periodically.','Three options per layout are compared on computed travel distance and floor utilisation. The Presentation screen keeps the review action plans.',()=>`${LIST.length} layouts, last change ${LIST.length?dmy(LIST.map(p=>p.updated_at).sort().pop()):'—'}`],
+['IATF 16949:2016','7.1.4.1 Environment for the operation of processes','Personnel safety, cleanliness and order suited to the product and process.','Clear gangways (operator side) and aisles for pallet trucks are part of the rules; a gap is shown if they are set below the targets.',()=>`Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m`],
+['IATF 16949:2016','8.5.1.5 Total productive maintenance','Maintenance access to equipment is planned.','A rear maintenance corridor between cells is kept in every option and checked against the target.',()=>`Target maintenance corridor ${TARGETS.maint} m`],
+['IATF 16949:2016','8.5.4 Preservation (incl. 8.5.4.1)','Handling, storage and transport of product are controlled.','Inbound, scrap and dispatch doors and the central transport aisle are drawn on the plan.',()=>'Doors and aisle shown on every drawing'],
+['APQP (AIAG, 2nd edition)','Phase 3 Process design and development — floor plan layout','The floor plan is a required output of process design.','The printed report, with its reference number, is the floor plan output for the quality-planning file.',()=>`${(P&&P.history||[]).filter(h=>h.t==='report').length} reports issued for the open layout`],
+['PPAP (AIAG, 4th edition)','Element 5 Process flow diagram','The flow must agree with the submitted process flow diagram.','The route drawn on the layout lists the same stages in the same order; compare it with the diagram in your PPAP file.',()=>'Compare the route with the PPAP flow diagram'],
+['AIAG-VDA FMEA (1st edition, 2019)','Process FMEA Step 2 Structure analysis','Structure the process into steps and 4M elements (Man, Machine, Material, Environment).','The machine list with cell groups and the room plan give the Machine and Environment elements for the Process FMEA (Failure Mode and Effects Analysis).',()=>P?`${P.items.length} items in the open layout`:'—'],
+['FMEA (AIAG, 4th edition)','Process FMEA — process step and material handling causes','Material handling and mix-up causes need the real flow.','Use the drawn route to rate handling and mix-up risks in the Process FMEA.',()=>'Route drawn on every option'],
+['Control Plan (AIAG)','Process step and measurement location','Show where each control or measurement happens.','Measurement tables sit in the quality room bay and are listed in the report.',()=>P?`${P.items.filter(m=>m.type==='msa').length} measurement tables in the open layout`:'—'],
+['VDA 6.3:2016','Process elements P4 Realisation of product and process development and P6 Process analysis / production','Production means, flow, handling and storage are suitable.','The layout, flow route, clearances and approval status are evidence for these process audit elements.',()=>`${LIST.filter(p=>p.status==='approved').length} approved layouts`],
+['MSA (AIAG, 4th edition)','Measurement environment','Measurement systems need a controlled environment.','Measurement (quality) tables are placed in their own room bay away from machining, so temperature and vibration can be controlled.',()=>P?`${P.items.filter(m=>m.type==='msa').length} tables`:'—'],
+['SPC (AIAG, 2nd edition)','Statistical Process Control','—','Not applicable here: this app makes no control charts. The quality room position supports collecting data near the line.',()=>'Not applicable']];
+const GLOSS=[['KPI','Key Performance Indicator'],['CNC','Computer Numerical Control'],['VMC / HMC','Vertical / Horizontal Machining Centre'],['QC','Quality Control'],['MSA','Measurement System Analysis'],['CMM','Coordinate Measuring Machine'],['DXF','Drawing Exchange Format (AutoCAD)'],['WIP','Work In Progress'],['RS','Rolling Shutter (door)'],['U-cell','Machines in a U shape around one operator gangway'],['FMEA','Failure Mode and Effects Analysis'],['APQP','Advanced Product Quality Planning'],['PPAP','Production Part Approval Process'],['SPC','Statistical Process Control'],['IATF','International Automotive Task Force'],['ISO','International Organization for Standardization'],['VDA','Verband der Automobilindustrie (German automotive association)'],['AIAG','Automotive Industry Action Group']];
+
+/* ---------- drawing ---------- */
+function drawSVG(o,th,id){
+  const S=CFG.PX,M=56,G=o.G,W=G.W,D=G.D,dk=th==='dark',C=dk?{bg:'#0b1120',wall:'#94a3b8',grid:'#1e293b',tx:'#e2e8f0',aisle:'#33415566',blk:'#94a3b8',rt:'#fbbf24',dim:'#38bdf8',qc:'#10b98122',qcs:'#10b981'}:{bg:'#ffffff',wall:'#0f172a',grid:'#e5e9f2',tx:'#0f172a',aisle:'#cbd5e155',blk:'#475569',rt:'#b45309',dim:'#0369a1',qc:'#10b98118',qcs:'#047857'};
+  const px=v=>v*S,w=px(W)+2*M,h=px(D)+2*M,u=id||'a';
+  let s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;font-family:system-ui,sans-serif"><defs><pattern id="g${u}" width="${S}" height="${S}" patternUnits="userSpaceOnUse"><path d="M${S} 0H0V${S}" fill="none" stroke="${C.grid}" stroke-width=".6"/></pattern><marker id="m${u}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="${C.rt}"/></marker></defs><rect width="${w}" height="${h}" fill="${C.bg}"/>`;
+  if(underlay&&dk)s+=`<image href="${underlay}" x="${M}" y="${M}" width="${px(W)}" height="${px(D)}" preserveAspectRatio="xMidYMid meet" opacity="${(+($('#rng_op')||{value:40}).value||40)/100}"/>`;
+  s+=`<g transform="translate(${M},${M})"><rect width="${px(W)}" height="${px(D)}" fill="url(#g${u})" stroke="${C.wall}" stroke-width="3"/>`;
+  const T=(x,y,t,sz,fill,extra)=>`<text x="${x}" y="${y}" font-size="${sz}" fill="${fill||C.tx}" ${extra||''}>${esc(t)}</text>`;
+  if(o.kind==='factory'){
+    const hh=px(G.Hh);
+    s+=`<rect x="${px(W/2-G.aisle/2)}" y="${px(.5)}" width="${px(G.aisle)}" height="${hh-px(1)}" fill="${C.aisle}" stroke="${C.blk}" stroke-dasharray="5 4"/>`;
+    s+=T(px(W/2)+4,px(G.Hh/2),G.aisle.toFixed(1)+' m central transport aisle',10,C.blk,`text-anchor="middle" transform="rotate(-90 ${px(W/2)+4} ${px(G.Hh/2)})" letter-spacing="2"`);
+    s+=`<line x1="0" y1="${hh}" x2="${px(W)}" y2="${hh}" stroke="${C.wall}" stroke-width="3"/><rect x="${px(W/2-1.5)}" y="${hh-5}" width="${px(3)}" height="10" fill="${C.bg}" stroke="#38bdf8" stroke-dasharray="3 2"/>`+T(px(W/2),hh-9,'D1 access',9,C.dim,'text-anchor="middle"');
+    const door=(x,y,wd,ht,col,lab,lx,ly,rot)=>`<rect x="${x}" y="${y}" width="${wd}" height="${ht}" fill="${col}" stroke="${C.wall}" rx="2"/>`+T(lx,ly,lab,9,col,rot?`text-anchor="middle" transform="rotate(${rot} ${lx} ${ly})"`:'text-anchor="middle"');
+    s+=door(px(W/2-1.8),-5,px(3.6),10,'#0284c7','RS 1 inbound (3.6 m Rolling Shutter)',px(W/2),-12,0);
+    s+=door(-5,px(G.scrap[1]-1.8),10,px(3.6),'#d97706','RS 2 scrap',-12,px(G.scrap[1]),-90);
+    s+=door(px(W)-5,px(G.dispatch[1]-1.8),10,px(3.6),'#db2777','RS 3 dispatch',px(W)+16,px(G.dispatch[1]),90);
+    s+=`<rect x="${px(.3)}" y="${hh+px(.3)}" width="${px(W-.6)}" height="${px(G.qcDepth-.6)}" rx="4" fill="${C.qc}" stroke="${C.qcs}"/>`+T(px(W/2),hh+px(.3)+14,`QUALITY CONTROL AND MEASUREMENT ROOM — ${(W-.6).toFixed(1)} m × ${(G.qcDepth-.6).toFixed(1)} m`,10,C.qcs,'text-anchor="middle" font-weight="700"');
+    for(const b of o.blocks)s+=`<rect x="${px(b.x)}" y="${px(b.y)}" width="${px(b.w)}" height="${px(b.h)}" rx="8" fill="none" stroke="${C.blk}" stroke-dasharray="6 4" stroke-width="1.5"/>`+T(px(b.x)+4,px(b.y)-3,String(b.label).toUpperCase(),8,C.blk,'font-weight="700"');
+    if(o.route.length>1)s+=`<polyline points="${o.route.map(p=>px(p[0])+','+px(p[1])).join(' ')}" fill="none" stroke="${C.rt}" stroke-width="2.2" stroke-dasharray="7 5" marker-end="url(#m${u})" opacity=".9"/>`;
+  }else{
+    s+=`<rect x="${px(W/2-G.cw/2)}" y="${px(.3)}" width="${px(G.cw)}" height="${px(D-.6)}" fill="${C.aisle}" stroke="${C.blk}" stroke-dasharray="5 4"/>`+T(px(W/2),px(D/2),'2.0 m central office corridor',10,C.blk,`text-anchor="middle" transform="rotate(-90 ${px(W/2)} ${px(D/2)})" letter-spacing="2"`);
+    s+=`<rect x="${px(W/2-1)}" y="${px(D)-5}" width="${px(2)}" height="10" fill="#0284c7" stroke="${C.wall}"/>`+T(px(W/2),px(D)+16,'ENTRANCE',10,C.dim,'text-anchor="middle" font-weight="700"');
+  }
+  for(const m of o.placed){
+    const col=o.kind==='office'?(KINDS[m.kind]||{c:'#0891b2'}).c:(TYPES[m.type]||{c:'#64748b'}).c,x=px(m.x),y=px(m.y),mw=px(m.w),mh=px(m.h),ch=Math.max(4,Math.floor(mw/5.4));
+    s+=`<rect x="${x}" y="${y}" width="${mw}" height="${mh}" rx="3" fill="${col}" fill-opacity="${o.kind==='office'?.82:.92}" stroke="${dk?'#fff':'#0f172a'}" stroke-opacity=".55"/>`;
+    const lab=mw>=70?m.name:(m.id||m.name),dims=`${r2(m.w)}×${r2(m.h)}${m.rot?' ↻':''}`;
+    s+=`<text x="${x+mw/2}" y="${y+mh/2-(mw>=70&&mh>=34?2:-3)}" font-size="${mw>=70?9.5:8}" fill="#fff" text-anchor="middle" font-weight="700">${esc(String(lab).slice(0,ch))}</text>`;
+    if(mw>=70&&mh>=34)s+=`<text x="${x+mw/2}" y="${y+mh/2+10}" font-size="8" fill="#fff" fill-opacity=".85" text-anchor="middle">${dims}${o.kind==='office'?' · '+r1(m.w*m.h)+' m²':''}</text>`;
+  }
+  s+=T(px(W/2),px(D)+34,`WIDTH ${W.toFixed(1)} m (${Math.round(W*1000)} mm)`,11,C.dim,'text-anchor="middle" font-weight="700"')+T(-30,px(D/2),`DEPTH ${D.toFixed(1)} m (${Math.round(D*1000)} mm)`,11,C.dim,`text-anchor="middle" font-weight="700" transform="rotate(-90 -30 ${px(D/2)})"`);
+  return s+'</g></svg>';
+}
+function legendHTML(o){
+  if(o.kind==='office')return `<div class="legend">${Object.entries(KINDS).map(([k,v])=>`<span><i style="background:${v.c}"></i>${esc(v.n)}</span>`).join('')}</div>`;
+  const used=[...new Set(o.placed.map(m=>m.type))];
+  return `<div class="legend">${used.map(t=>`<span><i style="background:${TYPES[t].c}"></i>${esc(TYPES[t].n)}</span>`).join('')}<span><i style="background:#f59e0b"></i>Material route per part (dashed)</span></div>`;
+}
+/* ---------- DXF (Drawing Exchange Format, AutoCAD R12) ---------- */
+function dxf(o){
+  const G=o.G,D=G.D,mm=v=>Math.round(v*1000),Y=y=>mm(D-y);let e='';
+  const L=(ly,a,b,c,d)=>{e+=`0\nLINE\n8\n${ly}\n10\n${a}\n20\n${b}\n30\n0\n11\n${c}\n21\n${d}\n31\n0\n`};
+  const R=(ly,x,y,w,h)=>{const X=mm(x),X2=mm(x+w),Y1=Y(y),Y2=Y(y+h);L(ly,X,Y1,X2,Y1);L(ly,X2,Y1,X2,Y2);L(ly,X2,Y2,X,Y2);L(ly,X,Y2,X,Y1)};
+  const T=(ly,x,y,ht,t)=>{e+=`0\nTEXT\n8\n${ly}\n10\n${mm(x)}\n20\n${Y(y)}\n30\n0\n40\n${ht}\n1\n${String(t).replace(/[\r\n]/g,' ')}\n`};
+  R('WALLS',0,0,G.W,D);
+  if(o.kind==='factory'){R('AISLES',G.W/2-G.aisle/2,.5,G.aisle,G.Hh-1);L('WALLS',0,Y(G.Hh),mm(G.W),Y(G.Hh));R('ZONES',.3,G.Hh+.3,G.W-.6,G.qcDepth-.6);T('ANNOTATIONS',G.W/2-3,G.Hh+.9,250,'QUALITY CONTROL AND MEASUREMENT ROOM');for(const b of o.blocks){R('ZONES',b.x,b.y,b.w,b.h);T('ANNOTATIONS',b.x+.1,b.y+.4,200,b.label)}}
+  else{R('AISLES',G.W/2-G.cw/2,.3,G.cw,D-.6)}
+  for(const m of o.placed){R('MACHINES',m.x,m.y,m.w,m.h);T('ANNOTATIONS',m.x+.15,m.y+m.h/2,200,m.name)}
+  T('ANNOTATIONS',0,-1,300,`${P?P.title:''} — ${o.name} — scale 1:1, units mm`);
+  const lay=[['WALLS',7],['MACHINES',1],['AISLES',4],['ZONES',3],['ANNOTATIONS',2]];
+  return '0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n9\n$INSUNITS\n70\n4\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLTYPE\n70\n1\n0\nLTYPE\n2\nCONTINUOUS\n70\n0\n3\nSolid line\n72\n65\n73\n0\n40\n0.0\n0\nENDTAB\n0\nTABLE\n2\nLAYER\n70\n'+lay.length+'\n'+lay.map(l=>`0\nLAYER\n2\n${l[0]}\n70\n0\n62\n${l[1]}\n6\nCONTINUOUS\n`).join('')+'0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n'+e+'0\nENDSEC\n0\nEOF\n';
+}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000)}
+
+/* ---------- loading and saving ---------- */
+function fromRow(r){const d=r.dimensions||{};return{id:r.id,no:r.no,title:r.title,kind:r.kind,status:r.status,source_file:r.source_file||'',sample:!!r.sample,history:r.history||[],sel:Math.max(0,Math.min(2,(r.selected_option||1)-1)),dirty:false,dim:{width:+d.width||20,depth:+d.depth||30,hallDepth:+d.hallDepth||24,qcDepth:+d.qcDepth||5.4,aisle:+d.aisle||2.8,opClearance:+d.opClearance||1.2,maintClearance:+d.maintClearance||1.5},items:(r.machines||[]).map(m=>({...m,w:+m.w,h:+m.h}))}}
+const good=m=>m.w>0&&m.h>0;
+function recalc(){OPTS=P?evaluate(P.items.filter(good),P.dim,P.kind):[];if(P&&P.sel>2)P.sel=0}
+function summary(){return OPTS.map(x=>({name:x.name,short:x.short,key:x.key,travel:x.travel,util:x.util,saving:x.saving,grade:x.grade,placed:x.placedN,total:x.total,noFit:x.noFit.length}))}
+function payload(){return{id:P.id||undefined,title:P.title,kind:P.kind,concept:P.kind==='office'?'office-ergonomic':FACTORY_CONCEPTS[P.sel].key,dimensions:{...P.dim},source_file:P.source_file||null,machines:P.items.filter(good).map(({id,type,name,w,h,cell,kind})=>({id,type,name,w,h,cell,kind})),options:summary(),selected_option:P.sel+1}}
+async function loadList(){LIST=await api.rpc('kmr_layout_list',{p_slug:slug})||[]}
+async function openProject(id){const r=await api.rpc('kmr_layout_get',{p_slug:slug,p_id:id});P=fromRow(r);recalc();REPORT=null;underlay='';await loadActions();paint();go('stu')}
+async function save(quiet){
+  if(!P)return;if(!canEdit){say('You can view layouts but not change them. Ask your administrator for editor access.');return false}
+  if(!String(P.title||'').trim()){say('Write a title for the layout first.');return false}
+  try{const r=await api.rpc('kmr_layout_save',{p_slug:slug,p:payload()});P.id=r.id;if(r.no)P.no=r.no;P.dirty=false;await loadList();if(!quiet)say('Saved '+(P.no||'')+'.',true);paintHead();return true}catch(err){say(err.message);return false}
+}
+async function newProject(kind,example){
+  if(!canEdit){say('You can view layouts but not change them.');return}
+  const t=($('#np_t')||{value:''}).value.trim()||(kind==='office'?'New office floor plan':'New factory layout');
+  P={id:null,no:null,title:t,kind,status:'draft',source_file:'',history:[],sel:0,dirty:true,dim:{...DEFAULT_DIM},items:example?JSON.parse(JSON.stringify(kind==='office'?SAMPLE_ROOMS:SAMPLE_MACHINES)):[]};
+  if(example&&kind==='factory'){P.dim={...P.dim,width:24,depth:36,hallDepth:30,qcDepth:6}}
+  recalc();REPORT=null;underlay='';ACTIONS=[];if(await save(true)){say('Layout '+P.no+' created. Add or change the machines below.',true)}paint();go('stu')
+}
+async function loadActions(){try{ACTIONS=await api.rpc('kmr_pres_actions_get',{p_slug:slug,p_code:'layout',p_app:'layout'})||[]}catch{ACTIONS=[]}}
+
+/* ---------- screens ---------- */
+const TABS=['std','prj','stu','rep','pre'];
+function go(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.t===t));TABS.forEach(x=>$('#'+x).classList.toggle('hide',x!==t));if(t==='rep')paintRep();if(t==='pre')paintPre()}
+function paint(){paintStd();paintPrj();paintStu();paintRep();paintPre();paintHead()}
+function paintHead(){const c=$('#co');c.textContent=(ctx?ctx.company:'')+(P?' · '+(P.no||'new')+' '+P.title+(P.dirty?'  (not saved)':''):'')}
+const armBtn=(id,label,sure)=>armed===id?`<button class="btn d sm" data-do="${id}">${sure}</button>`:`<button class="btn o sm" data-arm="${id}">${label}</button>`;
+
+function paintStd(){
+  $('#std').innerHTML=`<p class="mut" style="margin-top:0">How this app meets the standards used in KMR apps. The right-hand column shows live evidence from your own layouts. Clause numbers follow the editions named — check them against your controlled copies.</p>
+  <div style="overflow-x:auto"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>What it asks for</th><th>How Layout Studio meets it</th><th>Evidence now</th></tr></thead><tbody>${STD.map(r=>`<tr><td><b>${esc(r[0])}</b></td><td>${esc(r[1])}</td><td class="mut">${esc(r[2])}</td><td>${esc(r[3])}</td><td><span class="chip ${r[4]()==='Not applicable'?'x':'b'}">${esc(r[4]())}</span></td></tr>`).join('')}</tbody></table></div>
+  <div class="card" style="margin-top:14px"><h3>Short forms used in this app and what they mean</h3><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 16px">${GLOSS.map(g=>`<div><b>${esc(g[0])}</b> — ${esc(g[1])}</div>`).join('')}</div></div>`}
+
+function paintPrj(){
+  const n=LIST.length,ap=LIST.filter(p=>p.status==='approved').length,rv=LIST.filter(p=>p.status==='review').length,dr=LIST.filter(p=>p.status==='draft').length;
+  const k=(v,t,c)=>`<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
+  const best=p=>{const o=(p.options||[]).filter(x=>!x.noFit).sort((a,b)=>a.travel-b.travel)[0];return o?o:null};
+  $('#prj').innerHTML=`<div class="kpis">${k(n,'Saved layouts','var(--b2)')}${k(ap,'Approved','var(--g)')}${k(rv,'In review','var(--a)')}${k(dr,'Drafts','#94a3b8')}</div>
+  ${canEdit?`<div class="card"><h3>Start a new layout</h3><div class="row"><input id="np_t" placeholder="Title, e.g. Machine shop re-layout" style="min-width:260px;max-width:360px"><button class="btn" data-new="factory">＋ Factory (empty)</button><button class="btn o" data-new="factory-ex">＋ Factory with example machines</button><button class="btn" data-new="office">＋ Office floor plan</button></div><p class="mut" style="margin:0">A factory layout needs the list of machines (name, size, group). An office plan starts with a typical set of rooms that you can change.</p></div>`:'<p class="mut">You can view layouts. Editor access is needed to create or change them.</p>'}
+  ${isStaff?`<div class="row"><span class="mut">KMR staff only:</span><button class="btn o sm" data-sample="load">Load sample layouts</button>${armBtn('flush','Remove sample layouts','Press again to remove')}</div>`:''}
+  ${n?`<div style="overflow-x:auto"><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Items</th><th>Best option</th><th>Travel</th><th>Floor use</th><th>Status</th><th>Changed</th><th></th></tr></thead><tbody>${LIST.map(p=>{const b=best(p);return`<tr><td><b>${esc(p.no)}</b></td><td>${esc(p.title)}${p.sample?' <span class="chip x">sample</span>':''}</td><td>${kindName(p.kind)}</td><td>${p.machine_count}</td><td>${b?esc(b.short):'—'}</td><td>${b?b.travel+' m':'—'}</td><td>${b?b.util+'%':'—'}</td><td><span class="chip ${STATUS_CLS[p.status]||'x'}">${STATUS_NAME[p.status]||p.status}</span></td><td>${dmy(p.updated_at)}</td><td style="white-space:nowrap"><button class="btn sm" data-open="${p.id}">Open</button> ${canEdit?armBtn('del'+p.id,'Delete','Press again'):''}</td></tr>`}).join('')}</tbody></table></div>`:'<p class="mut">No layouts yet. Start one above.</p>'}`}
+
+const num2=(id,lab,f,step)=>`<div><label for="${id}">${lab}</label><input id="${id}" type="number" step="${step||.1}" min="0" data-dim="${f}" value="${P.dim[f]}" ${canEdit?'':'disabled'}></div>`;
+function itemRows(){
+  if(P.kind==='office')return P.items.map((m,i)=>`<tr><td><input data-i="${i}" data-f="name" value="${esc(m.name)}" style="min-width:140px"></td><td><select data-i="${i}" data-f="kind">${Object.entries(KINDS).map(([k,v])=>`<option value="${k}" ${m.kind===k?'selected':''}>${esc(v.n)}</option>`).join('')}</select></td><td><input data-i="${i}" data-f="w" type="number" step=".1" value="${m.w}" style="width:64px"></td><td><input data-i="${i}" data-f="h" type="number" step=".1" value="${m.h}" style="width:64px"></td><td><button class="btn d sm" data-rm="${i}" title="Remove">✕</button></td></tr>`).join('');
+  return P.items.map((m,i)=>`<tr><td><input data-i="${i}" data-f="id" value="${esc(m.id)}" style="width:70px"></td><td><input data-i="${i}" data-f="name" value="${esc(m.name)}" style="min-width:120px"></td><td><select data-i="${i}" data-f="type">${Object.entries(TYPES).filter(([k])=>k!=='office').map(([k,v])=>`<option value="${k}" ${m.type===k?'selected':''}>${esc(v.s)}</option>`).join('')}</select></td><td><input data-i="${i}" data-f="cell" value="${esc(m.cell||'')}" style="width:100px"></td><td><input data-i="${i}" data-f="w" type="number" step=".05" value="${m.w}" style="width:60px"></td><td><input data-i="${i}" data-f="h" type="number" step=".05" value="${m.h}" style="width:60px"></td><td><button class="btn d sm" data-rm="${i}" title="Remove">✕</button></td></tr>`).join('')}
+function paintStu(){
+  if(!P){$('#stu').innerHTML='<p class="mut">Open a layout from <b>Projects</b>, or start a new one there.</p>';return}
+  const off=P.kind==='office',dis=canEdit?'':'disabled';
+  $('#stu').innerHTML=`<div class="stu"><div>
+   <div class="card"><h3>1 · Layout</h3><label class="lb">Title</label><input id="p_title" value="${esc(P.title)}" ${dis}>
+    <div class="row" style="margin:10px 0 0"><span class="chip ${STATUS_CLS[P.status]||'x'}">${STATUS_NAME[P.status]||P.status}</span><span class="mut">${esc(P.no||'not saved yet')} · ${kindName(P.kind)}</span></div>
+    <div class="row" style="margin:10px 0 0"><button class="btn" id="b_save" ${dis}>Save</button>${P.id&&canEdit?`<select id="p_status" style="width:auto">${CFG.STATUS.map(s=>`<option value="${s}" ${P.status===s?'selected':''}>${STATUS_NAME[s]}</option>`).join('')}</select><button class="btn o sm" id="b_status">Set status</button>`:''}</div></div>
+   <div class="card"><h3>2 · Building and plan</h3><div class="frm">${num2('d_w','Width (m)','width',.5)}${num2('d_d','Total depth (m)','depth',.5)}${off?'':num2('d_h','Machine hall depth (m)','hallDepth',.5)}</div>
+    ${off?'':`<p class="mut" style="margin:6px 0 0">Quality room depth = total depth − hall depth = <b>${Math.max(0,P.dim.depth-P.dim.hallDepth).toFixed(1)} m</b>.</p>`}
+    <div style="margin-top:10px"><label class="lb">Picture of the existing plan (JPG or PNG) to trace over — it is shown on screen only and is not saved</label><input id="p_file" type="file" accept="image/*,.pdf,.dxf"><div class="mut" id="p_fn">${esc(P.source_file||'')}</div>
+     <div class="${underlay?'':'hide'}" id="op_row"><label class="lb">Picture strength</label><input id="rng_op" type="range" min="0" max="100" value="40"></div></div></div>
+   <div class="card"><h3>3 · Rules</h3><div class="frm">${off?'':num2('d_a','Central aisle (m)','aisle',.2)}${num2('d_o','Operator clearance (m)','opClearance',.1)}${num2('d_m','Maintenance corridor (m)','maintClearance',.1)}</div>
+    <p class="mut" style="margin:6px 0 0">Targets: aisle ${TARGETS.aisle} m, operator ${TARGETS.op} m, maintenance ${TARGETS.maint} m. A smaller value is allowed but shows as a gap.</p></div>
+   <div class="card"><h3>4 · ${off?'Rooms and zones':'Machines'} (${P.items.length})</h3>
+    <div style="max-height:46vh;overflow:auto"><table class="mt"><thead><tr>${off?'<th>Name</th><th>Kind</th>':'<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Width m</th><th>Depth m</th><th></th></tr></thead><tbody id="itb">${itemRows()}</tbody></table></div>
+    ${canEdit?`<div class="row" style="margin:8px 0 0"><button class="btn o sm" id="b_add">＋ Add ${off?'room':'machine'}</button>${armBtn('example','Use the example list','Press again to replace')}${armBtn('clear','Remove all','Press again to remove all')}</div>
+    <details style="margin-top:8px"><summary class="mut" style="cursor:pointer">Paste a list (spreadsheet columns)</summary><p class="mut" style="margin:6px 0">${off?'name, kind (public / open / private / service), width, depth':'id, name, type (cnc / vmc / conv / msa / finish), cell group, width, depth'} — one per line, comma or tab separated. Sizes are in metres.</p><textarea id="csv" rows="4"></textarea><div class="row" style="margin:6px 0 0"><button class="btn o sm" id="b_csv">Add these rows</button></div></details>`:''}</div>
+  </div><div>
+   <div class="otabs" id="otabs"></div><div id="kp"></div><div class="canvas" id="cv"></div><div id="lg"></div><div id="ck"></div>
+   <div class="row" style="margin-top:10px"><button class="btn o" id="b_dxf">⬇ Export DXF (Drawing Exchange Format)</button><a class="btn o" style="text-decoration:none" href="/it/cad.html${slug?'?co='+encodeURIComponent(slug):''}" target="_blank" rel="noopener">Open KMR CAD Draft</a><button class="btn" id="b_rep">Make the report →</button></div></div></div>`;
+  paintOpts()}
+function paintOpts(){
+  if(!P||!$('#otabs'))return;
+  if(!OPTS.length){$('#otabs').innerHTML='';$('#kp').innerHTML='';$('#cv').innerHTML='<p style="color:#94a3b8;margin:20px">Add machines or rooms to see the layout.</p>';$('#lg').innerHTML='';$('#ck').innerHTML='';return}
+  const o=OPTS[P.sel];
+  $('#otabs').innerHTML=OPTS.map((x,i)=>`<button class="ot ${i===P.sel?'on':''}" data-opt="${i}"><b>${esc(x.name.split(':')[0])}: ${esc(x.short)}</b><span>${x.travel} m · ${x.util}% · ${x.placedN}/${x.total} placed · <span class="chip ${x.grade==='C'?'r':'g'}">${x.grade}</span></span></button>`).join('');
+  const k=(v,t,c)=>`<div class="kpi" style="--c:${c}"><b>${v}</b><span>${t}</span></div>`;
+  $('#kp').innerHTML=`<div class="kpis">${k(o.travel+' m',o.kind==='office'?'Walking distance (visitor + service routes)':'Material route per part','var(--b1)')}${k(o.util+'%','Floor utilisation (cells with gangways)','var(--b2)')}${k(o.saving+'%','Saving against the longest option','var(--g)')}${k(o.placedN+' / '+o.total,'Placed','var(--a)')}${k(o.grade,'Grade (rank by route length)',o.grade==='C'?'var(--r)':'var(--g)')}</div>`;
+  $('#cv').innerHTML=drawSVG(o,'dark','s');$('#lg').innerHTML=legendHTML(o);
+  $('#ck').innerHTML=`<table><tbody>${o.checks.map(c=>`<tr><td style="width:24px" class="${c.ok?'ok':'bad'}">${c.ok?'✔':'✖'}</td><td>${esc(c.name)}</td><td class="mut">${esc(c.txt)}</td></tr>`).join('')}</tbody></table>`+(o.noFit.length?`<p class="msg" style="margin-top:8px">Not placed: ${esc(o.noFit.map(m=>m.name).join(', '))}. Make the building bigger, reduce the clearances, or remove items to see them placed.</p>`:'')}
+function dirty(){P.dirty=true;clearTimeout(timer);timer=setTimeout(()=>{recalc();paintOpts();paintHead()},250)}
+
+/* ---------- report ---------- */
+function pageWrap(body,i,n,ref){const F=CFG.FORMAT;return`<div class="page"><div class="ph"><div class="logo">${ctx&&ctx.logo_url?`<img src="${esc(ctx.logo_url)}" alt="${esc(ctx.company)}" crossorigin="anonymous">`:`<b>${esc(ctx?ctx.company:'')}</b>`}</div><div class="pt">${esc(F.title)}<small>${esc(P.title)} · ${esc(P.no||'')}</small></div><div class="rf">Report reference<b>${esc(ref)}</b>Issued ${dmy(REPORT.issued_at)}</div></div><div class="pb">${body}</div><div class="pf"><div>Format No. ${esc(F.no)} · Rev. ${esc(F.rev)} · Rev. date ${dmy(F.revDate)}</div><div style="text-align:center">${esc(ctx?ctx.company:'')} · ${esc(ref)}</div><div style="text-align:right">Page ${i} of ${n}</div></div></div>`}
+function reportPages(){
+  const o=OPTS[REPORT.opt],ref=REPORT.ref,ks=kpis(o),items=o.placed.concat(o.noFit.map(m=>({...m,x:null,y:null}))),per=24,pages=[];
+  pages.push(`<div class="two"><div>${drawSVG(o,'light','r1')}${legendHTML(o)}</div><div><table><tbody>
+   <tr><th>Layout</th><td>${esc(P.no||'')} · ${esc(P.title)}</td></tr><tr><th>Type</th><td>${kindName(P.kind)}</td></tr><tr><th>Building</th><td>${P.dim.width} m × ${P.dim.depth} m${P.kind==='office'?'':' (hall '+P.dim.hallDepth+' m)'}</td></tr><tr><th>Status</th><td>${STATUS_NAME[P.status]||P.status}</td></tr><tr><th>Source plan</th><td>${esc(P.source_file||'—')}</td></tr><tr><th>Option shown</th><td>${esc(o.name)}</td></tr><tr><th>Issued by</th><td>${esc(REPORT.issued_by||'')}</td></tr></tbody></table>
+   <p style="margin:8px 0 3px"><b>Key Performance Indicators (KPIs)</b></p><table><thead><tr><th>KPI</th><th>Value</th><th>Target</th><th></th></tr></thead><tbody>${ks.map(k=>`<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td><span class="chip ${k.ok?'g':'r'}">${k.ok?'Met':'Gap'}</span></td></tr>`).join('')}</tbody></table></div></div>`);
+  const mx=Math.max(...OPTS.map(x=>x.travel),1);
+  pages.push(`<p style="margin:0 0 4px"><b>The three options compared</b></p><table><thead><tr><th>Option</th><th>${P.kind==='office'?'Walking distance':'Route per part'}</th><th></th><th>Floor use</th><th>Saving</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x,i)=>`<tr><td>${esc(x.name)}${i===REPORT.opt?' <b>(shown)</b>':''}</td><td>${x.travel} m</td><td style="width:60mm"><div style="height:9px;background:#0ea5e9;width:${x.travel/mx*100}%"></div></td><td>${x.util}%</td><td>${x.saving}%</td><td>${x.placedN} / ${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table>
+   <p style="margin:10px 0 4px"><b>Checks on the option shown</b></p><table><tbody>${o.checks.map(c=>`<tr><td style="width:8mm">${c.ok?'✔':'✖'}</td><td>${esc(c.name)}</td><td>${esc(c.txt)}</td></tr>`).join('')}</tbody></table>
+   <p style="margin:8px 0 0">Route length and floor use are calculated from the machine sizes and rules in this layout (1:1 scale, metres). Grade is the rank of the options that place every item, by shortest route: A+, A, B+; C means an item is left out.</p>`);
+  for(let i=0;i<Math.max(1,Math.ceil(items.length/per));i++)pages.push(`<p style="margin:0 0 4px"><b>${P.kind==='office'?'Rooms':'Machines'} in the option shown</b> (${items.length}) — part ${i+1}</p><table><thead><tr><th>#</th>${P.kind==='office'?'<th>Room</th><th>Kind</th>':'<th>Id</th><th>Name</th><th>Type</th><th>Cell group</th>'}<th>Size (m)</th><th>Position x, y (m)</th><th>Turned</th></tr></thead><tbody>${items.slice(i*per,i*per+per).map((m,j)=>`<tr><td>${i*per+j+1}</td>${P.kind==='office'?`<td>${esc(m.name)}</td><td>${esc((KINDS[m.kind]||{}).n||'')}</td>`:`<td>${esc(m.id)}</td><td>${esc(m.name)}</td><td>${esc((TYPES[m.type]||{}).s||'')}</td><td>${esc(m.cell||'')}</td>`}<td>${r2(m.w)} × ${r2(m.h)}</td><td>${m.x==null?'<b>not placed</b>':r2(m.x)+', '+r2(m.y)}</td><td>${m.rot?'yes':''}</td></tr>`).join('')}</tbody></table>`);
+  pages.push(`<p style="margin:0 0 4px"><b>Standards this report supports</b></p><table><thead><tr><th>Standard</th><th>Clause / element</th></tr></thead><tbody>${STD.filter(r=>r[4]()!=='Not applicable').map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>
+   <div class="sg"><div>Prepared by (name, signature, date)</div><div>Checked by (name, signature, date)</div><div>Approved by (name, signature, date)</div></div>
+   <p style="margin:6px 0 3px"><b>Revision history of this report format ${esc(CFG.FORMAT.no)}</b></p><table><thead><tr><th>Rev.</th><th>Date</th><th>Change</th></tr></thead><tbody>${CFG.FORMAT.history.map(h=>`<tr><td>${esc(h.rev)}</td><td>${dmy(h.date)}</td><td>${esc(h.note)}</td></tr>`).join('')}</tbody></table>`);
+  return pages.map((b,i)=>pageWrap(b,i+1,pages.length,ref)).join('')}
+function paintRep(){
+  if(!P){$('#rep').innerHTML='<p class="mut">Open a layout from <b>Projects</b> first.</p>';return}
+  if(!OPTS.length){$('#rep').innerHTML='<p class="mut">Add machines or rooms in the Studio first.</p>';return}
+  const done=(P.history||[]).filter(h=>h.t==='report');
+  $('#rep').innerHTML=`<div class="row"><label class="lb" style="margin:0">Option to print</label><select id="r_opt" style="width:auto">${OPTS.map((x,i)=>`<option value="${i}" ${(REPORT?REPORT.opt:P.sel)===i?'selected':''}>${esc(x.name)}</option>`).join('')}</select><button class="btn" id="b_issue">Issue report with a new reference number</button>${REPORT?'<button class="btn o" id="b_print">Print / save as PDF</button>':''}</div>
+  <p class="mut" style="margin-top:0">Each issued report gets its own unique reference number. The customer logo is at the top left, and the format number, revision and page numbers are in the footer of every page.${done.length?` Issued so far for this layout: ${done.map(h=>esc(h.ref)).join(', ')}.`:''}</p>
+  ${REPORT?`<div style="overflow-x:auto"><div class="pages">${reportPages()}</div></div>`:''}`}
+async function issue(){
+  if(!P)return;if(P.dirty||!P.id){if(!(await save(true)))return}
+  const opt=+$('#r_opt').value;
+  try{const r=await api.rpc('kmr_layout_report',{p_slug:slug,p_id:P.id,p_option:opt+1});REPORT={...r,opt};const row=await api.rpc('kmr_layout_get',{p_slug:slug,p_id:P.id});P.history=row.history||[];paintRep();say('Report '+r.ref+' is ready. Press Print / save as PDF.',true)}catch(err){say(err.message)}}
+function printReport(){$('#printroot').innerHTML=reportPages();const t=document.title;document.title=REPORT.ref;window.print();setTimeout(()=>{$('#printroot').innerHTML='';document.title=t},500)}
+
+/* ---------- presentation ---------- */
+const SL_STD=[
+ [['ISO 9001:2015','7.1.3'],['IATF 16949:2016','7.1.3.1'],['VDA 6.3:2016','P4 / P6']],
+ [['IATF 16949:2016','7.1.3.1'],['APQP','Phase 3 floor plan layout'],['ISO 9001:2015','7.1.3']],
+ [['IATF 16949:2016','7.1.3.1'],['ISO 9001:2015','8.5.1'],['PPAP','Element 5 process flow diagram']],
+ [['ISO 9001:2015','7.1.4'],['IATF 16949:2016','7.1.4.1, 8.5.1.5'],['VDA 6.3:2016','P6'],['MSA 4th ed.','measurement environment']],
+ [['IATF 16949:2016','7.1.3.1 periodic review'],['ISO 9001:2015','10.2 corrective action']],
+ [['AIAG-VDA FMEA','Step 2'],['Control Plan','measurement location'],['APQP','Phase 3'],['SPC','not applicable here']]];
+function presProject(){return P}
+function paintPre(){
+  if(!P||!OPTS.length){$('#pre').innerHTML='<p class="mut">Open a layout that has machines or rooms. The presentation shows the real data of that layout.</p>';return}
+  $('#pre').innerHTML=`<div class="row"><button class="btn" id="b_full">⛶ Start full screen presentation</button><span class="mut">Arrow keys or the buttons move between slides. The presentation stays in full screen; press Esc to leave.</span></div><div class="pbox" id="pbox" tabindex="0"></div>`;slide(SL)}
+function slide(i){
+  const b=$('#pbox');if(!b)return;SL=Math.max(0,Math.min(5,i));const o=OPTS[P.sel],ks=kpis(o),co=ctx?ctx.company:'',stdz=SL_STD[SL];
+  const gaps=ks.filter(k=>!k.ok);let body='',title='',sub='';
+  const kp=(v,t,c)=>`<div class="kpi" style="--c:${c}"><b>${esc(v)}</b><span>${esc(t)}</span></div>`;
+  if(SL===0){title='Layout programme — '+esc(co);sub='Real data from the saved layouts of this company';
+   const n=LIST.length;body=`<div style="flex:1"><div class="kpis">${kp(n,'Saved layouts','#7dd3fc')}${kp(LIST.filter(p=>p.status==='approved').length,'Approved','#4ade80')}${kp(LIST.filter(p=>p.status==='review').length,'In review','#fbbf24')}${kp(LIST.filter(p=>p.status==='draft').length,'Drafts','#94a3b8')}</div><table><thead><tr><th>No.</th><th>Title</th><th>Type</th><th>Status</th><th>Changed</th></tr></thead><tbody>${LIST.slice(0,7).map(p=>`<tr><td>${esc(p.no)}</td><td>${esc(p.title)}</td><td>${kindName(p.kind)}</td><td>${STATUS_NAME[p.status]||p.status}</td><td>${dmy(p.updated_at)}</td></tr>`).join('')}</tbody></table>${n>7?`<div class="sub">and ${n-7} more</div>`:''}</div>`}
+  if(SL===1){title=esc(P.no||'')+' · '+esc(P.title);sub=esc(o.name)+' — 1:1 scale, '+P.dim.width+' m × '+P.dim.depth+' m';
+   body=`<div style="flex:1;display:flex;align-items:center;justify-content:center;min-height:0">${drawSVG(o,'light','p'+SL)}</div><div style="width:22%;display:flex;flex-direction:column;gap:1vh">${kp(o.travel+' m',P.kind==='office'?'Walking distance':'Route per part','#7dd3fc')}${kp(o.util+'%','Floor utilisation','#c4b5fd')}${kp(o.placedN+' / '+o.total,'Placed','#fbbf24')}${kp(o.grade,'Grade','#4ade80')}</div>`}
+  if(SL===2){title='The three options compared';sub='Shorter route is better; floor use should sit between '+TARGETS.utilMin+'% and '+TARGETS.utilMax+'%';const mx=Math.max(...OPTS.map(x=>x.travel),1);
+   body=`<div style="flex:1"><table><thead><tr><th>Option</th><th>Route</th><th style="width:30%"></th><th>Floor use</th><th>Saving</th><th>Placed</th><th>Grade</th></tr></thead><tbody>${OPTS.map((x,j)=>`<tr style="${j===P.sel?'background:#1e2a4a':''}"><td>${esc(x.name)}</td><td>${x.travel} m</td><td><div class="bar" style="width:${x.travel/mx*100}%"></div></td><td>${x.util}%</td><td>${x.saving}%</td><td>${x.placedN}/${x.total}</td><td>${x.grade}</td></tr>`).join('')}</tbody></table></div>`}
+  if(SL===3){title='KPI gaps against targets';sub='Key Performance Indicators (KPIs) of the chosen option: '+esc(o.name);
+   body=`<div style="flex:1"><table><thead><tr><th>KPI</th><th>Value now</th><th>Target</th><th>Result</th></tr></thead><tbody>${ks.map(k=>`<tr><td>${esc(k.name)}</td><td>${esc(k.val)}</td><td>${esc(k.target)}</td><td style="color:${k.ok?'#4ade80':'#f87171'};font-weight:700">${k.ok?'Met':'GAP'}</td></tr>`).join('')}</tbody></table><div class="sub" style="margin-top:1vh">${gaps.length?gaps.length+' gap'+(gaps.length>1?'s':'')+' need an action plan (next slide).':'All KPIs meet their targets.'}</div></div>`}
+  if(SL===4){title='Action plans';sub='Each action names the KPI gap it closes';
+   const kopts=['<option value="">Choose the KPI gap…</option>'].concat(ks.map(k=>`<option value="${esc(k.name)}">${esc(k.name)}${k.ok?'':' — GAP'}</option>`)).join('');
+   body=`<div style="flex:1;min-width:0"><table><thead><tr><th>KPI gap</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${ACTIONS.slice(0,6).map(a=>`<tr><td>${esc(a.kpi||'—')}</td><td>${esc(a.title)}</td><td>${esc(a.owner||'')}</td><td>${dmy(a.due)}</td><td>${canEdit?`<select data-ast="${a.id}">${['Open','In progress','Done'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}</select>`:esc(a.status)}</td><td>${canEdit?`<button class="btn d sm" data-adel="${a.id}">✕</button>`:''}</td></tr>`).join('')||'<tr><td colspan="6" style="color:#94a3b8">No actions yet.</td></tr>'}${canEdit?`<tr><td><select id="a_kpi">${kopts}</select></td><td><input id="a_t" placeholder="What will be done"></td><td><input id="a_o" placeholder="Owner"></td><td><input id="a_d" type="date"></td><td></td><td><button class="btn sm" id="a_add">Add</button></td></tr>`:''}</tbody></table>${ACTIONS.length>6?`<div class="sub">and ${ACTIONS.length-6} more</div>`:''}</div>`}
+  if(SL===5){title='Standards covered';sub='Clauses behind this layout programme';
+   body=`<div style="flex:1"><table><thead><tr><th>Standard</th><th>Clause / element</th><th>Evidence now</th></tr></thead><tbody>${STD.filter(r=>r[4]()!=='Not applicable').slice(0,9).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[4]())}</td></tr>`).join('')}</tbody></table></div>`}
+  b.innerHTML=`<div class="sl"><h2>${title}</h2><div class="sub">${sub}</div><div class="body">${body}</div></div><div class="sstd"><b>Standards for this slide:</b> ${stdz.map(s=>`<span class="s">${esc(s[0])} · ${esc(s[1])}</span>`).join('')}</div><div class="pnav"><button class="btn o sm" data-sl="${SL-1}" style="color:#fff;border-color:#fff8" ${SL===0?'disabled':''}>◀ Back</button><span>Slide ${SL+1} of 6 · ${esc(co)}</span><button class="btn sm" data-sl="${SL+1}" ${SL===5?'disabled':''}>Next ▶</button></div>`}
+async function addAction(){
+  const kpi=$('#a_kpi').value,t=$('#a_t').value.trim();if(!kpi){say('Choose which KPI gap this action is for.');return}if(!t){say('Write the action.');return}
+  const std={'Floor utilisation':'IATF 16949:2016 7.1.3.1','Machines / rooms placed':'ISO 9001:2015 7.1.3','Aisle and clearances':'IATF 16949:2016 7.1.4.1 / 8.5.1.5'}[kpi]||'IATF 16949:2016 7.1.3.1';
+  try{await api.rpc('kmr_pres_action_save',{p_slug:slug,p_code:'layout',p_app:'layout',p:{kpi,title:t,owner:$('#a_o').value.trim(),due:$('#a_d').value||'',standard:std}});await loadActions();slide(4)}catch(err){say(err.message)}}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('button,a,[data-t]');if(!t)return;const d=t.dataset;
+  try{
+  if(d.t&&t.classList.contains('tab'))return go(d.t);
+  if(d.arm){armed=d.arm;paintPrj();paintStu();setTimeout(()=>{if(armed===d.arm){armed=null;paintPrj();paintStu()}},4000);return}
+  if(d.new){const k=d.new.startsWith('factory')?'factory':'office';return newProject(k,d.new==='factory-ex'||k==='office')}
+  if(d.open)return openProject(d.open);
+  if(d.sample){await api.rpc('kmr_app_sample',{p_slug:slug,p_app:'layout',p_action:d.sample});await loadList();paintPrj();say('Sample layouts loaded.',true);return}
+  if(d.do){const a=d.do;armed=null;
+    if(a==='flush'){await api.rpc('kmr_app_sample',{p_slug:slug,p_app:'layout',p_action:'flush'});if(P&&P.sample)P=null;await loadList();paint();say('Sample layouts removed.',true)}
+    else if(a.startsWith('del')){const id=a.slice(3);await api.rpc('kmr_layout_delete',{p_slug:slug,p_id:id});if(P&&P.id===id){P=null;OPTS=[];REPORT=null}await loadList();paint();say('Layout deleted.',true)}
+    else if(a==='example'){P.items=JSON.parse(JSON.stringify(P.kind==='office'?SAMPLE_ROOMS:SAMPLE_MACHINES));dirty();paintStu()}
+    else if(a==='clear'){P.items=[];dirty();paintStu()}
+    return}
+  if(t.id==='b_save')return save();
+  if(t.id==='b_status'){const s=$('#p_status').value;await api.rpc('kmr_layout_status',{p_slug:slug,p_id:P.id,p_status:s});P.status=s;await loadList();paint();say('Status set to '+STATUS_NAME[s]+'.',true);return}
+  if(t.id==='b_add'){P.items.push(P.kind==='office'?{id:mkKey(),type:'office',kind:'open',name:'New room',w:4,h:3}:{id:'M-'+(P.items.length+1),type:'cnc',name:'New machine',w:2,h:1.5,cell:'Cell 1'});dirty();paintStu();return}
+  if(d.rm!==undefined){P.items.splice(+d.rm,1);dirty();paintStu();return}
+  if(t.id==='b_csv'){const rows=$('#csv').value.split(/\r?\n/).map(l=>l.split(/\t|,/).map(x=>x.trim())).filter(r=>r.length>=3&&r[0]);let n=0;
+    for(const r of rows){if(P.kind==='office'){const w=+r[2],h=+r[3];if(!(w>0&&h>0))continue;P.items.push({id:mkKey(),type:'office',kind:KINDS[r[1]]?r[1]:'open',name:r[0],w,h});n++}else{const w=+r[4],h=+r[5];if(!(w>0&&h>0))continue;P.items.push({id:r[0],name:r[1]||r[0],type:TYPES[r[2]]&&r[2]!=='office'?r[2]:'conv',cell:r[3]||'Cell 1',w,h});n++}}
+    say(n?n+' rows added.':'No rows were added. Check the column order and that sizes are numbers.',!!n);if(n){dirty();paintStu()}return}
+  if(d.opt!==undefined){P.sel=+d.opt;P.dirty=true;paintOpts();paintHead();return}
+  if(t.id==='b_dxf'){const o=OPTS[P.sel];download(`KMR_Layout_${(P.no||'new')}_${o.short.replace(/\W+/g,'')}_1to1.dxf`,dxf(o),'application/dxf');return}
+  if(t.id==='b_rep'){go('rep');return}
+  if(t.id==='b_issue')return issue();
+  if(t.id==='b_print')return printReport();
+  if(t.id==='b_full'){const b=$('#pbox');if(b.requestFullscreen)await b.requestFullscreen();b.focus();slide(SL);return}
+  if(d.sl!==undefined)return slide(+d.sl);
+  if(t.id==='a_add')return addAction();
+  if(d.adel){await api.rpc('kmr_pres_action_delete',{p_slug:slug,p_code:'layout',p_id:d.adel});await loadActions();slide(4);return}
+  }catch(err){say(err.message)}});
+document.addEventListener('input',e=>{const t=e.target;if(!P)return;
+  if(t.id==='p_title'){P.title=t.value;P.dirty=true;paintHead();return}
+  if(t.dataset.dim){P.dim[t.dataset.dim]=parseFloat(t.value)||0;dirty();if(t.dataset.dim==='hallDepth'||t.dataset.dim==='depth')paintStuQc();return}
+  if(t.dataset.i!==undefined){const m=P.items[+t.dataset.i],f=t.dataset.f;m[f]=(f==='w'||f==='h')?parseFloat(t.value):t.value;dirty();return}
+  if(t.id==='rng_op')paintOpts()});
+document.addEventListener('change',async e=>{const t=e.target;
+  if(t.dataset.i!==undefined&&P){const m=P.items[+t.dataset.i];m[t.dataset.f]=t.value;dirty();return}
+  if(t.dataset.ast){try{await api.rpc('kmr_pres_action_save',{p_slug:slug,p_code:'layout',p_app:'layout',p:{id:t.dataset.ast,status:t.value}});await loadActions()}catch(err){say(err.message)}return}
+  if(t.id==='r_opt'&&REPORT){REPORT=null;paintRep()}
+  if(t.id==='p_file'&&t.files[0]){const f=t.files[0];P.source_file=f.name;$('#p_fn').textContent=f.name;P.dirty=true;
+    if(f.type.startsWith('image/')){const r=new FileReader();r.onload=()=>{underlay=r.result;$('#op_row').classList.remove('hide');paintOpts()};r.readAsDataURL(f)}else say('This file type cannot be shown behind the drawing. Its name is saved; save the plan as a JPG or PNG to trace over it.')}});
+function paintStuQc(){const p=document.querySelector('#stu .mut b');if(p&&P.kind==='factory')p.textContent=Math.max(0,P.dim.depth-P.dim.hallDepth).toFixed(1)+' m'}
+document.addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test((e.target||{}).tagName))return;if(!$('#pbox')||$('#pre').classList.contains('hide'))return;if(e.key==='ArrowRight'||e.key==='PageDown')slide(SL+1);if(e.key==='ArrowLeft'||e.key==='PageUp')slide(SL-1)});
+
+/* ---------- sign in and start ---------- */
+const isPub=k=>{if(k.startsWith('sb_publishable_'))return true;try{return JSON.parse(atob(k.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).role==='anon'}catch{return false}},KRX=/sb_publishable_[A-Za-z0-9_-]{10,}|eyJ[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}\.[A-Za-z0-9_-]{15,}/g;
+async function findKey(){const c=sessionStorage.getItem('kmr_pub_key');if(c)return c;
+try{const r=await fetch('/it/console/api/public-config');if(r.ok){const j=await r.json();if(j.key&&isPub(j.key)){if(j.url)CFG.SUPABASE_URL=j.url;sessionStorage.setItem('kmr_pub_key',j.key);return j.key}}}catch{}
+for(const pg of['/it/company-config.js','/it/sales.html','/it/capacity.html','/it/balloon.html','/it/pd.html','/it/index.html','/it/']){try{const r=await fetch(pg);if(!r.ok)continue;const t=await r.text();let k=(t.match(KRX)||[]).find(isPub);if(!k)for(const m of t.matchAll(/<script[^>]+src=["']([^"']+)["']/g)){const u=new URL(m[1],location.origin+pg);if(u.origin!==location.origin)continue;try{k=((await(await fetch(u)).text()).match(KRX)||[]).find(isPub)}catch{}if(k)break}if(k){sessionStorage.setItem('kmr_pub_key',k);return k}}catch{}}
+throw new Error('Could not find the KMR public key. Please contact KMR support.')}
+function loginForm(){document.querySelector('.tabs').style.display='none';$('#std').innerHTML=`<div style="max-width:340px;margin:10px auto"><h3>Sign in to Factory &amp; Office Layout Studio</h3><p class="mut">Use your KMR Apps email and password.</p><label class="mut">Email</label><input id="le" type="email" autocomplete="username" inputmode="email"><label class="mut" style="margin-top:8px;display:block">Password</label><input id="lp" type="password" autocomplete="current-password"><div class="row" style="margin-top:12px"><button class="btn" id="lg">Sign in</button></div><p class="mut" style="font-size:12px">Forgot your password? Use the reset option on the <a href="/it/">KMR sign-in page</a>.</p></div>`;
+ const go2=async()=>{try{const{error}=await sb.auth.signInWithPassword({email:$('#le').value.trim(),password:$('#lp').value});if(error)throw new Error(error.message);location.reload()}catch(err){say(err.message)}};$('#lg').onclick=go2;$('#lp').addEventListener('keydown',e=>{if(e.key==='Enter')go2()})}
+async function boot(){try{
+  if(!DEMO){const{createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');sb=createClient(CFG.SUPABASE_URL,await findKey());const{data:{session}}=await sb.auth.getSession();if(!session){loginForm();return}
+   if(!slug){const r=(document.referrer.match(/\/it\/app\/([^/?#]+)/)||[])[1];if(r)slug=decodeURIComponent(r).toLowerCase()}if(!slug)throw new Error('Open Layout Studio from your company’s KMR Apps page.')}
+  ctx=await api.rpc('kmr_layout_context',{p_slug:slug});if(!ctx)throw new Error('You do not have access to Layout Studio, or the subscription is not active.');
+  canEdit=['admin','editor'].includes(ctx.role);isStaff=!!ctx.is_staff;$('#role').textContent=ctx.role;$('#bco').textContent=String(ctx.company).toUpperCase();$('#back').href=DEMO?'#':'/it/app/'+encodeURIComponent(slug);$('#back').classList.remove('hide');
+  await loadList();paint();
+  const nv=window.KMRNav&&KMRNav.pending();if(nv&&TABS.includes(nv.go))go(nv.go)
+ }catch(err){say(err.message)}}
+
+/* ---------- try-out mode without a database: ?demo=1 ---------- */
+function demo(){
+  const iso=n=>new Date(Date.now()+n*864e5).toISOString().slice(0,10);let seq=2,rseq=0,acts=[];
+  const mk=(no,title,kind,items,dim,status)=>{const opts=evaluate(items,dim,kind);return{id:'d'+no,no,title,kind,concept:kind==='office'?'office-ergonomic':'cellular-u',dimensions:dim,source_file:'',machines:items,options:opts.map(x=>({name:x.name,short:x.short,key:x.key,travel:x.travel,util:x.util,saving:x.saving,grade:x.grade,placed:x.placedN,total:x.total,noFit:x.noFit.length})),selected_option:3,status,history:[],sample:true,updated_at:iso(-2)+'T10:00:00Z',created_at:iso(-5)}};
+  let S=[mk('LAY-S-0001','Example machine shop — 41 machines','factory',SAMPLE_MACHINES,{width:24,depth:36,hallDepth:30,qcDepth:6,aisle:2.8,opClearance:1.2,maintClearance:1.5},'approved'),mk('LAY-S-0002','Example office floor','office',SAMPLE_ROOMS,{...DEFAULT_DIM},'review')];
+  const sum=r=>({id:r.id,no:r.no,title:r.title,kind:r.kind,concept:r.concept,dimensions:r.dimensions,source_file:r.source_file,machine_count:r.machines.length,options_count:r.options.length,options:r.options,selected_option:r.selected_option,status:r.status,sample:r.sample,updated_at:r.updated_at,created_at:r.created_at});
+  return{async rpc(f,a){
+   if(f==='kmr_layout_context')return{role:'admin',company:'Demo Engineering (sample data)',logo_url:'',is_staff:true};
+   if(f==='kmr_layout_list')return S.map(sum);
+   if(f==='kmr_layout_get')return JSON.parse(JSON.stringify(S.find(x=>x.id===a.p_id)));
+   if(f==='kmr_layout_save'){const p=a.p;let r=S.find(x=>x.id===p.id);if(!r){r={id:'d'+(seq),no:'LAY-'+String(seq++).padStart(4,'0'),status:'draft',history:[],sample:false,created_at:iso(0)};S.unshift(r)}Object.assign(r,{title:p.title,kind:p.kind,concept:p.concept,dimensions:p.dimensions,source_file:p.source_file,machines:p.machines,options:p.options,selected_option:p.selected_option,updated_at:new Date().toISOString()});return{ok:true,id:r.id,no:r.no}}
+   if(f==='kmr_layout_delete'){S=S.filter(x=>x.id!==a.p_id);return{ok:true}}
+   if(f==='kmr_layout_status'){S.find(x=>x.id===a.p_id).status=a.p_status;return{ok:true}}
+   if(f==='kmr_layout_report'){const r=S.find(x=>x.id===a.p_id),ref='LAY-R-DEMO-'+String(++rseq).padStart(4,'0');r.history.push({t:'report',ref,at:new Date().toISOString(),by:'demo'});return{ref,issued_at:new Date().toISOString(),issued_by:'demo',no:r.no}}
+   if(f==='kmr_pres_actions_get')return acts.slice();
+   if(f==='kmr_pres_action_save'){const p=a.p;if(p.id){Object.assign(acts.find(x=>x.id===p.id),p)}else acts.unshift({...p,id:'a'+Math.random()});return'ok'}
+   if(f==='kmr_pres_action_delete'){acts=acts.filter(x=>x.id!==a.p_id);return null}
+   if(f==='kmr_app_sample')return{}
+   return null}}}
+boot();
+</script></body></html>

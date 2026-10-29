@@ -28,7 +28,7 @@ export default async function LayoutStudioPage() {
           <h1>Factory &amp; Office Layout Studio</h1>
           <p>
             1:1 metric scale layout generator for manufacturing floors and corporate offices.
-            Upload CAD files (DXF/DWG), civil PDFs, or JPEG architectural blueprints, convert traditional machine lines into Lean Cellular units, and generate 1:1 scale layout options with AutoCAD DXF export.
+            Company sign-in and licence, projects saved per company, three layout options with computed route length and floor use, standards alignment, controlled reports with reference numbers, and AutoCAD DXF export.
           </p>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -45,10 +45,10 @@ export default async function LayoutStudioPage() {
         <div className="card">
           <h2>Core Capabilities</h2>
           <ul style={{ margin: "10px 0 0 18px", lineHeight: 1.7, color: "var(--ink,#16233a)" }}>
-            <li><b>1:1 Metric True Scale Engine:</b> Exact 1.0m = 40px rendering of Plot 51 Kiadb Bommasandra envelope (20m × 30m, 600 m²).</li>
-            <li><b>Line-to-Cellular Transformation:</b> Converts 62 CNC, VMC, MSA, and Conventional machines from linear bottlenecks to dual U-cells and flow workcenters.</li>
+            <li><b>1:1 Metric True Scale Engine:</b> Every machine and room is drawn at its real size in metres.</li>
+            <li><b>Line-to-Cellular Transformation:</b> Machine lists become U-cells, heavy-perimeter or straight-flow options, with a check on what does not fit.</li>
             <li><b>Office Ergonomic Generator:</b> Automatic generation of cubicles, executive cabins, conference suites, and ADA-compliant corridors.</li>
-            <li><b>Lean Factory KPIs:</b> Instant scoring of material travel distance, WIP reduction %, floor utilization %, and safety aisle clearances.</li>
+            <li><b>Lean Factory KPIs:</b> Calculated material route length, saving against the longest option, floor utilisation and aisle clearances, with KPI-gap action plans.</li>
             <li><b>Direct CAD Export:</b> One-click AutoCAD DXF export with layers (<code>WALLS</code>, <code>MACHINES</code>, <code>AISLES</code>, <code>ZONES</code>, <code>ANNOTATIONS</code>) and KMR CAD linkage.</li>
           </ul>
         </div>
@@ -80,7 +80,7 @@ export default async function LayoutStudioPage() {
         <div style={{ padding: "14px 20px", background: "#0e1726", color: "#fff", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <b style={{ fontSize: 15, letterSpacing: "0.03em" }}>Interactive 1:1 Scale Studio Preview</b>
-            <span className="muted" style={{ marginLeft: 12, fontSize: 13, color: "#94a3b8" }}>Embedded live instance — Plot 51 Bommasandra 62-Machine Cellular Layout</span>
+            <span className="muted" style={{ marginLeft: 12, fontSize: 13, color: "#94a3b8" }}>Embedded sample instance — 41-machine example shop</span>
           </div>
           <a href={demoUrl} target="_blank" rel="noopener" style={{ color: "#38bdf8", fontSize: 13, textDecoration: "none", fontWeight: 600 }}>
             Open Full Screen ↗
