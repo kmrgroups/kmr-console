@@ -11,10 +11,11 @@ export default async function LayoutStudioPage() {
   const staff = await requireStaff();
   const a = createAdminClient();
 
-  const [{ data: customers }, { data: projects }] = await Promise.all([
-    a.from("customers").select("id,name,slug,kind,status").eq("status", "active").order("name"),
-    a.from("layout_projects").select("id,no,title,kind,concept,dimensions,status,sample,updated_at").order("updated_at", { ascending: false }).limit(20).catch(() => ({ data: [] })),
-  ]);
+  const { data: customers } = await a
+    .from("customers")
+    .select("id,name,slug,kind,status")
+    .eq("status", "active")
+    .order("name");
 
   const base = env.platformUrl || "https://www.kmr-groups.com";
   const demoUrl = `${base}/it/layout.html?kmr=1&co=${DEMO.slug}&demo=1`;
