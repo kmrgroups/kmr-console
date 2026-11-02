@@ -29,11 +29,13 @@ insert into console.app_features (product_code, name, detail, is_core, price_mon
   ('dwm', 'Monthly DWM sheet and adherence', 'Plan by day from each activity''s frequency, O/C/X/E status, adherence per activity, per day and for the month, missed and concession record', true, 1500, 0, 5000, 10)
 on conflict (product_code, name) do nothing;
 
--- the licence for every active customer, like the other apps of the suite
-insert into console.licences (customer_id, product_code, status, valid_until, seats, notes)
-select id, 'dwm', 'active', null, 25, 'KMR Apps Suite licence'
-  from console.customers where status = 'active'
+-- the licence for every customer (company-level app: the workspace is the company itself, like Sales Flow), so the KMR developer admin
+-- (Console staff) can open DWM for any company, and the Console can switch it on or off per company
+insert into console.licences (customer_id, product_code, status, valid_until, seats, notes, product_ref, product_slug)
+select id, 'dwm', 'active', null, 25, 'KMR Apps Suite licence', id, slug from console.customers
 on conflict (customer_id, product_code) do nothing;
+update console.licences l set product_ref = l.customer_id, product_slug = c.slug
+  from console.customers c where c.id = l.customer_id and l.product_code = 'dwm' and l.product_ref is null;
 
 -- ---------- the saved documents ----------
 create table if not exists console.dwm_docs (
