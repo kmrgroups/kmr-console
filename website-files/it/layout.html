@@ -120,10 +120,11 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px 8px;border-bottom:1p
 .studio:fullscreen .stk{top:0}
 </style></head><body>
 <header><span class="clogo" id="clogo" hidden></span><div><h1>Factory &amp; Office Layout Studio</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
-<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="prj" href="#go=prj">Layouts</a><a class="tab" data-t="imp" href="#go=imp">Existing plan</a><a class="tab" data-t="stu" href="#go=stu">Studio</a><a class="tab" data-t="rep" href="#go=rep">Report</a><a class="tab" data-t="pre" href="#go=pre">Presentation</a></div>
-<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="prj" class="hide"></section><section id="imp" class="hide"></section><section id="stu" class="hide"></section><section id="rep" class="hide"></section><section id="pre" class="hide"></section></div></main>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="prj" href="#go=prj">Layouts</a><a class="tab" data-t="imp" href="#go=imp">Existing plan</a><a class="tab" data-t="stu" href="#go=stu">Studio</a><a class="tab" data-t="skt" href="#go=skt">Sketch &amp; table</a><a class="tab" data-t="rep" href="#go=rep">Report</a><a class="tab" data-t="pre" href="#go=pre">Presentation</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="prj" class="hide"></section><section id="imp" class="hide"></section><section id="stu" class="hide"></section><section id="skt" class="hide"></section><section id="rep" class="hide"></section><section id="pre" class="hide"></section></div></main>
 <div id="printroot"></div>
 <script src="/it/apps/qp-core.js"></script>
+<script src="/it/apps/layout-sketch.js"></script>
 <script>
 /* ENGINE — pure functions, no screen access. Units: metres. y grows downwards (north = 0). */
 const TYPES = {
@@ -1206,11 +1207,11 @@ async function addAction() {
 }
 
 /* ---------- screens, events ---------- */
-const TABS = ['std', 'prj', 'imp', 'stu', 'rep', 'pre'];
+const TABS = ['std', 'prj', 'imp', 'stu', 'skt', 'rep', 'pre'];
 function stk() { const h = document.querySelector('header'), tb = document.querySelector('.tabs'), hh = h ? h.offsetHeight : 0, v = hh + (tb ? tb.offsetHeight : 0); document.documentElement.style.setProperty('--hh', hh + 'px'); document.querySelectorAll('.studio').forEach(s => { if (!document.fullscreenElement) s.style.setProperty('--stk', v + 'px'); }); }
 window.addEventListener('resize', stk);
 document.addEventListener('fullscreenchange', () => { document.querySelectorAll('.studio').forEach(s => { if (document.fullscreenElement) s.style.setProperty('--stk', '0px'); }); const b = $('#b_full2'); if (b) b.textContent = document.fullscreenElement ? '✕ Exit full screen' : '⛶ Full screen'; stk(); });
-function go(t) { if (!TABS.includes(t)) t = 'std'; document.querySelector('.panel').classList.toggle('wide', t === 'stu'); document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); TABS.forEach(x => $('#' + x).classList.toggle('hide', x !== t)); if (location.hash !== '#go=' + t) history.replaceState(null, '', location.pathname + location.search + '#go=' + t); if (t === 'rep') paintRep(); if (t === 'pre') paintPre(); if (t === 'std') paintStd(); }
+function go(t) { if (!TABS.includes(t)) t = 'std'; document.querySelector('.panel').classList.toggle('wide', t === 'stu' || t === 'skt'); document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.t === t)); TABS.forEach(x => $('#' + x).classList.toggle('hide', x !== t)); if (location.hash !== '#go=' + t) history.replaceState(null, '', location.pathname + location.search + '#go=' + t); if (t === 'skt' && window.LayoutSketch) LayoutSketch.show(); if (t === 'rep') paintRep(); if (t === 'pre') paintPre(); if (t === 'std') paintStd(); }
 function paint() { paintStd(); paintPrj(); paintImp(); paintStu(); paintRep(); paintPre(); paintHead(); }
 function route() { const n = window.KMRNav && KMRNav.pending(); go(n ? n.go : 'std'); }
 window.addEventListener('hashchange', route);
@@ -1320,7 +1321,9 @@ document.addEventListener('keydown', e => { if (/INPUT|SELECT|TEXTAREA/.test((e.
   try {
     if (!(await QP.init('layout', 'kmr_layout_context'))) return;
     ctx = QP.ctx; canEdit = QP.canEdit; slug = QP.slug; DEMO = QP.DEMO;
-    await loadMaster(); await loadList(); paint(); route();
+    await loadMaster(); await loadList(); paint();
+    if (window.LayoutSketch) LayoutSketch.init({ el: $('#skt'), say, company: ctx.company, plant: ctx.plant || '', user: ctx.email || ctx.user_email || '', key: DEMO ? 'demo' : slug, logo: () => (window.KMRReport && KMRReport.logoSrc()) || '' });
+    route();
   } catch (err) { say(err.message); }
 })();
 </script>
