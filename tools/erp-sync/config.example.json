@@ -1,0 +1,6 @@
+{
+  "dsn": "ESBEE",
+  "url": "https://www.kmr-groups.com/it/console/api/sales/erp-sync",
+  "startDate": "2026-11-01",
+  "lookbackDays": 40
+}
