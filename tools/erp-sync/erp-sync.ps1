@@ -65,7 +65,7 @@ try {
   }
 
   $changed = $ServerPreview -or $Force -or -not (Test-Path $statePath) -or ((Get-Content $statePath -Raw).Trim() -ne $sha)
-  $key = (New-Object System.Net.NetworkCredential('', (Get-Content $keyPath -Raw | ConvertTo-SecureString))).Password
+  $key = (New-Object System.Net.NetworkCredential('', ((Get-Content $keyPath -Raw).Trim() | ConvertTo-SecureString))).Password
   $flags = ',"dryRun":' + $(if ($ServerPreview) { 'true' } else { 'false' }) + ',"force":' + $(if ($Force) { 'true' } else { 'false' })
   $body = if ($changed) { '{"from":"' + $f + '","rows":' + $json + $flags + '}' } else { '{"from":"' + $f + '","rows":null' + $flags + '}' }
 
