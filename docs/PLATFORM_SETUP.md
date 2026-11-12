@@ -461,3 +461,8 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 ## Calibration Hub: import a plant's full gauge register from its ERP (run `supabase/migrations/0099_calibration_erp_import.sql` once, after 0098)
 
 - **Import** on the Calibration Hub now also accepts an ERP `.json` file: every gauge with its status (In use / Out of service / Scrapped), supplier and full history card (each calibration with lab, certificate and cost). Existing tags are updated; a calibration already on the gauge for the same date is not added again.
+
+## Calibration Hub: mail alert for administrators only + "Send test mail" (run `supabase/migrations/0100_calibration_mail_admin_test.sql` once, after 0098)
+
+- The **Mail alert** tab is shown to Calibration Hub administrators only (editors and viewers do not see it; the database refuses them too).
+- **Send test mail** (Mail alert screen): sends the gauges that are inside the window today to one address (default: the administrator's own e-mail) so the layout can be checked. It marks nothing as mailed. Route: `app/api/cal/test-mail` (needs `RESEND_API_KEY` and `EMAIL_FROM`, like the morning mail).
