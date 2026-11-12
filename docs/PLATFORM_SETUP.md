@@ -470,3 +470,7 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 ## Calibration Hub: alert mail shows the customer, not KMR (run `supabase/migrations/0101_calibration_mail_customer_brand.sql` once, after 0100)
 
 - The mail header carries the customer's logo, name and plant; the footer carries the customer's address, e-mail and phone; the sender name is the customer's name (the sending address stays the one in `EMAIL_FROM`).
+
+## Sales Flow: ERP invoices add to the hand-typed despatch (run `supabase/migrations/0102_sf_erp_adds_to_manual.sql` once, after 0097)
+
+- The day's despatch for a part = what was typed by hand + the total of that day's ERP invoices. The ERP part is remembered (`sf_despatch.erp_qty`), so it is never counted twice, a manual entry is never wiped, and a cancelled invoice only takes off its own quantity.
