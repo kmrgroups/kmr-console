@@ -466,3 +466,7 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 
 - The **Mail alert** tab is shown to Calibration Hub administrators only (editors and viewers do not see it; the database refuses them too).
 - **Send test mail** (Mail alert screen): sends the gauges that are inside the window today to one address (default: the administrator's own e-mail) so the layout can be checked. It marks nothing as mailed. Route: `app/api/cal/test-mail` (needs `RESEND_API_KEY` and `EMAIL_FROM`, like the morning mail).
+
+## Calibration Hub: alert mail shows the customer, not KMR (run `supabase/migrations/0101_calibration_mail_customer_brand.sql` once, after 0100)
+
+- The mail header carries the customer's logo, name and plant; the footer carries the customer's address, e-mail and phone; the sender name is the customer's name (the sending address stays the one in `EMAIL_FROM`).

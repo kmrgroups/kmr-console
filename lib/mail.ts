@@ -7,7 +7,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * attempt is recorded as "skipped" in the email log (Console › System health), so nothing fails.
  * ALERT_EMAIL receives KMR's own notices (payment reports, new orders, errors); it defaults to the seller email.
  */
-export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string };
+export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string; brand?: Brand };
+/** The customer the mail is sent for: its own name, logo and plant details replace the KMR sender block. */
+export type Brand = { name: string; plant?: string | null; logo?: string; address?: string; email?: string; phone?: string };
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
@@ -26,22 +28,28 @@ export async function seller(): Promise<Seller> {
 export const alertEmail = async () => process.env.ALERT_EMAIL || (await seller()).email;
 
 export async function renderMail(m: Mail): Promise<string> {
-  const s = await seller();
+  const b = m.brand;
+  const s = b ? { name: b.name, email: b.email || "", phone: b.phone || "", address: b.address || "", gstin: "" } : await seller();
+  const logo = b?.logo && /^https:\/\//i.test(b.logo) ? `<img src="${esc(b.logo)}" alt="${esc(b.name)}" style="display:block;max-height:46px;max-width:180px;margin-bottom:10px;background:#fff;padding:4px;border-radius:3px">` : "";
+  const plant = b?.plant ? `<div style="font-size:13px;font-weight:400;color:#c6a15b;margin-top:4px;font-family:Segoe UI,Arial,sans-serif">${esc(b.plant)}</div>` : "";
   const rows = m.rows?.length ? `<table role="presentation" style="width:100%;border-collapse:collapse;margin:18px 0;font-size:14px">${m.rows.map(([k, v]) =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #eee;color:#5e6778;width:40%">${esc(k)}</td><td style="padding:8px 0;border-bottom:1px solid #eee;color:#0b1c3a;font-weight:600">${esc(v)}</td></tr>`).join("")}</table>` : "";
   const btn = m.button ? `<p style="margin:26px 0"><a href="${esc(m.button.url)}" style="background:#c6a15b;color:#0b1c3a;text-decoration:none;font-weight:700;padding:12px 22px;display:inline-block">${esc(m.button.label)}</a></p>` : "";
   return `<!doctype html><html><body style="margin:0;background:#f4f1ea;font-family:Segoe UI,Arial,sans-serif;color:#101828">
 <table role="presentation" width="100%" style="background:#f4f1ea;padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" style="max-width:600px;background:#ffffff;border:1px solid #e6dfd1">
-<tr><td style="background:#0b1c3a;padding:18px 26px;color:#ffffff;font-size:18px;font-weight:700;font-family:Georgia,serif">${esc(s.name)}<div style="height:2px;background:#c6a15b;margin-top:12px;width:56px"></div></td></tr>
+<tr><td style="background:#0b1c3a;padding:18px 26px;color:#ffffff;font-size:18px;font-weight:700;font-family:Georgia,serif">${logo}${esc(s.name)}${plant}<div style="height:2px;background:#c6a15b;margin-top:12px;width:56px"></div></td></tr>
 <tr><td style="padding:26px">
 <h1 style="margin:0 0 14px;font-size:20px;color:#0b1c3a;font-family:Georgia,serif">${esc(m.heading)}</h1>
 ${m.paragraphs.map((p) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.6">${esc(p)}</p>`).join("")}
 ${rows}${btn}
 </td></tr>
-<tr><td style="padding:16px 26px;border-top:1px solid #e6dfd1;font-size:12px;color:#5e6778;line-height:1.6">${esc(s.name)}${s.address ? ` · ${esc(s.address)}` : ""}<br>${esc(s.email)}${s.phone ? ` · ${esc(s.phone)}` : ""}${s.gstin ? ` · GSTIN ${esc(s.gstin)}` : ""}</td></tr>
+<tr><td style="padding:16px 26px;border-top:1px solid #e6dfd1;font-size:12px;color:#5e6778;line-height:1.6">${esc(s.name)}${b?.plant ? ` · ${esc(b.plant)}` : ""}${s.address ? ` · ${esc(s.address)}` : ""}${s.email || s.phone ? "<br>" : ""}${esc(s.email)}${s.phone ? `${s.email ? " · " : ""}${esc(s.phone)}` : ""}${s.gstin ? ` · GSTIN ${esc(s.gstin)}` : ""}</td></tr>
 </table></td></tr></table></body></html>`;
 }
+
+/** Keeps the sending address but shows the customer's name as the sender. */
+const fromFor = (from: string, name: string) => { const a = (from.match(/<([^>]+)>/)?.[1] || from).trim(); return `${name.replace(/[<>"]/g, "").slice(0, 80)} <${a}>`; };
 
 async function log(m: Mail, status: "sent" | "skipped" | "failed", error?: string) {
   await createAdminClient().from("email_log").insert({ app: "console", kind: m.kind, to_addr: m.to.slice(0, 200), subject: m.subject.slice(0, 200), status, error: error?.slice(0, 500) ?? null, ref: m.ref ?? null });
@@ -55,7 +63,7 @@ export async function sendMail(m: Mail): Promise<"sent" | "skipped" | "failed"> 
     if (!key || !from) { await log(m, "skipped", "RESEND_API_KEY / EMAIL_FROM not set"); return "skipped"; }
     const r = await fetch(process.env.RESEND_API_URL || "https://api.resend.com/emails", {
       method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [m.to], subject: m.subject, html: await renderMail(m), reply_to: m.replyTo || (await seller()).email }),
+      body: JSON.stringify({ from: m.brand ? fromFor(from, m.brand.name) : from, to: [m.to], subject: m.subject, html: await renderMail(m), reply_to: m.replyTo || m.brand?.email || (await seller()).email }),
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) { const t = await r.text().catch(() => ""); await log(m, "failed", `${r.status} ${t}`); return "failed"; }

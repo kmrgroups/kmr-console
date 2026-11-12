@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { sendMail } from "@/lib/mail";
+import { sendMail, type Brand } from "@/lib/mail";
 import { env } from "@/lib/env";
 
 // Calibration Hub › Mail alert › "Send test mail": an administrator gets (or sends to one typed address) the list of gauges that are inside the alert window today.
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const db = createClient(env.supabaseUrl, env.supabaseAnonKey, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
     const { data, error } = await db.rpc("kmr_cal_test_list", { p_slug: slug });
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: /administrator/i.test(error.message) ? 403 : 400 });
-    const s = data as { slug: string; company: string; days_before: number; me: string; rows: Row[] };
+    const s = data as { slug: string; company: string; brand?: Brand; days_before: number; me: string; rows: Row[] };
     const to = String(body.to || s.me || "").trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(to)) return NextResponse.json({ ok: false, error: "Type a valid e-mail address." }, { status: 400 });
     const n = s.rows.length, shown = s.rows.slice(0, MAX_ROWS);
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       `Due ${dmy(r.next_due)} (${r.days_left} day${r.days_left === 1 ? "" : "s"}) · ${r.gauge_class ?? "Variable"}${r.location ? " · " + r.location : r.department ? " · " + r.department : ""}${r.supplier ? " · Supplier: " + r.supplier : ""}`,
     ]);
     const r = await sendMail({
-      to, kind: "calibration-due-test", ref: s.slug,
+      to, kind: "calibration-due-test", ref: s.slug, brand: s.brand,
       subject: `TEST — Calibration due within ${s.days_before} days — ${n} gauge${n === 1 ? "" : "s"} · ${s.company}`,
       heading: "Gauges going to overdue (test)", paragraphs, rows,
       button: { label: "Open Calibration Hub", url: `${env.platformUrl}/it/calibration.html?kmr=1&co=${encodeURIComponent(s.slug)}#go=var` },

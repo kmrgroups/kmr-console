@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendMail } from "@/lib/mail";
+import { sendMail, type Brand } from "@/lib/mail";
 import { env } from "@/lib/env";
 
 // Calibration Hub: every morning (vercel.json) e-mails each company / plant that has the "mail alert" on the list of gauges that will
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 type Row = { id: string; tag: string; name: string; gauge_class: string | null; department: string | null; location: string | null; supplier: string | null; next_due: string; days_left: number };
-type Scan = { customer_id: string; slug: string; company: string; days_before: number; recipients: string[]; rows: Row[] };
+type Scan = { customer_id: string; slug: string; company: string; brand?: Brand; days_before: number; recipients: string[]; rows: Row[] };
 
 const dmy = (d: string) => d.split("-").reverse().join("-");
 const MAX_ROWS = 60;
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       let sent = 0;
       for (const to of s.recipients) {
         const r = await sendMail({
-          to, kind: "calibration-due", ref: s.slug,
+          to, kind: "calibration-due", ref: s.slug, brand: s.brand,
           subject: `Calibration due within ${s.days_before} days — ${n} gauge${n === 1 ? "" : "s"} · ${s.company}`,
           heading: "Gauges going to overdue", paragraphs, rows,
           button: { label: "Open Calibration Hub", url: `${env.platformUrl}/it/calibration.html?kmr=1&co=${encodeURIComponent(s.slug)}#go=var` },
