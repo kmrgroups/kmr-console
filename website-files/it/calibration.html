@@ -142,7 +142,7 @@ throw new Error('Could not find the KMR public key. Please contact KMR support.'
 /* the customer's logo + name (set in KMR Console / Administration), same as every KMR app; also the tab icon */
 async function showBrand(){let b={name:(ctx&&ctx.company)||'',logo:null};try{const pp=JSON.parse(localStorage.getItem('kmr-portal')||'null');if(pp&&(DEMO||pp.slug===slug))b.logo=pp.logo||null}catch(e){}
 if(!DEMO&&sb&&slug){try{const{data}=await sb.rpc('kmr_portal_brand',{p_slug:slug});if(data&&data[0]){b.logo=data[0].logo_url||b.logo;b.name=data[0].name||b.name}}catch(e){}
-try{localStorage.setItem('kmr-portal',JSON.stringify({slug,name:b.name,logo:b.logo||null}))}catch(e){}}
+try{const old=JSON.parse(localStorage.getItem('kmr-portal')||'null')||{};localStorage.setItem('kmr-portal',JSON.stringify({...old,slug,name:b.name,logo:b.logo||null}))}catch(e){}}
 const el=document.getElementById('clogo');if(!el)return;const safe=String(b.logo||'').replace(/["<>]/g,'');
 el.innerHTML=safe?'<img src="'+safe+'" alt="">':String(b.name||'K').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase().replace(/[<>&]/g,'');el.hidden=false;
 if(safe){document.querySelectorAll('link[rel~="icon"]').forEach(l=>l.remove());const ic=document.createElement('link');ic.rel='icon';ic.href=safe;document.head.append(ic)}}
