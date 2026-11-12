@@ -457,3 +457,7 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 - Gauge details: new *Supplier name* field (also accepted by Excel / CSV import).
 - **Mail alert** screen: gauges that will become overdue within N days (default 12, editable per company / plant) are mailed once, every morning ~8:30 AM IST, to the addresses chosen (typed, "my e-mail", or all Calibration Hub users). Job: `app/api/cron/cal-due` (needs `CRON_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM`, as for the other jobs; without the mail keys nothing is marked as sent).
 
+
+## Calibration Hub: import a plant's full gauge register from its ERP (run `supabase/migrations/0099_calibration_erp_import.sql` once, after 0098)
+
+- **Import** on the Calibration Hub now also accepts an ERP `.json` file: every gauge with its status (In use / Out of service / Scrapped), supplier and full history card (each calibration with lab, certificate and cost). Existing tags are updated; a calibration already on the gauge for the same date is not added again.
