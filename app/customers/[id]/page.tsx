@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -187,6 +187,31 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             </ActionForm>
           </div>
         </div>}
+      </div>}
+
+
+      {!isPlant && manager && <div className="card">
+        <h2>Mail sending address</h2>
+        {(() => {
+          const m = c as { mail_domain?: string | null; mail_local?: string | null; mail_domain_status?: string | null; mail_dns?: { type: string; name: string; value: string; priority?: number; status?: string }[] | null };
+          const ok = m.mail_domain_status === "verified";
+          return <>
+            <p className="muted" style={{ marginTop: 0 }}>Notification mails of every app (calibration alerts and so on) go out from this company's own domain, for example <span className="mono">dont-reply@nerigroup.in</span>, with the company's name, logo and plant. Plants use the company's domain. Until the domain is verified, mails go out from the standard address with the company's name.</p>
+            {m.mail_domain && <p style={{ margin: "6px 0 12px" }}>Sender: <b className="mono">{m.mail_local || "dont-reply"}@{m.mail_domain}</b> <span className={`badge ${ok ? "ok" : "warn"}`}>{ok ? "verified — in use" : `waiting for DNS (${m.mail_domain_status || "pending"})`}</span></p>}
+            <ActionForm action={saveMailDomain} submitLabel={m.mail_domain ? "Save" : "Add domain"} hidden={{ id: c.id }} className="row">
+              <input name="local" defaultValue={m.mail_local || "dont-reply"} aria-label="Address before @" style={{ width: 130 }} />
+              <span>@</span>
+              <input name="domain" defaultValue={m.mail_domain || ""} placeholder="nerigroup.in" aria-label="Company domain" required style={{ width: 220 }} />
+            </ActionForm>
+            {m.mail_domain && !ok && <>
+              <p style={{ margin: "14px 0 6px" }}><b>Add these records at the company's domain provider (DNS), then press “Check now”.</b></p>
+              <div className="tablewrap"><table><thead><tr><th>Type</th><th>Name</th><th>Value</th><th>Priority</th><th>Status</th></tr></thead>
+                <tbody>{(m.mail_dns ?? []).map((r, i) => <tr key={i}><td>{r.type}</td><td className="mono" style={{ wordBreak: "break-all" }}>{r.name}</td><td className="mono" style={{ wordBreak: "break-all" }}>{r.value}</td><td>{r.priority ?? ""}</td><td>{r.status ?? ""}</td></tr>)}</tbody></table></div>
+              <div className="row" style={{ gap: 8, marginTop: 10 }}><ActionForm action={checkMailDomain} submitLabel="Check now" hidden={{ id: c.id }} /></div>
+            </>}
+            {m.mail_domain && <div style={{ marginTop: 10 }}><ActionForm action={removeMailDomain} submitLabel="Remove domain" variant="secondary" hidden={{ id: c.id }} confirm="Mails will go out from the standard address again. Remove the domain?" /></div>}
+          </>;
+        })()}
       </div>}
 
       <div className="card">

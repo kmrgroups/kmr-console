@@ -506,3 +506,47 @@ export async function renamePlant(_: ActionState, form: FormData): Promise<Actio
     return { ok: "Plant renamed." };
   } catch (e) { return fail(e); }
 }
+
+// ---- Mail sending address: each customer's notification mails go out from its own domain (e.g. dont-reply@nerigroup.in) ----
+export async function saveMailDomain(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const domain = String(form.get("domain") ?? "").trim().toLowerCase().replace(/^.*@/, "").replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
+    const local = String(form.get("local") ?? "dont-reply").trim().toLowerCase() || "dont-reply";
+    if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) return { error: "Type the company's domain, e.g. nerigroup.in" };
+    if (!/^[a-z0-9._-]{1,40}$/.test(local)) return { error: "The address before @ may use letters, numbers, dot, dash and underscore only." };
+    const { addDomain } = await import("@/lib/mail-domain");
+    const d = await addDomain(domain);
+    const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ mail_domain: domain, mail_local: local, mail_domain_id: d.id, mail_domain_status: d.status, mail_dns: d.records }).eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: d.status === "verified" ? `Mails now go out from ${local}@${domain}.` : "Saved. Add the DNS records shown below at the company's domain provider, then press “Check now”. Until it is verified, mails go out from the standard address." };
+  } catch (e) { return fail(e); }
+}
+export async function checkMailDomain(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const supabase = await createClient();
+    const { data: c } = await supabase.from("customers").select("mail_domain,mail_local,mail_domain_id").eq("id", id).maybeSingle();
+    if (!c?.mail_domain_id) return { error: "Add the domain first." };
+    const { verifyDomain } = await import("@/lib/mail-domain");
+    const d = await verifyDomain(c.mail_domain_id);
+    await supabase.from("customers").update({ mail_domain_status: d.status, mail_dns: d.records }).eq("id", id);
+    revalidatePath(`/customers/${id}`);
+    return d.status === "verified" ? { ok: `Verified. Mails now go out from ${c.mail_local}@${c.mail_domain}.` } : { error: `Not verified yet (${d.status}). DNS changes can take a few minutes to a few hours; try again later.` };
+  } catch (e) { return fail(e); }
+}
+export async function removeMailDomain(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ mail_domain: null, mail_domain_id: null, mail_domain_status: null, mail_dns: null }).eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: "Removed. Mails go out from the standard address again." };
+  } catch (e) { return fail(e); }
+}

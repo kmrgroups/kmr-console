@@ -474,3 +474,9 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 ## Sales Flow: ERP invoices add to the hand-typed despatch (run `supabase/migrations/0102_sf_erp_adds_to_manual.sql` once, after 0097)
 
 - The day's despatch for a part = what was typed by hand + the total of that day's ERP invoices. The ERP part is remembered (`sf_despatch.erp_qty`), so it is never counted twice, a manual entry is never wiped, and a cancelled invoice only takes off its own quantity.
+
+## Mail from the customer's own domain (run `supabase/migrations/0103_customer_mail_domain.sql` once)
+
+- Console › customer › **Mail sending address**: type the company's domain (e.g. `nerigroup.in`) and the address before @ (default `dont-reply`). The Console adds the domain at the mail provider (Resend) and shows the DNS records to add at the company's domain provider; **Check now** verifies it. Once verified, every mail sent for that customer (and its plants) goes out as `dont-reply@<domain>` with the company's name. Until then the standard `EMAIL_FROM` address is used with the company's name.
+- `RESEND_API_KEY` must be a **full-access** key (a sending-only key cannot add domains).
+- New mail code passes `customerId` (or `customerSlug`) to `sendMail` to get this behaviour.

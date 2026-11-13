@@ -39,7 +39,7 @@ export async function GET(req: Request) {
       let sent = 0;
       for (const to of s.recipients) {
         const r = await sendMail({
-          to, kind: "calibration-due", ref: s.slug, brand: s.brand,
+          to, kind: "calibration-due", ref: s.slug, brand: s.brand, customerId: s.customer_id,
           subject: `Calibration due within ${s.days_before} days — ${n} gauge${n === 1 ? "" : "s"} · ${s.company}`,
           heading: "Gauges going to overdue", paragraphs, rows,
           button: { label: "Open Calibration Hub", url: `${env.platformUrl}/it/calibration.html?kmr=1&co=${encodeURIComponent(s.slug)}#go=var` },

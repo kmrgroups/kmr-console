@@ -7,7 +7,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * attempt is recorded as "skipped" in the email log (Console › System health), so nothing fails.
  * ALERT_EMAIL receives KMR's own notices (payment reports, new orders, errors); it defaults to the seller email.
  */
-export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string; brand?: Brand };
+export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string; brand?: Brand; customerId?: string; customerSlug?: string };
 /** The customer the mail is sent for: its own name, logo and plant details replace the KMR sender block. */
 export type Brand = { name: string; plant?: string | null; logo?: string; address?: string; email?: string; phone?: string };
 
@@ -48,6 +48,22 @@ ${rows}${btn}
 </table></td></tr></table></body></html>`;
 }
 
+/** The customer's own sending address (its verified domain; a plant uses its company's), or null → the standard address. */
+async function customerFrom(m: Mail): Promise<string | null> {
+  if (!m.customerId && !m.customerSlug) return null;
+  try {
+    const db = createAdminClient();
+    const q = db.from("customers").select("name,parent_id,mail_domain,mail_local,mail_domain_status");
+    const { data: c } = await (m.customerId ? q.eq("id", m.customerId) : q.eq("slug", String(m.customerSlug).toLowerCase())).maybeSingle();
+    if (!c) return null;
+    let d = c as { name: string; parent_id: string | null; mail_domain: string | null; mail_local: string | null; mail_domain_status: string | null };
+    let nm = d.name;
+    if (d.parent_id) { const { data: p } = await db.from("customers").select("name,mail_domain,mail_local,mail_domain_status").eq("id", d.parent_id).maybeSingle(); if (p) { nm = (p as { name: string }).name; d = { ...d, ...(p as object) } as typeof d; } }
+    if (d.mail_domain && d.mail_domain_status === "verified") return `${(m.brand?.name || nm).replace(/[<>"]/g, "").slice(0, 80)} <${d.mail_local || "dont-reply"}@${d.mail_domain}>`;
+  } catch { /* fall back to the standard address */ }
+  return null;
+}
+
 /** Keeps the sending address but shows the customer's name as the sender. */
 const fromFor = (from: string, name: string) => { const a = (from.match(/<([^>]+)>/)?.[1] || from).trim(); return `${name.replace(/[<>"]/g, "").slice(0, 80)} <${a}>`; };
 
@@ -63,7 +79,7 @@ export async function sendMail(m: Mail): Promise<"sent" | "skipped" | "failed"> 
     if (!key || !from) { await log(m, "skipped", "RESEND_API_KEY / EMAIL_FROM not set"); return "skipped"; }
     const r = await fetch(process.env.RESEND_API_URL || "https://api.resend.com/emails", {
       method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: m.brand ? fromFor(from, m.brand.name) : from, to: [m.to], subject: m.subject, html: await renderMail(m), reply_to: m.replyTo || m.brand?.email || (await seller()).email }),
+      body: JSON.stringify({ from: (await customerFrom(m)) || (m.brand ? fromFor(from, m.brand.name) : from), to: [m.to], subject: m.subject, html: await renderMail(m), reply_to: m.replyTo || m.brand?.email || (await seller()).email }),
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) { const t = await r.text().catch(() => ""); await log(m, "failed", `${r.status} ${t}`); return "failed"; }
