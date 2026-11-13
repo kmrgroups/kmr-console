@@ -588,7 +588,7 @@ export async function loadErpMasters(_: ActionState, form: FormData): Promise<Ac
     const supabase = await createClient();
     const { data: c } = await supabase.from("customers").select("id,name,plant_code,parent_id").eq("id", id).maybeSingle();
     const pl = c as { name: string; plant_code: string | null; parent_id: string | null } | null;
-    if (!pl || !pl.parent_id || !/unit[ _-]*2/i.test(`${pl.name} ${pl.plant_code ?? ""}`)) return { error: "This data belongs to the Unit-2 plant only." };
+    if (!pl || !pl.parent_id) return { error: "Open a plant page (not the company page) to load this data." };
     const { readFile } = await import("node:fs/promises");
     const path = await import("node:path");
     const kinds = ["customers", "machines", "raw_materials", "parts", "suppliers", "cycle_times", "rate_contracts"];

@@ -192,10 +192,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
 
 
-      {isPlant && manager && /unit[ _-]*2/i.test(`${c.name} ${(c as { plant_code?: string | null }).plant_code ?? ""}`) && <div className="card">
-        <h2>Load ERP data into Operations Master</h2>
+      {isPlant && manager && <div className="card">
+        <h2>Load Unit-2 ERP data into Operations Master</h2>
         <p className="muted" style={{ marginTop: 0 }}>Copies this plant's old ERP data (customers, parts, machines, raw material, suppliers, cycle times, rate contracts) into its Operations Master. Nothing is deleted; you can press it again safely. It takes about a minute.</p>
-        <ActionForm action={loadErpMasters} submitLabel="Load ERP data now" hidden={{ id: c.id }} className="row" />
+        <ActionForm action={loadErpMasters} submitLabel="Load ERP data now" confirm={`Load the Unit-2 ERP data into "${c.name}"? Use this only on the Unit-2 plant. Nothing is deleted.`} hidden={{ id: c.id }} className="row" />
       </div>}
       {isPlant && manager && <div className="card">
         <h2>Plant in-charge</h2>
