@@ -109,7 +109,9 @@ rmp:[
 ['IATF','8.5.4.1','Preservation (stock rotation)','Stock and orders are tracked so older stock is used first.'],
 ['IATF','6.1.2.3','Contingency plans','Shortage against demand is shown early so action can be planned.'],
 ['ISO','7.1.1 / 8.1','Resources and operational planning','Monthly plan pulls the Sales Flow schedule, adds stock and WIP entered by the plant, and gives the material budget with GST.'],
-['IATF','8.4.2.1','Type and extent of control','Weekly planned vs received quantity and value show supply against the budget.']],
+['IATF','8.4.2.1','Type and extent of control','Weekly planned vs received quantity and value show supply against the budget.'],
+['ISO','8.4.2 / 8.6','Control of external provision; release','Actual inward screen records quantity and cost received each week against the plan.'],
+['IATF','8.4.2.4','Supplier monitoring','Planned vs inward quantity and cost per material and supplier show delivery performance.']],
 mmd:[
 ['ISO','8.5.2','Identification and traceability','Material, WIP and outsourced lots are tracked with their identification.'],
 ['IATF','8.5.2.1','Identification and traceability (supplemental)','Receipt, issue and WIP records allow tracing a lot through the process.'],
