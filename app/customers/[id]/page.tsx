@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -190,6 +190,17 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
       </div>}
 
 
+
+      {manager && <div className="card">
+        <h2>{isPlant ? "Plant in-charge" : "In-charge for mails"}</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Shown in the footer of this {isPlant ? "plant's" : "company's"} notification mails and used as the reply address. {isPlant ? "Each plant has its own person; nothing is taken from the main company." : ""}</p>
+        {(() => { const m = c as { incharge_name?: string | null; incharge_email?: string | null; incharge_phone?: string | null };
+          return <ActionForm action={savePlantIncharge} submitLabel="Save" hidden={{ id: c.id }} className="row">
+            <input name="name" defaultValue={m.incharge_name ?? ""} placeholder="Name" aria-label="In-charge name" style={{ width: 200 }} />
+            <input name="email" type="email" defaultValue={m.incharge_email ?? ""} placeholder="E-mail" aria-label="In-charge e-mail" style={{ width: 240 }} />
+            <input name="phone" defaultValue={m.incharge_phone ?? ""} placeholder="Phone" aria-label="In-charge phone" style={{ width: 160 }} />
+          </ActionForm>; })()}
+      </div>}
       {!isPlant && manager && <div className="card">
         <h2>Mail sending address</h2>
         {(() => {

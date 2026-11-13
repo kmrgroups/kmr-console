@@ -550,3 +550,19 @@ export async function removeMailDomain(_: ActionState, form: FormData): Promise<
     return { ok: "Removed. Mails go out from the standard address again." };
   } catch (e) { return fail(e); }
 }
+
+export async function savePlantIncharge(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const name = String(form.get("name") ?? "").trim().slice(0, 120) || null;
+    const email = String(form.get("email") ?? "").trim().toLowerCase() || null;
+    const phone = String(form.get("phone") ?? "").trim().slice(0, 40) || null;
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) return { error: "Enter a valid e-mail address." };
+    const supabase = await createClient();
+    const { error } = await supabase.from("customers").update({ incharge_name: name, incharge_email: email, incharge_phone: phone }).eq("id", id);
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${id}`);
+    return { ok: "Saved. This person's details appear in the footer of this " + "plant's notification mails." };
+  } catch (e) { return fail(e); }
+}

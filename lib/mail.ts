@@ -9,7 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  */
 export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string; brand?: Brand; customerId?: string; customerSlug?: string };
 /** The customer the mail is sent for: its own name, logo and plant details replace the KMR sender block. */
-export type Brand = { name: string; plant?: string | null; logo?: string; address?: string; email?: string; phone?: string };
+export type Brand = { name: string; plant?: string | null; incharge?: string; logo?: string; address?: string; email?: string; phone?: string };
 
 /** Customer mails never show KMR's own addresses (info@kmr-groups.com etc.). */
 const notKmr = (e?: string | null) => (e && !/@(.+\.)?kmr-groups\.com$/i.test(e.trim()) ? e.trim() : "");
@@ -46,7 +46,7 @@ export async function renderMail(m: Mail): Promise<string> {
 ${m.paragraphs.map((p) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.6">${esc(p)}</p>`).join("")}
 ${rows}${btn}
 </td></tr>
-<tr><td style="padding:16px 26px;border-top:1px solid #e6dfd1;font-size:12px;color:#5e6778;line-height:1.6">${esc(s.name)}${b?.plant ? ` · ${esc(b.plant)}` : ""}${s.address ? ` · ${esc(s.address)}` : ""}${s.email || s.phone ? "<br>" : ""}${esc(s.email)}${s.phone ? `${s.email ? " · " : ""}${esc(s.phone)}` : ""}${s.gstin ? ` · GSTIN ${esc(s.gstin)}` : ""}</td></tr>
+<tr><td style="padding:16px 26px;border-top:1px solid #e6dfd1;font-size:12px;color:#5e6778;line-height:1.6">${esc(s.name)}${b?.plant ? ` · ${esc(b.plant)}` : ""}${s.address ? ` · ${esc(s.address)}` : ""}${s.email || s.phone || b?.incharge ? "<br>" : ""}${b?.incharge ? `Plant in charge: ${esc(b.incharge)}${s.email || s.phone ? " · " : ""}` : ""}${esc(s.email)}${s.phone ? `${s.email ? " · " : ""}${esc(s.phone)}` : ""}${s.gstin ? ` · GSTIN ${esc(s.gstin)}` : ""}</td></tr>
 </table></td></tr></table></body></html>`;
 }
 

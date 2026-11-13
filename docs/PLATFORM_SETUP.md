@@ -485,3 +485,7 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 
 - Fixes "canceling statement due to statement timeout" on plants with thousands of gauges. The screen loads the gauges with their total cost and a count summary plus the last 14 months of records; a gauge's full history is read when its history card opens, and the whole register when exported.
 - Mails sent for a customer never show an `@kmr-groups.com` address (footer or reply-to).
+
+## Plant in-charge in mails (run `supabase/migrations/0105_plant_incharge_mail.sql` once, after 0101)
+
+- Console › customer/plant › **Plant in-charge**: name, e-mail and phone of that plant's person. They appear in the footer of the plant's notification mails and are the reply address. A plant no longer shows the main company's contact (which was copied when the plant was created); a plant with no in-charge shows none.
