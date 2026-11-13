@@ -27,9 +27,10 @@
       const mine = lines.filter((l) => l.material_code === m.code && l.src !== "none");
       const need = mine.reduce((a, l) => a + l.qty, 0);
       const wk = [1, 2, 3, 4, 5].map((w) => { const x = (m.weeks || []).find((y) => y.w === w); return { w, p: x ? n(x.p) : 0, r: x ? n(x.r) : 0 }; });
-      const planned = wk.reduce((a, x) => a + x.p, 0), received = wk.reduce((a, x) => a + x.r, 0);
+      const received = wk.reduce((a, x) => a + x.r, 0);
       const rate = m.rate === null || m.rate === undefined ? null : n(m.rate), gst = n(m.gst);
       const balance = need - n(m.on_hand), toBuy = Math.max(0, balance);
+      const planned = toBuy;
       const net = planned * n(rate) / LAKH, aNet = received * n(rate) / LAKH;
       return Object.assign({}, m, { parts: mine, need, balance, toBuy, wk, planned, received, gap: toBuy - planned, net, gross: net * (1 + gst / 100), aNet, aGross: aNet * (1 + gst / 100), noRate: rate === null && (planned > 0 || toBuy > 0) });
     });
