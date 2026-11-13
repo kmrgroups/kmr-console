@@ -103,14 +103,17 @@ function paintMonth(){
 function plantHtml(p,pi,ed){
   if(!p.mats.length)return '<p class="note">No bill of material for this plant yet. Add parts and materials under “Materials &amp; BOM”.</p>';
   const inp=(k,f,v,x='',w='')=>ed?`<input class="n" type="number" step="any" min="0" value="${v===null||v===undefined?'':v}" data-k="${k}" data-pi="${pi}" ${x} data-f="${f}"${w!==''?` data-w="${w}"`:''} style="width:${k==='wk'?72:84}px;text-align:right">`:qn(v);
-  return p.mats.map((m,mi)=>{
+  const addable=p.lines.filter(l=>l.src==='none'),add=ed?`<div class="row noprint" style="margin:8px 0"><b>Add a part that is not in the Sales Flow plan:</b><select id="ap${pi}" style="min-width:220px"><option value="">Select part…</option>${addable.map(l=>`<option value="${l.idx}">${esc(l.part_code)} ${esc(l.part_name||'')}</option>`).join('')}</select><input id="aq${pi}" type="number" min="0" step="any" placeholder="Schedule qty" style="width:110px"><button class="btn" data-addp="${pi}">Add part</button></div>`:'';
+  const vis=p.mats.map((m,mi)=>({m,mi})).filter(x=>x.m.parts.length||x.m.planned>0);
+  if(!vis.length)return add+'<p class="note">No parts have a Sales Flow plan for this month yet'+(ed?' — add a part above if you need to plan it manually.':'.')+'</p>';
+  return add+vis.map(({m,mi})=>{
     const ul=m.unit==='nos'?'nos':'kg',short=m.toBuy>0&&m.gap>0.5;
     return `<div class="ph"><h3><span class="grow"><b>${esc(m.code)}</b> <span class="mut">${esc(m.supplier||'')}</span></span>
       ${ed?`<span class="noprint" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label class="mut">Stock (${ul}) ${inp('st','on_hand_kg',m.on_hand,`data-mi="${mi}"`)}</label><label class="mut">Rate ₹/${ul} ${inp('st','rate',m.rate,`data-mi="${mi}"`)}</label><label class="mut">GST % ${inp('st','gst_pct',m.gst,`data-mi="${mi}"`)}</label><label class="mut">Unit <select data-k="st" data-pi="${pi}" data-mi="${mi}" data-f="unit" style="width:70px"><option${ul==='kg'?' selected':''}>kg</option><option${ul==='nos'?' selected':''}>nos</option></select></label><label class="mut">Supplier <input data-k="st" data-pi="${pi}" data-mi="${mi}" data-f="supplier_text" value="${esc(m.supplier||'')}" style="width:170px"></label></span>
       <span style="display:none" class="onlyprint"></span>`:`<span class="mut">Stock ${qn(m.on_hand)} ${ul} · Rate ₹${qn(m.rate)} / ${ul} · GST ${qn(m.gst)}%</span>`}</h3>
     <table><thead><tr><th>Part</th><th>Customer</th><th class="num">Schedule</th><th class="num">Safety stock</th><th class="num">Super-market (RRS)</th><th class="num">Despatched</th><th class="num">WIP</th><th class="num">WIP stage 2</th><th class="num">Balance (pcs)</th><th class="num">${ul==='nos'?'pcs':'kg'} / pc</th><th class="num">Needed (${ul})</th></tr></thead><tbody>
     ${m.parts.map(l=>`<tr><td><b>${esc(l.part_code)}</b><div class="mut">${esc(l.part_name||'')}</div></td><td class="mut">${esc(l.buyers||'')}</td>
-      <td class="num">${l.src==='sales'?`${qn(l.sched)} <span class="chip b" title="From Sales Flow">Sales Flow</span>`:ed?inp('ps','manual',l.manual,`data-li="${l.idx}"`)+'<div class="mut" style="font-size:11px">no Sales Flow schedule</div>':`${qn(l.sched)}${l.src==='typed'?' <span class="chip a">typed</span>':''}`}</td>
+      <td class="num">${l.src==='sales'?`${qn(l.sched)} <span class="chip b" title="From Sales Flow">Sales Flow</span>`:ed?inp('ps','manual',l.manual,`data-li="${l.idx}"`)+'<div class="mut" style="font-size:11px">added manually</div>':`${qn(l.sched)}${l.src==='typed'?' <span class="chip a">typed</span>':''}`}</td>
       <td class="num">${inp('ps','safety',l.safety,`data-li="${l.idx}"`)}</td><td class="num">${inp('ps','rrs',l.rrs,`data-li="${l.idx}"`)}</td><td class="num">${qn(l.despatched)}</td>
       <td class="num">${inp('ps','wip',l.wip,`data-li="${l.idx}"`)}</td><td class="num">${inp('ps','wip2',l.wip2,`data-li="${l.idx}"`)}</td>
       <td class="num">${l.bal<0?`<span class="mut">${qn(l.bal)}</span>`:qn(l.bal)}</td><td class="num">${qn(l.factor)}</td><td class="num"><b>${qn(l.qty)}</b></td></tr>`).join('')}
@@ -140,6 +143,9 @@ function csvMonth(){
   const b=new Blob(['﻿'+R.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='RM-plan-'+S.month+'.csv';document.body.append(a);a.click();a.remove();
 }
 document.addEventListener('change',e=>{if(e.target.closest&&e.target.closest('#month'))saveMonth(e)});
+document.addEventListener('click',async e=>{const b=e.target.closest&&e.target.closest('[data-addp]');if(!b||!canEdit())return;
+  const pi=+b.dataset.addp,i=$('#ap'+pi).value,q=Number($('#aq'+pi).value||0);if(i===''){say('Select a part first');return}
+  try{const pl=S.mo.plants[pi],l=pl.lines[+i];await call('kmr_rmp_partstock_save',{p_month:S.month,p_rows:[{part_code:l.part_code,sched_manual:q}]});l.manual=q;S.mp=S.mo.plants.map(MO.plant);paintMonth()}catch(err){say(err.message)}});
 
 /* ---------- 1. requirement vs stock (core) ---------- */
 function drawReq(){

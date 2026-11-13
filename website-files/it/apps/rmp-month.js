@@ -23,7 +23,7 @@
       return Object.assign({}, l, { idx, src: hasSales ? "sales" : (l.manual !== null && l.manual !== undefined ? "typed" : "none"), sched, bal, qty: bal * n(l.factor) });
     });
     const mats = (p.materials || []).map((m) => {
-      const mine = lines.filter((l) => l.material_code === m.code);
+      const mine = lines.filter((l) => l.material_code === m.code && l.src !== "none");
       const need = mine.reduce((a, l) => a + l.qty, 0);
       const wk = [1, 2, 3, 4, 5].map((w) => { const x = (m.weeks || []).find((y) => y.w === w); return { w, p: x ? n(x.p) : 0, r: x ? n(x.r) : 0 }; });
       const planned = wk.reduce((a, x) => a + x.p, 0), received = wk.reduce((a, x) => a + x.r, 0);
@@ -33,7 +33,7 @@
       return Object.assign({}, m, { parts: mine, need, balance, toBuy, wk, planned, received, gap: toBuy - planned, net, gross: net * (1 + gst / 100), aNet, aGross: aNet * (1 + gst / 100), noRate: rate === null && (planned > 0 || toBuy > 0) });
     });
     const t = mats.reduce((a, m) => ({ net: a.net + m.net, gross: a.gross + m.gross, aNet: a.aNet + m.aNet, aGross: a.aGross + m.aGross, short: a.short + (m.toBuy > 0 && m.gap > 0.5 ? 1 : 0), buy: a.buy + (m.toBuy > 0 ? 1 : 0), norate: a.norate + (m.noRate ? 1 : 0) }), { net: 0, gross: 0, aNet: 0, aGross: 0, short: 0, buy: 0, norate: 0 });
-    return Object.assign({ id: p.id, name: p.name, code: p.code, lines, mats, parts: new Set(lines.map((l) => l.part_code)).size, noSales: lines.filter((l) => l.src !== "sales" && l.sched > 0).length }, t);
+    return Object.assign({ id: p.id, name: p.name, code: p.code, lines, mats, parts: new Set(lines.filter((l) => l.src !== "none").map((l) => l.part_code)).size, noSales: lines.filter((l) => l.src === "typed").length }, t);
   }
   function company(plants) {
     return plants.reduce((a, p) => ({ net: a.net + p.net, gross: a.gross + p.gross, aNet: a.aNet + p.aNet, aGross: a.aGross + p.aGross, buy: a.buy + p.buy, short: a.short + p.short, parts: a.parts + p.parts }), { net: 0, gross: 0, aNet: 0, aGross: 0, buy: 0, short: 0, parts: 0 });
