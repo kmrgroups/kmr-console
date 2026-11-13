@@ -33,10 +33,10 @@ tr.done td:nth-child(3) b{color:var(--mut);text-decoration:line-through}tr.na{op
 .sup{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.sup>h3{margin:0;padding:10px 12px;background:var(--bg);font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sup>h3 .grow{flex:1}
 </style></head><body>
 <header><span class="clogo" id="clogo" hidden></span><div><h1>Raw Material Planning</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
-<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="month" href="#go=month">Raw material plan (qty, cost)</a><a class="tab" data-t="inward" href="#go=inward">Actual inward (qty, cost)</a><a class="tab" data-t="cmp" href="#go=cmp">Plan vs actual</a><a class="tab" data-t="req" href="#go=req">Requirement</a><a class="tab" data-t="plan" href="#go=plan">Purchase plan</a><a class="tab" data-t="orders" href="#go=orders">Orders</a><a class="tab" data-t="master" href="#go=master">Materials &amp; BOM</a><a class="tab" data-t="start" href="#go=start">Parts to start</a></div>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="month" href="#go=month">Raw material plan (qty, cost)</a><a class="tab" data-t="ws" href="#go=ws">Work sheet</a><a class="tab" data-t="inward" href="#go=inward">Actual inward (qty, cost)</a><a class="tab" data-t="cmp" href="#go=cmp">Plan vs actual</a><a class="tab" data-t="req" href="#go=req">Requirement</a><a class="tab" data-t="plan" href="#go=plan">Purchase plan</a><a class="tab" data-t="orders" href="#go=orders">Orders</a><a class="tab" data-t="master" href="#go=master">Materials &amp; BOM</a><a class="tab" data-t="start" href="#go=start">Parts to start</a></div>
 <main><div class="panel"><div id="msg"></div>
 <div class="row noprint"><label class="mut">Month</label><input type="month" id="mon" style="width:auto"><span id="src"></span><span class="grow"></span><span class="mut" id="stamp"></span></div>
-<section id="std"></section><section id="month" class="hide"></section><section id="inward" class="hide"></section><section id="cmp" class="hide"></section><section id="req" class="hide"></section><section id="plan" class="hide"></section><section id="orders" class="hide"></section><section id="master" class="hide"></section><section id="start" class="hide"></section></div></main>
+<section id="std"></section><section id="month" class="hide"></section><section id="inward" class="hide"></section><section id="ws" class="hide"></section><section id="cmp" class="hide"></section><section id="req" class="hide"></section><section id="plan" class="hide"></section><section id="orders" class="hide"></section><section id="master" class="hide"></section><section id="start" class="hide"></section></div></main>
 <div class="modal" id="m"><div class="in" id="mb"></div></div>
 <script src="/it/kmr-lock.js"></script><script>window.QP_LOCKS={map:{plan:"rmp.purchase-plan-moq-lead-times",orders:"rmp.supplier-orders-receipts"},names:{"rmp.purchase-plan-moq-lead-times":"Purchase plan, MOQ & lead times","rmp.supplier-orders-receipts":"Supplier orders & receipts"}};</script><script src="/it/apps/qp-core.js"></script>
 <script src="/it/apps/rmp-calc.js"></script><script src="/it/apps/rmp-month.js"></script><script>if(new URLSearchParams(location.search).has("demo")){document.write('<script src="/it/apps/rmp-demo.js"><\/script>')}</script>
@@ -68,9 +68,9 @@ async function route(){
   let go=hashGo();
   if(window.KMRLock&&KMRLock.locked(go)){KMRLock.dialog(go);go='std';history.replaceState(null,'',location.pathname+location.search+'#go=std')}
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
-  ['std','month','inward','cmp','req','plan','orders','master','start'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  ['std','month','ws','inward','cmp','req','plan','orders','master','start'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
   if(go==='std'){KMRStd.draw($('#std'),'rmp');return}
-  if(go==='month'||go==='inward'||go==='cmp'){try{S.mm=go;await drawMonth()}catch(e){say(e.message)}return}
+  if(go==='month'||go==='inward'||go==='cmp'||go==='ws'){try{S.mm=go;await drawMonth()}catch(e){say(e.message)}return}
   try{await load();({req:drawReq,plan:drawPlan,orders:drawOrders,master:drawMaster,start:drawStart})[go]()}catch(e){say(e.message)}
 }
 document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
@@ -85,6 +85,7 @@ const qn=(v)=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
 const WKL=['1 – 7','8 – 14','15 – 21','22 – 28','29 – end'];
 async function drawMonth(){S.mo=await call('kmr_rmp_month',{p_month:S.month});S.mp=S.mo.plants.map(MO.plant);paintMonth()}
 function paintMonth(){
+  if(S.mm==='ws')return paintWs();
   const CM=S.mm==='cmp',IN=S.mm==='inward'||CM,P=S.mp,co=S.mo.company,T=MO.company(P),ed=canEdit()&&!co,box=$(CM?'#cmp':IN?'#inward':'#month');
   ['#month','#inward','#cmp'].forEach(q=>{if($(q)&&$(q)!==box)$(q).innerHTML=''});
   const a=document.activeElement,sig=a&&a.dataset&&a.dataset.k?Object.entries(a.dataset).map(([k,v])=>`[data-${k}="${v}"]`).join(''):'';
@@ -111,12 +112,20 @@ function cmpHtml(p){
   <tr><td colspan="6" style="text-align:right"><b>Total</b></td><td class="num"><b>${lk(tp)}</b></td><td class="num"><b>${lk(ta)}</b></td><td class="num"><b>${d(ta,tp,1)}</b></td><td class="num"><b>${lk(tpg)}</b></td><td class="num"><b>${lk(tag)}</b></td><td></td></tr></tbody></table>`;
 }
 function inwardHtml(p,pi,ed){
-  const rows=p.mats.map((m,mi)=>({m,mi})).filter(x=>x.m.parts.length||x.m.planned>0||x.m.received>0);
+  const rows=p.mats.map((m,mi)=>({m,mi})).filter(x=>x.m.parts.length||x.m.planned>0||x.m.received>0||x.m.wp>0);
   if(!rows.length)return '<p class="note">No planned material for this plant this month.</p>';
-  const inp=(x,mi)=>ed?`<input class="n" type="number" step="any" min="0" value="${x.r||''}" data-k="wk" data-pi="${pi}" data-mi="${mi}" data-f="r" data-w="${x.w}" style="width:76px;text-align:right">`:qn(x.r);
-  return `<table style="table-layout:fixed;width:100%;min-width:900px"><colgroup><col style="width:17%"><col style="width:6%"><col style="width:7%">${'<col style="width:7.5%">'.repeat(5)}<col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:8%"></colgroup><thead><tr><th>Material</th><th>Unit</th><th class="num">Planned qty</th>${[1,2,3,4,5].map(w=>`<th class="num">Week ${w} received<div class="mut" style="font-weight:400;text-transform:none">${WKL[w-1]}</div></th>`).join('')}<th class="num">Inward qty</th><th class="num">Balance to receive</th><th class="num">Rate ₹</th><th class="num">Inward net ₹ L</th><th class="num">Inward incl. GST ₹ L</th></tr></thead><tbody>
-  ${rows.map(({m,mi})=>`<tr><td><b>${esc(m.code)}</b><div class="mut">${esc(m.supplier||'')}</div></td><td>${m.unit==='nos'?'nos':'kg'}</td><td class="num">${qn(m.planned)}</td>${m.wk.map(x=>`<td class="num">${inp(x,mi)}</td>`).join('')}<td class="num"><b>${qn(m.received)}</b></td><td class="num">${m.planned-m.received>0?qn(m.planned-m.received):'<span class="chip g">Done</span>'}</td><td class="num">${m.rate===null?'<span class="chip a">No rate</span>':qn(m.rate)}</td><td class="num">${lk(m.aNet)}</td><td class="num">${lk(m.aGross)}</td></tr>`).join('')}
-  <tr><td colspan="9" style="text-align:right"><b>Total</b></td><td class="num"><b>${lk(p.aNet)}</b></td><td class="num"><b>${lk(p.aGross)}</b></td></tr></tbody></table>`;
+  const box=(m,mi,w,f,v)=>ed?`<input class="n" type="number" step="any" min="0" value="${v||''}" data-k="wk" data-pi="${pi}" data-mi="${mi}" data-f="${f}" data-w="${w}" style="width:80px;text-align:right">`:qn(v);
+  const df=(a,b)=>{const x=a-b;return x===0?'<span class="mut">0</span>':`<span class="${x<0?'late':''}">${x>0?'+':''}${qn(x)}</span>`};
+  const cg='<colgroup><col style="width:17%">'+'<col style="width:11%">'.repeat(5)+'<col style="width:9%"><col style="width:9.5%"><col style="width:9.5%"></colgroup>';
+  return rows.map(({m,mi})=>{
+    const ul=m.unit==='nos'?'nos':'kg',pc=m.wp*(m.rate||0)/1e5,pg=pc*(1+m.gst/100);
+    const st=m.received===0?['a','Not received yet']:m.received>=m.planned&&m.planned>0?['g','Fully received']:['b','Part received'];
+    return `<div class="ph"><h3><span class="grow"><b>${esc(m.code)}</b> <span class="mut">${esc(m.supplier||'')} · ${ul} · rate ₹${m.rate===null?'—':qn(m.rate)} · GST ${qn(m.gst)}%</span></span><span>To buy <b>${qn(m.planned)}</b> ${ul}</span> <span class="chip ${st[0]}">${st[1]}</span></h3>
+    <div style="overflow-x:auto;padding:4px 12px 10px"><table style="table-layout:fixed;width:100%;min-width:820px">${cg}<thead><tr><th></th>${[1,2,3,4,5].map(w=>`<th class="num">Week ${w}<div class="mut" style="font-weight:400;text-transform:none">${WKL[w-1]}</div></th>`).join('')}<th class="num">Total (${ul})</th><th class="num">Cost ₹ L</th><th class="num">Incl. GST ₹ L</th></tr></thead><tbody>
+    <tr><td><b>Planned</b></td>${m.wk.map(x=>`<td class="num">${box(m,mi,x.w,'p',x.p)}</td>`).join('')}<td class="num"><b>${qn(m.wp)}</b></td><td class="num">${lk(pc)}</td><td class="num">${lk(pg)}</td></tr>
+    <tr><td><b>Actual received</b></td>${m.wk.map(x=>`<td class="num">${box(m,mi,x.w,'r',x.r)}</td>`).join('')}<td class="num"><b>${qn(m.received)}</b></td><td class="num">${lk(m.aNet)}</td><td class="num">${lk(m.aGross)}</td></tr>
+    <tr style="background:#F7F9FC"><td><b>Difference</b> <span class="mut">(actual − plan)</span></td>${m.wk.map(x=>`<td class="num">${df(x.r,x.p)}</td>`).join('')}<td class="num"><b>${df(m.received,m.wp)}</b></td><td class="num"><span class="${m.aNet>pc?'late':''}">${m.aNet-pc>0?'+':''}${lk(m.aNet-pc)}</span></td><td class="num">${lk(m.aGross-pg)}</td></tr></tbody></table>
+    ${m.planned>0&&Math.abs(m.wp-m.planned)>0.5?`<div class="note"><span class="chip a">Check</span> Weekly plan (${qn(m.wp)} ${ul}) is ${m.wp<m.planned?'less':'more'} than the quantity to buy (${qn(m.planned)} ${ul}).</div>`:''}</div></div>`}).join('')+`<div class="note"><b>Total for plant:</b> actual inward ₹ ${lk(p.aNet)} L (incl. GST ₹ ${lk(p.aGross)} L)</div>`;
 }
 function plantHtml(p,pi,ed,IN,CM){
   if(CM)return cmpHtml(p);
@@ -134,6 +143,34 @@ function plantHtml(p,pi,ed,IN,CM){
   const t2=shown.length?`<h3 style="margin:18px 0 6px">2. Parts in the plan <span class="mut" style="font-weight:400">(schedule from Sales Flow)</span></h3><div style="overflow-x:auto"><table style="table-layout:fixed;width:100%;min-width:1000px"><colgroup><col style="width:15%"><col style="width:12%"><col style="width:12%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:6%"><col style="width:6%"><col style="width:8%"><col style="width:6%"><col style="width:8%"></colgroup><thead><tr><th>Part</th><th>Customer</th><th>Material</th><th class="num">Schedule</th><th class="num">Safety stock</th><th class="num">Super-market (RRS)</th><th class="num">Despatched</th><th class="num">WIP</th><th class="num">WIP stage 2</th><th class="num">Balance (pcs)</th><th class="num">Per piece</th><th class="num">Needed</th></tr></thead><tbody>
   ${shown.map(l=>`<tr><td><b>${esc(l.part_code)}</b><div class="mut">${esc(l.part_name||'')}</div></td><td class="mut">${esc(l.buyers||'')}</td><td>${esc(l.material_code)}</td><td class="num">${l.src==='sales'?`${qn(l.sched)}<div><span class="chip b">Sales Flow</span></div>`:ed?num('ps','manual',l.manual,`data-li="${l.idx}"`)+'<div class="mut" style="font-size:11px">added manually</div>':qn(l.sched)}</td><td class="num">${num('ps','safety',l.safety,`data-li="${l.idx}"`)}</td><td class="num">${num('ps','rrs',l.rrs,`data-li="${l.idx}"`)}</td><td class="num">${qn(l.despatched)}</td><td class="num">${num('ps','wip',l.wip,`data-li="${l.idx}"`)}</td><td class="num">${num('ps','wip2',l.wip2,`data-li="${l.idx}"`)}</td><td class="num">${qn(l.bal)}</td><td class="num">${qn(l.factor)}</td><td class="num"><b>${qn(l.qty)}</b></td></tr>`).join('')}</tbody></table></div>`:'<p class="note">No parts have a Sales Flow plan for this month yet'+(ed?' — add a part below if you need to plan it manually.':'.')+'</p>';
   return un+t1+t2+add;
+}
+function paintWs(){
+  const P=S.mp,co=S.mo.company,ed=canEdit()&&!co,box=$('#ws');
+  ['#month','#inward','#cmp'].forEach(q=>{if($(q))$(q).innerHTML=''});
+  const a=document.activeElement,sig=a&&a.dataset&&a.dataset.k?Object.entries(a.dataset).map(([k,v])=>`[data-${k}="${v}"]`).join(''):'';
+  const ml=new Date(S.month+'-01T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  if(window.KMRReport)KMRReport.set({title:'Work sheet — '+ml,doc:co?'All plants':(P[0]?P[0].name:''),format:'KMR/RMP/F-05',rev:'01',date:'2026-11-13',land:true});
+  const sec=(p,pi)=>{
+    const inp=(k,f,v,x)=>ed?`<input class="n" type="number" step="any" min="0" value="${v||''}" data-k="${k}" data-pi="${pi}" ${x} data-f="${f}" style="width:72px;text-align:right">`:qn(v);
+    const groups=p.mats.map((m,mi)=>({m,mi})).filter(x=>x.m.parts.length);
+    if(!groups.length)return '<p class="note">No parts have a Sales Flow plan for this month yet.</p>';
+    let sl=0,body='';
+    groups.forEach(({m,mi})=>{
+      const ul=m.unit==='nos'?'nos':'kg',n=m.parts.length;
+      m.parts.forEach((l,k)=>{sl++;
+        body+=`<tr><td class="num">${sl}</td><td>${esc(l.buyers||'')}</td><td><b>${esc(l.part_code)}</b></td><td>${esc(l.part_name||'')}</td><td class="num">${l.src==='sales'?qn(l.sched):inp('ps','manual',l.manual,`data-li="${l.idx}"`)}</td>
+        <td class="num">${inp('ps','fg',l.fg,`data-li="${l.idx}"`)}</td><td class="num">${inp('ps','fi',l.fi,`data-li="${l.idx}"`)}</td><td class="num">${inp('ps','wip',l.wip,`data-li="${l.idx}"`)}</td><td class="num">${inp('ps','inc',l.inc,`data-li="${l.idx}"`)}</td><td class="num">${inp('ps','sup',l.sup,`data-li="${l.idx}"`)}</td>
+        <td class="num"><b>${qn(l.tot)}</b></td><td class="num"><b>${l.wsBal>0?qn(l.wsBal):'<span class="chip g">Nil</span>'}</b></td>
+        <td>${esc(m.code)}</td><td>${ul}</td><td class="num">${qn(l.factor)}</td><td class="num"><b>${qn(l.wsReq)}</b></td>
+        ${k===0?`<td class="num" rowspan="${n}" style="background:#F7F9FC;vertical-align:middle">${inp('st','on_hand_kg',m.on_hand,`data-mi="${mi}"`)}<div class="mut" style="font-size:11px">${n>1?'for '+n+' parts':''}</div></td><td class="num" rowspan="${n}" style="background:#F7F9FC;vertical-align:middle"><b>${m.wsBuy>0?qn(m.wsBuy):'<span class="chip g">Enough</span>'}</b><div class="mut" style="font-size:11px">${qn(m.wsNeed)} needed</div></td><td rowspan="${n}" style="vertical-align:middle">${esc(m.supplier||'')}</td>`:''}</tr>`;});
+    });
+    return `<div style="overflow-x:auto"><table style="table-layout:fixed;width:100%;min-width:1750px"><colgroup><col style="width:3%"><col style="width:9%"><col style="width:7.5%"><col style="width:8%"><col style="width:5%">${'<col style="width:4.5%">'.repeat(5)}<col style="width:5%"><col style="width:5.5%"><col style="width:8%"><col style="width:3.5%"><col style="width:4%"><col style="width:5.5%"><col style="width:5.5%"><col style="width:6%"><col style="width:7%"></colgroup><thead><tr><th>Sl no</th><th>Customer name</th><th>Customer part no.</th><th>Customer part name</th><th class="num">Schedule qty</th><th class="num">FG stock</th><th class="num">FI stock</th><th class="num">WIP stock</th><th class="num">Incoming stock</th><th class="num">Supplier stock</th><th class="num">Total stock</th><th class="num">Balance to start (1st operation)</th><th>Raw material description</th><th>Unit</th><th class="num">Qty per part</th><th class="num">RM required to start 1st operation</th><th class="num">RM stock</th><th class="num">RM balance to purchase</th><th>Supplier</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  box.innerHTML=`<div class="rep"><h2 style="margin:0">Work sheet — ${esc(ml)}</h2><div class="mut" style="margin-bottom:10px">${co?'All plants':esc(P[0]?P[0].name:'')}</div></div>
+  <div class="row noprint"><button class="btn o" onclick="window.print()">Print / save as PDF</button></div>
+  ${P.map((p,pi)=>co?`<details style="margin:10px 0"><summary><b>${esc(p.code?p.code+' · ':'')}${esc(p.name)}</b></summary>${sec(p,pi)}</details>`:sec(p,pi)).join('')}
+  <p class="note"><b>How to read it:</b> FG = finished goods, FI = final inspection. Schedule comes from Sales Flow. Total stock = FG + FI + WIP + incoming + supplier stock. <b>Balance to start</b> = schedule − total stock (never below 0). <b>RM required</b> = balance to start × qty per part. <b>RM balance to purchase</b> = RM required for all parts using that material − RM stock. Stocks are typed by the plant in-charge.</p>`;
+  if(sig){const el=box.querySelector('input'+sig);if(el){el.focus();try{el.select()}catch(e){}}}
 }
 async function saveMonth(e){
   const t=e.target;if(!t.dataset||!t.dataset.k||!canEdit())return;
