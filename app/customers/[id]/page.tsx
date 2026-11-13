@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, loadErpMasters } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -23,6 +23,7 @@ export const metadata = { title: "Customer" };
 
 type Licence = { features?: string[] | null; id: string; product_code: string; status: string; starts_on: string; valid_until: string | null; seats: number | null; product_ref: string | null; product_slug: string | null; notes: string | null };
 
+export const maxDuration = 120;
 export default async function CustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const staff = await requireStaff();
@@ -191,6 +192,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
 
 
+      {isPlant && manager && /unit[ _-]*2/i.test(`${c.name} ${(c as { plant_code?: string | null }).plant_code ?? ""}`) && <div className="card">
+        <h2>Load ERP data into Operations Master</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Copies this plant's old ERP data (customers, parts, machines, raw material, suppliers, cycle times, rate contracts) into its Operations Master. Nothing is deleted; you can press it again safely. It takes about a minute.</p>
+        <ActionForm action={loadErpMasters} submitLabel="Load ERP data now" hidden={{ id: c.id }} className="row" />
+      </div>}
       {isPlant && manager && <div className="card">
         <h2>Plant in-charge</h2>
         <p className="muted" style={{ marginTop: 0 }}>Shown in the footer of this plant's notification mails and used as the reply address. Each plant has its own person; nothing is taken from the main company.</p>

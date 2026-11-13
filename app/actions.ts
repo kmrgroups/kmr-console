@@ -577,3 +577,39 @@ export async function savePlantIncharge(_: ActionState, form: FormData): Promise
     return { ok: "Saved. This person's details appear in the footer of this " + "plant's notification mails." };
   } catch (e) { return fail(e); }
 }
+
+
+/** One-click load of the Unit-2 ERP master data (data/erp-unit2/*.json) into this plant's Operations Master.
+ *  Adds and updates by code only; nothing is deleted. Fields already filled in the app are kept unless the ERP has a value for them. */
+export async function loadErpMasters(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const supabase = await createClient();
+    const { data: c } = await supabase.from("customers").select("id,name,plant_code,parent_id").eq("id", id).maybeSingle();
+    const pl = c as { name: string; plant_code: string | null; parent_id: string | null } | null;
+    if (!pl || !pl.parent_id || !/unit[ _-]*2/i.test(`${pl.name} ${pl.plant_code ?? ""}`)) return { error: "This data belongs to the Unit-2 plant only." };
+    const { readFile } = await import("node:fs/promises");
+    const path = await import("node:path");
+    const kinds = ["customers", "machines", "raw_materials", "parts", "suppliers", "cycle_times", "rate_contracts"];
+    const lines: string[] = [];
+    for (const kind of kinds) {
+      const j = JSON.parse(await readFile(path.join(process.cwd(), "data", "erp-unit2", `Unit-2_${kind}.json`), "utf8")) as { records: { code: string; name: string; active: boolean; data: Record<string, unknown> }[] };
+      const old = new Map<string, Record<string, unknown>>();
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from("ops_records").select("code,data").eq("customer_id", id).eq("kind", kind).order("code").range(from, from + 999);
+        if (error) return { error: error.message };
+        for (const r of (data ?? []) as { code: string; data: Record<string, unknown> }[]) old.set(r.code, r.data ?? {});
+        if (!data || data.length < 1000) break;
+      }
+      const rows = j.records.map((r) => ({ customer_id: id, kind, code: r.code, name: r.name, active: r.active, data: { ...(old.get(r.code) ?? {}), ...r.data }, updated_by: "erp-import" }));
+      for (let i = 0; i < rows.length; i += 300) {
+        const { error } = await supabase.from("ops_records").upsert(rows.slice(i, i + 300), { onConflict: "customer_id,kind,code" });
+        if (error) return { error: `${kind}: ${error.message}` };
+      }
+      lines.push(`${kind.replace("_", " ")} ${rows.length}`);
+    }
+    revalidatePath(`/customers/${id}`);
+    return { ok: "Loaded into Operations Master: " + lines.join(", ") + "." };
+  } catch (e) { return fail(e); }
+}
