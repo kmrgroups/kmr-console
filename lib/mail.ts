@@ -11,6 +11,8 @@ export type Mail = { to: string; subject: string; heading: string; paragraphs: s
 /** The customer the mail is sent for: its own name, logo and plant details replace the KMR sender block. */
 export type Brand = { name: string; plant?: string | null; logo?: string; address?: string; email?: string; phone?: string };
 
+/** Customer mails never show KMR's own addresses (info@kmr-groups.com etc.). */
+const notKmr = (e?: string | null) => (e && !/@(.+\.)?kmr-groups\.com$/i.test(e.trim()) ? e.trim() : "");
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
 
 type Seller = { name: string; email: string; phone: string; address: string; gstin: string };
@@ -29,7 +31,7 @@ export const alertEmail = async () => process.env.ALERT_EMAIL || (await seller()
 
 export async function renderMail(m: Mail): Promise<string> {
   const b = m.brand;
-  const s = b ? { name: b.name, email: b.email || "", phone: b.phone || "", address: b.address || "", gstin: "" } : await seller();
+  const s = b ? { name: b.name, email: notKmr(b.email), phone: b.phone || "", address: b.address || "", gstin: "" } : await seller();
   const logo = b?.logo && /^https:\/\//i.test(b.logo) ? `<img src="${esc(b.logo)}" alt="${esc(b.name)}" style="display:block;max-height:46px;max-width:180px;margin-bottom:10px;background:#fff;padding:4px;border-radius:3px">` : "";
   const plant = b?.plant ? `<div style="font-size:13px;font-weight:400;color:#c6a15b;margin-top:4px;font-family:Segoe UI,Arial,sans-serif">${esc(b.plant)}</div>` : "";
   const rows = m.rows?.length ? `<table role="presentation" style="width:100%;border-collapse:collapse;margin:18px 0;font-size:14px">${m.rows.map(([k, v]) =>
@@ -79,7 +81,7 @@ export async function sendMail(m: Mail): Promise<"sent" | "skipped" | "failed"> 
     if (!key || !from) { await log(m, "skipped", "RESEND_API_KEY / EMAIL_FROM not set"); return "skipped"; }
     const r = await fetch(process.env.RESEND_API_URL || "https://api.resend.com/emails", {
       method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: (await customerFrom(m)) || (m.brand ? fromFor(from, m.brand.name) : from), to: [m.to], subject: m.subject, html: await renderMail(m), reply_to: m.replyTo || m.brand?.email || (await seller()).email }),
+      body: JSON.stringify({ from: (await customerFrom(m)) || (m.brand ? fromFor(from, m.brand.name) : from), to: [m.to], subject: m.subject, html: await renderMail(m), ...(m.brand ? (notKmr(m.replyTo || m.brand.email) ? { reply_to: notKmr(m.replyTo || m.brand.email) } : {}) : { reply_to: m.replyTo || (await seller()).email }) }),
       signal: AbortSignal.timeout(8000),
     });
     if (!r.ok) { const t = await r.text().catch(() => ""); await log(m, "failed", `${r.status} ${t}`); return "failed"; }

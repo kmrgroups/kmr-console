@@ -480,3 +480,8 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 - Console › customer › **Mail sending address**: type the company's domain (e.g. `nerigroup.in`) and the address before @ (default `dont-reply`). The Console adds the domain at the mail provider (Resend) and shows the DNS records to add at the company's domain provider; **Check now** verifies it. Once verified, every mail sent for that customer (and its plants) goes out as `dont-reply@<domain>` with the company's name. Until then the standard `EMAIL_FROM` address is used with the company's name.
 - `RESEND_API_KEY` must be a **full-access** key (a sending-only key cannot add domains).
 - New mail code passes `customerId` (or `customerSlug`) to `sendMail` to get this behaviour.
+
+## Calibration Hub: fast loading for big plants (run `supabase/migrations/0104_calibration_load_fast.sql` once)
+
+- Fixes "canceling statement due to statement timeout" on plants with thousands of gauges. The screen loads the gauges with their total cost and a count summary plus the last 14 months of records; a gauge's full history is read when its history card opens, and the whole register when exported.
+- Mails sent for a customer never show an `@kmr-groups.com` address (footer or reply-to).
