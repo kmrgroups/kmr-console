@@ -28,14 +28,15 @@
     const mats = (p.materials || []).map((m) => {
       const mine = lines.filter((l) => l.material_code === m.code && l.src !== "none");
       const need = mine.reduce((a, l) => a + l.qty, 0);
-      const wk = [1, 2, 3, 4, 5].map((w) => { const x = (m.weeks || []).find((y) => y.w === w); return { w, p: x ? n(x.p) : 0, r: x ? n(x.r) : 0 }; });
+      const rateN = m.rate === null || m.rate === undefined ? 0 : n(m.rate);
+      const wk = [1, 2, 3, 4, 5].map((w) => { const x = (m.weeks || []).find((y) => y.w === w); const r = x ? n(x.r) : 0, pp = x ? n(x.p) : 0, c = x && x.c !== null && x.c !== undefined ? n(x.c) : null; return { w, p: pp, r, c, pc: pp * rateN, ac: c !== null ? c : r * rateN }; });
       const received = wk.reduce((a, x) => a + x.r, 0);
       const rate = m.rate === null || m.rate === undefined ? null : n(m.rate), gst = n(m.gst);
       const balance = need - n(m.on_hand), toBuy = Math.max(0, balance);
       const wsNeed = mine.reduce((s, l) => s + l.wsReq, 0), wsBuy = Math.max(0, wsNeed - n(m.on_hand)), wp = wk.reduce((s, x) => s + x.p, 0);
       const planned = toBuy;
-      const net = planned * n(rate) / LAKH, aNet = received * n(rate) / LAKH;
-      return Object.assign({}, m, { wsNeed, wsBuy, wp, parts: mine, need, balance, toBuy, wk, planned, received, gap: toBuy - planned, net, gross: net * (1 + gst / 100), aNet, aGross: aNet * (1 + gst / 100), noRate: rate === null && (planned > 0 || toBuy > 0) });
+      const net = planned * n(rate) / LAKH, aNet = wk.reduce((s, x) => s + x.ac, 0) / LAKH, est = wk.some((x) => x.c === null && x.r > 0);
+      return Object.assign({}, m, { est, wsNeed, wsBuy, wp, parts: mine, need, balance, toBuy, wk, planned, received, gap: toBuy - planned, net, gross: net * (1 + gst / 100), aNet, aGross: aNet * (1 + gst / 100), noRate: rate === null && (planned > 0 || toBuy > 0) });
     });
     const t = mats.reduce((a, m) => ({ net: a.net + m.net, gross: a.gross + m.gross, aNet: a.aNet + m.aNet, aGross: a.aGross + m.aGross, short: a.short + (m.toBuy > 0 && m.gap > 0.5 ? 1 : 0), buy: a.buy + (m.toBuy > 0 ? 1 : 0), norate: a.norate + (m.noRate ? 1 : 0) }), { net: 0, gross: 0, aNet: 0, aGross: 0, short: 0, buy: 0, norate: 0 });
     return Object.assign({ id: p.id, name: p.name, code: p.code, lines, mats, parts: new Set(lines.filter((l) => l.src !== "none").map((l) => l.part_code)).size, noSales: lines.filter((l) => l.src === "typed").length }, t);
