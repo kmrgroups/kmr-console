@@ -613,3 +613,74 @@ export async function loadErpMasters(_: ActionState, form: FormData): Promise<Ac
     return { ok: "Loaded into Operations Master: " + lines.join(", ") + "." };
   } catch (e) { return fail(e); }
 }
+
+
+// ---- Operations Master: find and merge duplicate records of one plant -------------------------------------------
+type OpsRow = { id: string; kind: string; code: string; name: string; data: Record<string, unknown> | null; active: boolean; updated_by: string | null };
+const OPS_KINDS = ["customers", "parts", "suppliers", "machines", "raw_materials", "cycle_times", "rate_contracts"] as const;
+const keyCode = (v: string) => v.toUpperCase().replace(/[^A-Z0-9]/g, "");
+const filled = (r: OpsRow) => Object.values(r.data ?? {}).filter((x) => x !== "" && x != null).length + (r.name ? 1 : 0);
+
+async function opsDuplicateGroups(supabase: Awaited<ReturnType<typeof createClient>>, id: string) {
+  const out: { kind: string; rows: OpsRow[] }[] = [];
+  for (const kind of OPS_KINDS) {
+    const rows: OpsRow[] = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase.from("ops_records").select("id,kind,code,name,data,active,updated_by").eq("customer_id", id).eq("kind", kind).order("code").range(from, from + 999);
+      if (error) throw new Error(error.message);
+      rows.push(...((data ?? []) as OpsRow[]));
+      if (!data || data.length < 1000) break;
+    }
+    // union-find: same code ignoring case, spaces and punctuation. Different codes with the same company name are NOT merged
+    // (e.g. two Bosch plants are different ship-to / bill-to parties).
+    const par = rows.map((_, i) => i); const f = (i: number): number => (par[i] === i ? i : (par[i] = f(par[i])));
+    const seen = new Map<string, number>();
+    const link = (k: string, i: number) => { if (!k) return; const j = seen.get(k); if (j === undefined) seen.set(k, i); else par[f(i)] = f(j); };
+    rows.forEach((r, i) => link("C:" + keyCode(r.code), i));
+    const groups = new Map<number, OpsRow[]>();
+    rows.forEach((r, i) => { const g = f(i); groups.set(g, [...(groups.get(g) ?? []), r]); });
+    for (const g of groups.values()) if (g.length > 1) out.push({ kind, rows: g });
+  }
+  return out;
+}
+
+export async function checkOpsDuplicates(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const supabase = await createClient();
+    const groups = await opsDuplicateGroups(supabase, String(form.get("id") ?? ""));
+    if (!groups.length) return { ok: "No duplicates found. Every record appears once." };
+    const per = new Map<string, number>(); groups.forEach((g) => per.set(g.kind, (per.get(g.kind) ?? 0) + g.rows.length - 1));
+    const eg = groups.slice(0, 6).map((g) => g.rows.map((r) => r.code).join(" = ")).join(" | ");
+    return { ok: `${[...per].map(([k, n]) => `${k.replace("_", " ")}: ${n} duplicate(s)`).join(", ")}. Examples: ${eg}. Press "Merge duplicates now" to make each one a single record.` };
+  } catch (e) { return fail(e); }
+}
+
+export async function mergeOpsDuplicates(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const id = String(form.get("id") ?? "");
+    const supabase = await createClient();
+    const groups = await opsDuplicateGroups(supabase, id);
+    let merged = 0, removed = 0;
+    for (const g of groups) {
+      // keep the record that already has the most details (the earlier, hand-entered one wins a tie); fill its gaps from the others
+      const sorted = [...g.rows].sort((a, b) => filled(b) - filled(a) || Number(a.updated_by === "erp-import") - Number(b.updated_by === "erp-import"));
+      const keep = sorted[0], others = sorted.slice(1);
+      const data: Record<string, unknown> = { ...(keep.data ?? {}) };
+      for (const o of others) for (const [k, v] of Object.entries(o.data ?? {})) if ((data[k] === undefined || data[k] === "" || data[k] == null) && v !== "" && v != null) data[k] = v;
+      data.merged_from = [...((keep.data?.merged_from as unknown[]) ?? []), ...others.map((o) => ({ code: o.code, name: o.name, data: o.data }))];
+      const { error } = await supabase.from("ops_records").update({ name: keep.name || others.find((o) => o.name)?.name || "", data, active: g.rows.some((r) => r.active), updated_by: "merge" }).eq("id", keep.id);
+      if (error) return { error: error.message };
+      const { error: e2 } = await supabase.from("ops_records").delete().in("id", others.map((o) => o.id));
+      if (e2) return { error: e2.message };
+      if (g.kind === "parts") for (const o of others) for (const [kind, field] of [["cycle_times", "part_no"], ["rate_contracts", "item"]] as const) {
+        const { data: refs } = await supabase.from("ops_records").select("id,data").eq("customer_id", id).eq("kind", kind).eq(`data->>${field}`, o.code);
+        for (const r of (refs ?? []) as { id: string; data: Record<string, unknown> }[]) await supabase.from("ops_records").update({ data: { ...r.data, [field]: keep.code } }).eq("id", r.id);
+      }
+      merged++; removed += others.length;
+    }
+    revalidatePath(`/customers/${id}`);
+    return { ok: merged ? `Done: ${removed} duplicate record(s) merged into ${merged} single record(s). The removed entries are kept inside the remaining record (merged_from), so nothing is lost.` : "No duplicates found." };
+  } catch (e) { return fail(e); }
+}

@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, loadErpMasters } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, loadErpMasters, checkOpsDuplicates, mergeOpsDuplicates } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -196,6 +196,12 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         <h2>Load Unit-2 ERP data into Operations Master</h2>
         <p className="muted" style={{ marginTop: 0 }}>Copies this plant's old ERP data (customers, parts, machines, raw material, suppliers, cycle times, rate contracts) into its Operations Master. Nothing is deleted; you can press it again safely. It takes about a minute.</p>
         <ActionForm action={loadErpMasters} submitLabel="Load ERP data now" confirm={`Load the Unit-2 ERP data into "${c.name}"? Use this only on the Unit-2 plant. Nothing is deleted.`} hidden={{ id: c.id }} className="row" />
+      </div>}
+      {isPlant && manager && <div className="card">
+        <h2>Merge duplicate records in Operations Master</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Finds records that are the same thing entered twice (the same code written differently, for example "R.S. TECH" and "RS TECH") and makes each one a single record, keeping all the details. Records with different codes are never merged, even if the company name is the same (for example two Bosch plants). Press "Check" first to see what would be merged.</p>
+        <ActionForm action={checkOpsDuplicates} submitLabel="Check duplicates" variant="secondary" hidden={{ id: c.id }} className="row" />
+        <ActionForm action={mergeOpsDuplicates} submitLabel="Merge duplicates now" confirm={`Merge the duplicate records of "${c.name}" into single records?`} hidden={{ id: c.id }} className="row" />
       </div>}
       {isPlant && manager && <div className="card">
         <h2>Plant in-charge</h2>
