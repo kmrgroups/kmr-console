@@ -113,3 +113,7 @@ begin
   return rid;
 end $$;
 grant execute on function public.kmr_rmp_stock_save(text, jsonb) to authenticated;
+
+-- Schedules that came from the Excel sheet are not part of the Sales Flow plan: remove them so only Sales Flow parts show.
+-- (Stock, safety, RRS and WIP figures stay.) Parts added by hand on the screen are not touched.
+update console.rmp_partstock set sched_manual = null where updated_by = 'rm-sheet-import';

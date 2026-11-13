@@ -17,10 +17,11 @@
 
   function plant(p) {
     const lines = (p.lines || []).map((l, idx) => {
-      const hasSales = l.sales !== null && l.sales !== undefined;
-      const sched = hasSales ? n(l.sales) : n(l.manual);
+      const sq = l.sales === null || l.sales === undefined ? 0 : n(l.sales), mq = l.manual === null || l.manual === undefined ? 0 : n(l.manual);
+      const hasSales = sq > 0;
+      const sched = hasSales ? sq : mq;
       const bal = sched + n(l.safety) + n(l.rrs) - n(l.despatched) - n(l.wip) - n(l.wip2);
-      return Object.assign({}, l, { idx, src: hasSales ? "sales" : (l.manual !== null && l.manual !== undefined ? "typed" : "none"), sched, bal, qty: bal * n(l.factor) });
+      return Object.assign({}, l, { idx, src: hasSales ? "sales" : (mq > 0 ? "typed" : "none"), sched, bal, qty: bal * n(l.factor) });
     });
     const mats = (p.materials || []).map((m) => {
       const mine = lines.filter((l) => l.material_code === m.code && l.src !== "none");

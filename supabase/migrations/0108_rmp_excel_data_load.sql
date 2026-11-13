@@ -28,7 +28,7 @@ begin
   if with_month then
     for x in select * from jsonb_array_elements(d -> 'partstock') loop
       insert into console.rmp_partstock (customer_id, month, part_code, safety_qty, rrs_qty, wip_qty, wip2_qty, sched_manual, updated_by)
-      values (pid, mon, x ->> 'part', coalesce((x ->> 'safety')::numeric, 0), coalesce((x ->> 'rrs')::numeric, 0), coalesce((x ->> 'wip')::numeric, 0), coalesce((x ->> 'wip2')::numeric, 0), nullif(x ->> 'manual', '')::numeric, 'rm-sheet-import')
+      values (pid, mon, x ->> 'part', coalesce((x ->> 'safety')::numeric, 0), coalesce((x ->> 'rrs')::numeric, 0), coalesce((x ->> 'wip')::numeric, 0), coalesce((x ->> 'wip2')::numeric, 0), null, 'rm-sheet-import')
       on conflict (customer_id, month, part_code) do update set safety_qty = excluded.safety_qty, rrs_qty = excluded.rrs_qty, wip_qty = excluded.wip_qty, wip2_qty = excluded.wip2_qty, sched_manual = excluded.sched_manual, updated_at = now();
     end loop;
     for x in select * from jsonb_array_elements(d -> 'weeks') loop
