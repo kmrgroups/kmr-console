@@ -489,3 +489,6 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 ## Plant in-charge in mails (run `supabase/migrations/0105_plant_incharge_mail.sql` once, after 0101)
 
 - Console › customer/plant › **Plant in-charge**: name, e-mail and phone of that plant's person. They appear in the footer of the plant's notification mails and are the reply address. A plant no longer shows the main company's contact (which was copied when the plant was created); a plant with no in-charge shows none.
+
+- Mail domain without a full-access key: if `RESEND_API_KEY` can only send, add the domain at resend.com/domains yourself, save it in Console › Mail sending address, and press "Already verified…" once Resend shows Verified. Or set `RESEND_ADMIN_KEY` (full access, used only for domain management) and the Console does it all. If a customer's domain is not verified at the provider, the mail is automatically re-sent from the standard address, so nothing is lost.
+- The "Plant in-charge" card exists on plant pages only; the mail footer uses the plant's own in-charge.

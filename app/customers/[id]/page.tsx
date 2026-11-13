@@ -191,9 +191,9 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
 
 
-      {manager && <div className="card">
-        <h2>{isPlant ? "Plant in-charge" : "In-charge for mails"}</h2>
-        <p className="muted" style={{ marginTop: 0 }}>Shown in the footer of this {isPlant ? "plant's" : "company's"} notification mails and used as the reply address. {isPlant ? "Each plant has its own person; nothing is taken from the main company." : ""}</p>
+      {isPlant && manager && <div className="card">
+        <h2>Plant in-charge</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Shown in the footer of this plant's notification mails and used as the reply address. Each plant has its own person; nothing is taken from the main company.</p>
         {(() => { const m = c as { incharge_name?: string | null; incharge_email?: string | null; incharge_phone?: string | null };
           return <ActionForm action={savePlantIncharge} submitLabel="Save" hidden={{ id: c.id }} className="row">
             <input name="name" defaultValue={m.incharge_name ?? ""} placeholder="Name" aria-label="In-charge name" style={{ width: 200 }} />
@@ -215,10 +215,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
               <input name="domain" defaultValue={m.mail_domain || ""} placeholder="nerigroup.in" aria-label="Company domain" required style={{ width: 220 }} />
             </ActionForm>
             {m.mail_domain && !ok && <>
+              {!(m.mail_dns ?? []).length && <p className="muted" style={{ margin: "10px 0 0" }}>The DNS records are not shown here because the server's mail key can only send. Open <b>resend.com/domains</b>, add <b>{m.mail_domain}</b> there, give the records it shows to whoever manages the domain, and when it shows Verified press the grey button below.</p>}
               <p style={{ margin: "14px 0 6px" }}><b>Add these records at the company's domain provider (DNS), then press “Check now”.</b></p>
               <div className="tablewrap"><table><thead><tr><th>Type</th><th>Name</th><th>Value</th><th>Priority</th><th>Status</th></tr></thead>
                 <tbody>{(m.mail_dns ?? []).map((r, i) => <tr key={i}><td>{r.type}</td><td className="mono" style={{ wordBreak: "break-all" }}>{r.name}</td><td className="mono" style={{ wordBreak: "break-all" }}>{r.value}</td><td>{r.priority ?? ""}</td><td>{r.status ?? ""}</td></tr>)}</tbody></table></div>
-              <div className="row" style={{ gap: 8, marginTop: 10 }}><ActionForm action={checkMailDomain} submitLabel="Check now" hidden={{ id: c.id }} /></div>
+              <div className="row" style={{ gap: 8, marginTop: 10 }}><ActionForm action={checkMailDomain} submitLabel="Check now" hidden={{ id: c.id }} /><ActionForm action={checkMailDomain} submitLabel="Already verified in the mail provider — start using it" variant="secondary" hidden={{ id: c.id, manual: "1" }} confirm="Only press this if the domain shows Verified at resend.com/domains. If it is not verified, mails fall back to the standard address." /></div>
             </>}
             {m.mail_domain && <div style={{ marginTop: 10 }}><ActionForm action={removeMailDomain} submitLabel="Remove domain" variant="secondary" hidden={{ id: c.id }} confirm="Mails will go out from the standard address again. Remove the domain?" /></div>}
           </>;

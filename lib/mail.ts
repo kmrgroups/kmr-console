@@ -79,11 +79,16 @@ export async function sendMail(m: Mail): Promise<"sent" | "skipped" | "failed"> 
     if (!m.to || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m.to)) return "skipped";
     const key = process.env.RESEND_API_KEY, from = process.env.EMAIL_FROM;
     if (!key || !from) { await log(m, "skipped", "RESEND_API_KEY / EMAIL_FROM not set"); return "skipped"; }
-    const r = await fetch(process.env.RESEND_API_URL || "https://api.resend.com/emails", {
+    const url = process.env.RESEND_API_URL || "https://api.resend.com/emails";
+    const own = await customerFrom(m);
+    const send = (fromAddr: string) => fetch(url, {
       method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: (await customerFrom(m)) || (m.brand ? fromFor(from, m.brand.name) : from), to: [m.to], subject: m.subject, html: await renderMail(m), ...(m.brand ? (notKmr(m.replyTo || m.brand.email) ? { reply_to: notKmr(m.replyTo || m.brand.email) } : {}) : { reply_to: m.replyTo || (await seller()).email }) }),
+      body: JSON.stringify({ from: fromAddr, to: [m.to], subject: m.subject, html: html, ...(m.brand ? (notKmr(m.replyTo || m.brand.email) ? { reply_to: notKmr(m.replyTo || m.brand.email) } : {}) : { reply_to: m.replyTo || replyDefault }) }),
       signal: AbortSignal.timeout(8000),
     });
+    const html = await renderMail(m), replyDefault = m.brand ? "" : (await seller()).email, std = m.brand ? fromFor(from, m.brand.name) : from;
+    let r = await send(own || std);
+    if (!r.ok && own) r = await send(std);   // the customer's domain is not (or no longer) verified at the mail provider: use the standard address so the mail is never lost
     if (!r.ok) { const t = await r.text().catch(() => ""); await log(m, "failed", `${r.status} ${t}`); return "failed"; }
     await log(m, "sent"); return "sent";
   } catch (e) {

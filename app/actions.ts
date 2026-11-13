@@ -517,12 +517,17 @@ export async function saveMailDomain(_: ActionState, form: FormData): Promise<Ac
     if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) return { error: "Type the company's domain, e.g. nerigroup.in" };
     if (!/^[a-z0-9._-]{1,40}$/.test(local)) return { error: "The address before @ may use letters, numbers, dot, dash and underscore only." };
     const { addDomain } = await import("@/lib/mail-domain");
-    const d = await addDomain(domain);
+    let d: { id: string; status: string; records: unknown[] } | null = null, note = "";
+    try { d = await addDomain(domain); } catch (e) {
+      // the server's mail key can only send (cannot manage domains): keep the domain, the domain is then added at the mail provider's own site
+      if (/restricted|only send|permission|forbidden|unauthori/i.test((e as Error).message)) note = "manual"; else throw e;
+    }
     const supabase = await createClient();
-    const { error } = await supabase.from("customers").update({ mail_domain: domain, mail_local: local, mail_domain_id: d.id, mail_domain_status: d.status, mail_dns: d.records }).eq("id", id);
+    const { error } = await supabase.from("customers").update({ mail_domain: domain, mail_local: local, mail_domain_id: d?.id ?? null, mail_domain_status: d?.status ?? "pending", mail_dns: d?.records ?? [] }).eq("id", id);
     if (error) return { error: error.message };
     revalidatePath(`/customers/${id}`);
-    return { ok: d.status === "verified" ? `Mails now go out from ${local}@${domain}.` : "Saved. Add the DNS records shown below at the company's domain provider, then press “Check now”. Until it is verified, mails go out from the standard address." };
+    if (note === "manual") return { ok: "Saved. The server's mail key can only send, so add this domain at resend.com/domains yourself, give its DNS records to whoever manages the domain, and when it shows Verified come back and press “Already verified…”. (Or put a full-access key in RESEND_ADMIN_KEY and this page does it all.)" };
+    return { ok: d!.status === "verified" ? `Mails now go out from ${local}@${domain}.` : "Saved. Add the DNS records shown below at the company's domain provider, then press “Check now”. Until it is verified, mails go out from the standard address." };
   } catch (e) { return fail(e); }
 }
 export async function checkMailDomain(_: ActionState, form: FormData): Promise<ActionState> {
@@ -531,7 +536,13 @@ export async function checkMailDomain(_: ActionState, form: FormData): Promise<A
     const id = String(form.get("id") ?? "");
     const supabase = await createClient();
     const { data: c } = await supabase.from("customers").select("mail_domain,mail_local,mail_domain_id").eq("id", id).maybeSingle();
-    if (!c?.mail_domain_id) return { error: "Add the domain first." };
+    if (!c?.mail_domain) return { error: "Add the domain first." };
+    if (String(form.get("manual") ?? "") === "1") {
+      await supabase.from("customers").update({ mail_domain_status: "verified" }).eq("id", id);
+      revalidatePath(`/customers/${id}`);
+      return { ok: `Mails now go out from ${c.mail_local}@${c.mail_domain}. If the domain is not really verified at the mail provider, mails safely fall back to the standard address.` };
+    }
+    if (!c.mail_domain_id) return { error: "The server's mail key cannot check domains. Verify the domain at resend.com/domains, then press “Already verified…”." };
     const { verifyDomain } = await import("@/lib/mail-domain");
     const d = await verifyDomain(c.mail_domain_id);
     await supabase.from("customers").update({ mail_domain_status: d.status, mail_dns: d.records }).eq("id", id);

@@ -5,7 +5,7 @@ export type DnsRecord = { record?: string; name: string; type: string; value: st
 export type DomainInfo = { id: string; status: string; records: DnsRecord[] };
 
 async function call(path: string, method: string, body?: unknown): Promise<Record<string, unknown>> {
-  const key = process.env.RESEND_API_KEY;
+  const key = process.env.RESEND_ADMIN_KEY || process.env.RESEND_API_KEY;
   if (!key) throw new Error("Mail is not set up on the server yet (RESEND_API_KEY).");
   const r = await fetch(API() + path, { method, headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(15000) });
   const j = (await r.json().catch(() => ({}))) as Record<string, unknown>;
