@@ -492,3 +492,7 @@ Product `calib`. Copy `website-files/it/calibration.html` to `/it/calibration.ht
 
 - Mail domain without a full-access key: if `RESEND_API_KEY` can only send, add the domain at resend.com/domains yourself, save it in Console › Mail sending address, and press "Already verified…" once Resend shows Verified. Or set `RESEND_ADMIN_KEY` (full access, used only for domain management) and the Console does it all. If a customer's domain is not verified at the provider, the mail is automatically re-sent from the standard address, so nothing is lost.
 - The "Plant in-charge" card exists on plant pages only; the mail footer uses the plant's own in-charge.
+
+## Calibration Hub: certificate scans / photos (run `supabase/migrations/0106_calibration_certificates.sql` once)
+
+- On the Calibrate (and Edit calibration) screen: **Add files** (PDF or images, several at once) and **Take photo** (phone camera). Large photos are reduced on the phone before upload. Files are private (bucket `kmr-cal`), shown on the gauge's history card with **View** and, for administrators and editors, **Delete**. Deleting a calibration record also deletes its files.
