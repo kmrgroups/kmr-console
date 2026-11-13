@@ -88,7 +88,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         </div>
         <small className="muted">{isPlant ? "You are managing one plant: its apps, licences, people and data are separate from the other plants." : "Select a plant to switch on its apps and manage its licences. This page holds the company details and the single customer link."}</small>
       </div>}
-      {isPlant && parentRow && <div className="alert info">This is a <b>plant</b> of <a href={p(`/customers/${parentRow.id}`)}><b>{parentRow.name}</b></a>. People sign in with the company's single link and choose their plant: <span className="mono">{env.platformUrl}/it/app/{parentRow.slug}</span></div>}
+      {isPlant && parentRow && <div className="alert info">This is a <b>plant</b> of <a href={p(`/customers/${parentRow.id}`)}><b>{parentRow.name}</b></a>. People sign in with the company's single link and choose their plant: <a className="mono" href={`${env.platformUrl}/it/app/${parentRow.slug}`} target="_blank" rel="noopener">{env.platformUrl}/it/app/{parentRow.slug}</a><br />Open this plant directly: <a className="mono" href={`${env.platformUrl}/it/app/${c.slug}`} target="_blank" rel="noopener">{env.platformUrl}/it/app/{c.slug}</a></div>}
 
       {!isPlant && <div className="card">
         <h2>Plants</h2>
