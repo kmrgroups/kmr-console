@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--tx:#0f172a;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0891b2;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--tx:#e8ecf8;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+main{padding:14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+input,select,textarea,button{font:inherit;color:inherit}.chip.x{background:#ffffff22;border-radius:12px;padding:2px 10px;font-size:12px}
+.msg{padding:10px 12px;border-radius:8px;background:#fee2e2;color:#7f1d1d;margin-bottom:10px}.msg.ok{background:#dcfce7;color:#14532d}
+.tabs{display:flex;gap:4px;padding:8px 14px 0;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}.tabs a.tab{padding:10px 14px;border-radius:10px 10px 0 0;color:var(--mut);text-decoration:none;white-space:nowrap;font-weight:600;font-size:14px}.tabs a.tab:hover{background:#eef3fb;color:var(--ink)}.tabs a.tab.on{background:var(--bg);color:var(--b1);border-bottom:3px solid var(--b1)}</style>
+<title>Presentation · KMR Apps</title>
+<meta name="theme-color" content="#1e3a8a">
+</head><body>
+<header><span class="clogo" id="clogo" hidden></span><div><h1 id="ttl">Presentation</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<nav class="tabs" id="ptabs"></nav>
+<main><div class="panel"><div id="msg"></div><section id="pres"></section></div></main>
+<script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-present.js"></script><script src="/it/apps/kmr-present-apps.js"></script>
+<script>
+(async()=>{try{
+  const key=(new URLSearchParams(location.search).get("app")||"").toLowerCase(), P=(window.KMRPA||{})[key];
+  if(!P){QP.say("This app has no presentation. Open it from the app's Presentation tab.");return}
+  if(key==="hrms"){location.replace("/it/hrm.html"+location.search+"#go=pres");return}
+  (function(){ // the app's own tabs stay visible; clicking one goes back to that screen
+    const PAGE={sales:"sales",calibration:"calibration",apqp:"apqp",ppap:"ppap",rmp:"rmp",mmd:"mmd",mnt:"mnt",msa:"msa",crm:"crm",d8:"d8",off:"office",aud:"aud",spc:"spc",tsk:"tasks",mom:"mom",cad:"cad",dwm:"dwm"};
+    const q=new URLSearchParams(location.search),slug=q.get("co")||"",nav=document.getElementById("ptabs");let saved=null;
+    try{saved=JSON.parse(sessionStorage.getItem("kmr_tabs_"+key)||"null")}catch(e){}
+    const base=(saved&&saved.url)||("/it/"+(PAGE[key]||key)+".html?kmr=1&co="+encodeURIComponent(slug));
+    const tabs=(saved&&saved.tabs&&saved.tabs.length)?saved.tabs:[{t:"",label:"← Back to "+P.name}];
+    nav.innerHTML=tabs.map(x=>'<a class="tab" href="'+base.split("#")[0]+(x.t?'#go='+encodeURIComponent(x.t):'')+'">'+String(x.label).replace(/[<>&]/g,"")+'</a>').join("")+'<a class="tab on" href="#">Presentation</a>';
+  })();
+  document.getElementById("ttl").textContent="Presentation · "+P.name; document.title="Presentation · "+P.name+" · KMR Apps";
+  await QP.init(P.code,P.ctxFn); if(!QP.ctx)return;
+  for(const u of (P.deps||[])) await new Promise((res,rej)=>{const s=document.createElement('script');s.src=u;s.onload=res;s.onerror=()=>rej(new Error('Could not load '+u));document.head.append(s)});
+  const ctl=P.controls?P.controls():[];
+  KMRPresent.mount(document.getElementById("pres"),{app:key,code:P.code,stdKey:P.std,appName:P.name,company:QP.ctx.company,slug:QP.slug,call:QP.call,canEdit:QP.canEdit,controls:ctl,load:v=>P.load(QP.call,v)});
+}catch(e){QP.say(e.message||String(e))}})();
+</script><script src="/it/apps/back.js"></script></body></html>
