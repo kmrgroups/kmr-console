@@ -21,7 +21,7 @@
       const hasSales = sq > 0;
       const sched = hasSales ? sq : mq;
       const bal = sched + n(l.safety) + n(l.rrs) - n(l.despatched) - n(l.wip) - n(l.wip2);
-      const tot = n(l.fg) + n(l.fi) + n(l.wip) + n(l.inc) + n(l.sup), wsBal = Math.max(0, sched - tot);
+      const tot = n(l.fg) + n(l.fi) + n(l.wip) + n(l.inc) + n(l.sup), wsBal = Math.max(0, sched + n(l.safety) - tot);
       return Object.assign({}, l, { tot, wsBal, wsReq: wsBal * n(l.factor), idx, src: hasSales ? "sales" : (mq > 0 ? "typed" : "none"), sched, bal, qty: bal * n(l.factor) });
     });
     const mats = (p.materials || []).map((m) => {
