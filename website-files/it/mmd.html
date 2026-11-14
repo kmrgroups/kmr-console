@@ -1,0 +1,349 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
+<title>Material Movement · KMR Apps</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0891b2;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;color:#130a3a;font-weight:800;font-size:14px;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{text-decoration:none;display:inline-block;border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;flex:none}.tab.on{background:var(--card);color:var(--b1);box-shadow:0 -2px 0 var(--b1) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%;min-width:0}
+.btn{border:0;border-radius:9px;padding:9px 16px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer;text-decoration:none;display:inline-block}.btn.o{background:none;color:var(--b1);border:1px solid var(--b1)}.btn.s{padding:5px 10px;font-size:12px}.btn.r{background:var(--r)}.btn.g{background:var(--g)}.btn:disabled{opacity:.5}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row>.grow{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b1))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;min-width:640px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}
+.mut{color:var(--mut)}.hide{display:none}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
+a{color:var(--b1)}.num,.n{text-align:right;font-variant-numeric:tabular-nums}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-start;justify-content:center;z-index:9;padding:10px;overflow:auto}.modal.on{display:flex}.in{background:var(--card);border-radius:14px;width:min(860px,100%);padding:16px;margin:auto}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.frm label,.lbl{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--mut);margin:8px 0}
+.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
+.scan{display:flex;gap:8px;margin:6px 0 14px}.scan input{font-size:20px;padding:14px;border:2px solid var(--b1);letter-spacing:.5px}.scan .btn{white-space:nowrap}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}.card h3{margin:0 0 8px;font-size:15px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 14px}.kv div span{display:block;font-size:11px;color:var(--mut);text-transform:uppercase}.kv div b{font-size:14px}
+.ln{display:grid;grid-template-columns:1.3fr .5fr 1fr 1fr auto;gap:6px;margin-bottom:6px}@media(max-width:640px){.ln{grid-template-columns:1fr 1fr}}
+.bar{display:flex;gap:2px;min-width:110px}.bar i{flex:1;height:8px;border-radius:3px;background:var(--line)}.bar i.d{background:var(--g)}.bar i.c{background:var(--b1)}
+.late{color:var(--r);font-weight:700}.pg{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}.pg .card table{min-width:0}
+/* printed documents */
+.sheet{background:#fff;color:#000;padding:8px;border-radius:8px;margin-bottom:12px;overflow-x:auto}
+.tag{width:100mm;border:2px solid var(--c);margin:0 0 10px;font-size:11px;color:#000;background:#fff;break-inside:avoid;page-break-after:always}.th{background:var(--c);color:#fff;padding:5px 8px;display:flex;justify-content:space-between;gap:8px}.th b{font-size:13px}
+.tb{display:flex;gap:8px;padding:6px}.qr{width:28mm;flex:none;text-align:center}.qr svg{width:28mm;height:28mm;display:block}.qr small{font:700 10px monospace;display:block;margin-top:2px}.qr.s,.qr.s svg{width:22mm;height:22mm}
+.fs{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;align-content:start}.f{min-width:0}.f.w{grid-column:span 2}.f span{display:block;font-size:8px;text-transform:uppercase;color:#555}.f b{font-size:11px;word-break:break-word}.f big{font-size:15px}
+.tf{border-top:1px solid #ccc;padding:3px 8px;font-size:9px;color:#555;display:flex;justify-content:space-between}
+.dt,.doc{background:#fff;color:#000;padding:10px;font-size:11px;border:1px solid #ccc;margin-bottom:12px;break-inside:avoid}.dt table,.doc table{min-width:0;margin:8px 0}.dt th,.dt td,.doc th,.doc td{border:1px solid #999;padding:3px 5px;color:#000}.dt th,.doc th{background:#eee}
+.hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.hd h2,.hd h3{margin:0}.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:4px 12px;margin:8px 0}.meta .f{border-bottom:1px dotted #aaa}.meta .f.w{grid-column:span 2}.dt .mut,.doc .mut{color:#555}
+tr.cur td{background:#fef9c3}.sg{display:flex;justify-content:space-between;gap:20px;margin-top:26px}.sg span{border-top:1px solid #000;padding-top:3px;flex:1;text-align:center;font-size:10px}
+@media print{@page{margin:8mm}body{background:#fff;color:#000;padding:0}body>*:not(.modal){display:none!important}.modal{position:static;display:block!important;background:none;padding:0}.in{box-shadow:none;width:auto;padding:0;background:#fff}.noprint{display:none!important}.sheet{padding:0;margin:0}.dt,.doc{border:0}}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:var(--card)}.box h3{margin:0 0 6px;font-size:15px}
+.sc{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--card)}.lt{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}.lt th,.lt td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}.lt th{background:var(--bg);position:sticky;top:0;z-index:2;white-space:nowrap}.lt td.n,.lt th.n{text-align:right}
+@media print{.sc{max-height:none;overflow:visible;border:0}.lt{min-width:0}}
+</style></head><body>
+<header><span class="clogo" id="clogo" hidden></span><div><h1>Material Movement</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="scan" href="#go=scan">Scan</a><a class="tab" data-t="issue" href="#go=issue">Issue raw material</a><a class="tab" data-t="rs" href="#go=rs">Route sheets</a><a class="tab" data-t="sup" href="#go=sup">Supplier DC / GRN</a><a class="tab" data-t="wip" href="#go=wip">WIP map &amp; alerts</a><a class="tab" data-t="dash" href="#go=dash">Dashboards</a><a class="tab" data-t="rej" href="#go=rej">Rejection &amp; rework</a><a class="tab" data-t="loss" href="#go=loss">Loss hours</a><a class="tab" data-t="trace" href="#go=trace">Traceability</a><a class="tab" data-t="erp" href="#go=erp">ERP production history</a></div>
+<main><div class="panel"><div id="msg"></div>
+<section id="std"></section><section id="scan" class="hide"></section><section id="issue" class="hide"></section><section id="rs" class="hide"></section><section id="sup" class="hide"></section><section id="wip" class="hide"></section><section id="dash" class="hide"></section><section id="rej" class="hide"></section><section id="loss" class="hide"></section><section id="trace" class="hide"></section><section id="erp" class="hide"></section></div></main>
+<div class="modal" id="m"><div class="in" id="mb"></div></div>
+<script src="/it/kmr-lock.js"></script><script>window.QP_LOCKS={map:{wip:"mmd.wip-map-throughput-alerts",dash:"mmd.dashboards-pareto",sup:"mmd.supplier-dc-grn",loss:"mmd.loss-hours-d-codes",trace:"mmd.traceability-iatf-records"},names:{"mmd.wip-map-throughput-alerts":"WIP map & throughput alerts","mmd.dashboards-pareto":"Dashboards & Pareto","mmd.supplier-dc-grn":"Supplier DC & GRN","mmd.loss-hours-d-codes":"Loss hours (D codes)","mmd.traceability-iatf-records":"Traceability & IATF records"}};</script><script src="/it/apps/qp-core.js"></script>
+<script src="/it/apps/qr.js"></script><script src="/it/apps/mmd-print.js"></script><script src="/it/apps/mmd-dash.js"></script><script>if(new URLSearchParams(location.search).has("demo")){document.write('<script src="/it/apps/mmd-demo.js"><\/script>')}</script>
+<script>
+const {$,esc,iso,today,fmt,say,call}=QP;
+const P=window.MMDPrint,N=P.N;
+const S={m:null,x:null};
+const ed=()=>QP.canEdit;
+const hasF=(k)=>!window.KMRLock||KMRLock.has(k);
+const store=(k,v)=>{try{if(v===undefined)return localStorage.getItem('mmd_'+k)||'';localStorage.setItem('mmd_'+k,v)}catch(e){return ''}};
+const open=(h)=>{$('#mb').innerHTML=h;$('#m').classList.add('on')},closeM=()=>{$('#m').classList.remove('on');stopCam()};
+$('#m').addEventListener('click',e=>{if(e.target.id==='m')closeM()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+const co=()=>$('#co').textContent;
+const hashGo=()=>{const m=location.hash.match(/go=([a-z]+)/);return m?m[1]:'std'};
+const dt=(v)=>v?new Date(v).toLocaleString('en-IN',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
+const opt=(arr,sel,f)=>arr.map(x=>`<option value="${esc(x.code)}"${x.code===sel?' selected':''}>${esc(f?f(x):x.code+' — '+(x.name||''))}</option>`).join('');
+const kindChip=(k)=>({RM:['RM','b'],OK:['OK','g'],REJ:['Rejected','r'],REW:['Rework','a']}[k]||[k,'x']);
+const hm=(s)=>{const m=/^(\d+):(\d+)/.exec(s||'');return m?(+m[1])*60+(+m[2]):null};
+function guessShift(){const n=new Date(),m=n.getHours()*60+n.getMinutes();for(const s of S.m.shifts){const f=hm(s.start||s.from),t=hm(s.end||s.to);if(f==null||t==null)continue;if(f<t?(m>=f&&m<t):(m>=f||m<t))return s.code}return (S.m.shifts[0]||{}).code||''}
+
+async function loadM(){if(!S.m)S.m=await call('kmr_mmd_load')}
+async function loadX(){S.x=await call('kmr_mmd_data',{p_days:60})}
+async function route(){
+  let go=hashGo();
+  if(window.KMRLock&&KMRLock.locked(go)){KMRLock.dialog(go);go='std';history.replaceState(null,'',location.pathname+location.search+'#go=std')}
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
+  ['std','scan','issue','rs','sup','wip','dash','rej','loss','trace','erp'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  if(go==='std'){KMRStd.draw($('#std'),'mmd');return}
+  try{await loadM();if(go!=='trace'&&go!=='issue'||!S.x)await loadX();({scan:drawScan,issue:drawIssue,rs:drawRs,sup:drawSup,wip:drawWip,dash:drawDash,rej:drawRej,loss:drawLoss,trace:drawTrace,erp:drawErp})[go]()}catch(e){say(e.message)}
+}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
+window.addEventListener('hashchange',route);
+
+/* ---------- printing: tags + data table (or any document) in a window you can print ---------- */
+function showDoc(title,html,after){
+  open(`<div class="row noprint"><b class="grow">${esc(title)}</b><button class="btn" id="prn">Print</button><button class="btn o" id="cls">Close</button></div><div class="sheet">${html}</div>`);
+  $('#prn').onclick=()=>window.print();$('#cls').onclick=()=>{closeM();if(after)after()};
+}
+const tagsHtml=(tags)=>tags.map(t=>P.tag(t,co())).join('');
+function resultDoc(title,res,extra){
+  const tags=res.tags||[];let h=(extra||'')+tagsHtml(tags);if(tags[0])h+=P.table(tags[0],co());
+  showDoc(title,h,()=>route());
+}
+
+/* ---------- reason lines (rejection / rework): reason + specification + actual + qty — all required ---------- */
+function linesBox(id,kind){return `<div class="card" style="border-left:4px solid var(--${kind==='rej'?'r':'a'})"><div class="row" style="margin:0 0 6px"><b class="grow">${kind==='rej'?'Rejected':'Sent for rework'} — reason, specification, actual</b><button class="btn s o" type="button" data-add="${id}" data-k="${kind}">+ Add reason</button></div><div id="${id}"></div></div>`}
+function addLine(id,kind){
+  const dcs=S.m.defect_codes||[],pref=kind==='rej'?'Rejection':'Rework';
+  const mine=dcs.filter(d=>d.type===pref||d.type==='Either'),rest=dcs.filter(d=>!mine.includes(d)),g=(mine.length?`<optgroup label="${pref} codes">${opt(mine,'',d=>d.code+' — '+d.name)}</optgroup>`:'')+(rest.length?`<optgroup label="Other reasons">${opt(rest,'',d=>d.code+' — '+d.name)}</optgroup>`:'');
+  const d=document.createElement('div');d.className='ln';
+  d.innerHTML=`<select data-f="code"><option value="">Reason…</option>${g}</select><input data-f="qty" type="number" min="1" step="1" placeholder="Qty" inputmode="numeric"><input data-f="spec" placeholder="Specification e.g. Ø42.5 ±0.02"><input data-f="actual" placeholder="Actual e.g. Ø42.56"><button class="btn s r" type="button">✕</button>`;
+  d.querySelector('button').onclick=()=>{d.remove();sum()};d.querySelector('[data-f=qty]').oninput=sum;$('#'+id).appendChild(d);
+}
+const readLines=(id)=>[...document.querySelectorAll('#'+id+' .ln')].map(r=>{const g=(f)=>r.querySelector('[data-f='+f+']').value.trim(),c=g('code'),dn=((S.m.defect_codes||[]).find(x=>x.code===c)||{}).name;return {code:c,reason:dn||'',qty:+g('qty')||0,spec:g('spec'),actual:g('actual')}}).filter(l=>l.qty>0||l.code||l.spec||l.actual);
+function wireLines(){document.querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>{addLine(b.dataset.add,b.dataset.k)})}
+function sum(){const el=$('#tot');if(!el)return;const ok=+($('#fOk')||{}).value||0,r=readLines('rejL').reduce((a,l)=>a+l.qty,0),w=readLines('rewL').reduce((a,l)=>a+l.qty,0),bal=+el.dataset.bal;const t=ok+r+w;el.innerHTML=`Entered <b>${N(t)}</b> of <b>${N(bal)}</b> pcs on this tag${t>bal?' <span class="late">— more than the tag holds</span>':t<bal?` · <b>${N(bal-t)}</b> pcs stay on the tag to be entered later`:''}`}
+
+/* ---------- 1. SCAN ---------- */
+function drawScan(){
+  const x=S.x,open_=x.rs.filter(r=>r.status==='open'),k=(n,l,c)=>`<div class="kpi" style="--c:${c}"><b>${n}</b><span>${l}</span></div>`;
+  const wip=x.tags.filter(t=>t.status==='open'&&['op','rework'].includes(t.loc)).reduce((a,t)=>a+t.bal,0),sup=x.dcs.filter(d=>['open','part'].includes(d.status)).reduce((a,d)=>a+d.qty-d.received_qty,0),
+    rej=x.tags.filter(t=>t.kind==='REJ'&&!t.dispo&&t.status!=='void').reduce((a,t)=>a+t.bal,0),rew=x.tags.filter(t=>t.kind==='REW'&&t.status==='open').reduce((a,t)=>a+t.bal,0),fg=x.tags.filter(t=>t.loc==='fg'&&t.status==='open').reduce((a,t)=>a+t.bal,0);
+  $('#scan').innerHTML=`<div class="kpis">${k(open_.length,'open route sheets','var(--b1)')}${k(N(wip),'pcs on the shop floor','var(--b2)')}${k(N(sup),'pcs at suppliers','var(--a)')}${k(N(rew),'pcs waiting rework','var(--a)')}${k(N(rej),'rejected, no decision yet','var(--r)')}${k(N(fg),'pcs in finished goods','var(--g)')}</div>
+  <label class="lbl">Scan a tag or DC QR (or type its number) — the matching screen opens</label>
+  <form class="scan" id="sf"><input id="sc" autocomplete="off" autocapitalize="characters" placeholder="TG-2610-00012  /  DC-2610-0003  /  RS-2610-0001" autofocus><button class="btn" type="submit">Open</button>${('BarcodeDetector' in window)?'<button class="btn o" type="button" id="cam">📷 Camera</button>':''}</form>
+  <div id="act"></div>
+  <b>Last entries</b><div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Entry</th><th>Part</th><th>Operation</th><th class="n">OK</th><th class="n">Rej</th><th class="n">Rew</th><th>By</th><th>New tags</th>${ed()?'<th></th>':''}</tr></thead><tbody>${x.entries.slice(0,15).map(e=>`<tr${e.status==='void'?' style="opacity:.5;text-decoration:line-through"':''}><td>${dt(e.entry_at)}</td><td>${{process:'Process',rework:'Rework',dc:'DC',grn:'GRN',dispatch:'Dispatch'}[e.kind]}</td><td>${esc(e.part_code)}<div class="mut">${esc(e.rs_no)}</div></td><td>${esc(e.op_name||'—')}<div class="mut">${esc(e.machine||'')}</div></td><td class="n">${N(e.ok_qty)}</td><td class="n">${N(e.rej_qty)}</td><td class="n">${N(e.rew_qty)}</td><td>${esc(e.operator||'—')}</td><td class="mut">${esc(e.out_tags||'')}</td>${ed()?`<td>${e.status==='ok'&&e.kind!=='dispatch'?`<button class="btn s o" data-void="${e.id}">Void</button>`:''}</td>`:''}</tr>`).join('')||'<tr><td colspan="10" class="mut">No entries yet. Issue raw material to start a route sheet.</td></tr>'}</tbody></table></div>`;
+  if(hasF('mmd.wip-map-throughput-alerts')&&window.MMDDash){const n=MMDDash.stuck(S.m,x);if(n)$('#scan').insertAdjacentHTML('afterbegin',`<div class="msg"><b>${n} lot${n>1?'s are':' is'} not moving.</b> <a href="#go=wip">See the WIP map &amp; alerts</a></div>`)}
+  $('#sf').onsubmit=(ev)=>{ev.preventDefault();const v=$('#sc').value;$('#sc').value='';if(v.trim())openCode(v)};
+  if($('#cam'))$('#cam').onclick=startCam;
+  document.querySelectorAll('[data-void]').forEach(b=>b.onclick=()=>voidDlg(b.dataset.void));
+  if(!window.__act)$('#sc').focus();
+}
+async function openCode(code){
+  code=String(code).trim().toUpperCase();say('');
+  try{
+    if(/^DC-/.test(code)){await dcScreen(code)}
+    else if(/^RS-/.test(code)){await rsView(code)}
+    else{const tj=await call('kmr_mmd_tag',{p_no:code});tagScreen(tj)}
+  }catch(e){say(e.message);$('#sc')&&$('#sc').focus()}
+}
+function info(tj){
+  const t=tj.tag,rs=tj.rs,c=kindChip(t.kind),pr=tj.progress||[];
+  return `<div class="card"><div class="row" style="margin:0"><b style="font-size:17px">${esc(t.tag_no)}</b><span class="chip ${c[1]}">${c[0]}</span><span class="chip ${t.status==='open'?'b':'x'}">${esc(t.status==='open'?(t.loc==='fg'?'in finished goods':t.loc==='op'?'waiting at '+((tj.op||{}).name||'process'):t.loc):t.status)}</span><span class="grow"></span><button class="btn s o" data-reprint="${esc(t.tag_no)}">Reprint tag</button></div>
+  <div class="kv" style="margin-top:8px"><div><span>Part</span><b>${esc(rs.part_code)} · ${esc(rs.part_name||'')}</b></div><div><span>Customer</span><b>${esc(rs.customer_name||'—')}</b></div><div><span>Route sheet</span><b>${esc(rs.rs_no)}</b></div><div><span>Heat code</span><b>${esc(rs.heat_code)}</b></div><div><span>Qty on tag</span><b>${N(t.bal)} of ${N(t.qty)}</b></div><div><span>Route sheet qty</span><b>${N(rs.qty)}</b></div>${t.reason?`<div><span>Reason</span><b>${esc(t.reason)}</b></div><div><span>Specification</span><b>${esc(t.spec)}</b></div><div><span>Actual</span><b>${esc(t.actual)}</b></div>`:''}</div>
+  ${pr.length?`<div style="overflow-x:auto;margin-top:8px"><table style="min-width:520px"><thead><tr><th>#</th><th>Operation</th><th class="n">Route sheet qty</th><th class="n">Cumulative OK</th><th class="n">Balance</th></tr></thead><tbody>${pr.map(o=>`<tr${o.seq===t.seq?' style="background:#fef9c3;color:#000"':''}><td>${o.seq}</td><td>${esc(o.name)}${o.type==='supplier'?' <span class="chip a">supplier</span>':''}</td><td class="n">${N(o.rs_qty)}</td><td class="n">${N(o.ok)}</td><td class="n">${N(Math.max(0,o.rs_qty-o.ok-o.rej))}</td></tr>`).join('')}</tbody></table></div>`:''}</div>`;
+}
+function tagScreen(tj){
+  window.__act=1;const t=tj.tag,rs=tj.rs,o=tj.op||{},A=$('#act');let form='';
+  const needEd=()=>ed()?'':'<p class="note">You have view access only — changing data needs the editor role.</p>';
+  if(t.status!=='open'||t.bal<=0)form=`<p class="note">This tag has no quantity left${t.dispo?` — disposition: <b>${esc(t.dispo)}</b>`:''}. Scan the tag of the next stage.</p>`;
+  else if(['RM','OK'].includes(t.kind)&&t.loc==='op'){
+    if(o.type==='supplier')form=hasF('mmd.supplier-dc-grn')?dcForm(tj):'<p class="note">“'+esc(o.name)+'” is a supplier process. Delivery challans and goods receipts are not in your plan.</p>';
+    else form=entryForm(tj);
+  }else if(t.kind==='OK'&&t.loc==='fg')form=dispatchForm(tj);
+  else if(t.kind==='REW')form=reworkForm(tj);
+  else if(t.kind==='REJ')form=disposeForm(tj);
+  A.innerHTML=info(tj)+(ed()?form:needEd());
+  A.querySelector('[data-reprint]').onclick=()=>showDoc('Tag '+t.tag_no,P.tag(tj,co())+P.table(tj,co()));
+  wireLines();wireForm(tj);A.scrollIntoView({behavior:'smooth',block:'start'});
+}
+const idv=(id)=>($('#'+id)||{}).value;
+const common=()=>`<div><label>Operator name *</label><input id="fOp" value="${esc(store('op'))}" placeholder="Operator"></div><div><label>Shift</label><select id="fSh">${opt(S.m.shifts,guessShift(),s=>s.code+' — '+(s.name||''))}</select></div><div><label>MMD engineer</label><input id="fEng" value="${esc(store('eng'))}" placeholder="your name"></div>`;
+const saveCommon=()=>{store('op',idv('fOp'));store('eng',idv('fEng'))};
+const cmn=()=>({operator:idv('fOp'),shift:idv('fSh'),engineer:idv('fEng')});
+function entryForm(tj){
+  const t=tj.tag,o=tj.op||{},last=(tj.progress||[]).length===t.seq;
+  return `<div class="card"><h3>Enter ${esc(o.name||'process')} — ${last?'last operation, OK goes to finished goods':'OK goes to the next operation'}</h3>
+  <div class="frm"><div><label>Machine *</label><select id="fMc">${opt(S.m.machines,o.machine)}</select></div>${common()}<div><label>OK quantity</label><input id="fOk" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></div></div>
+  <div style="height:10px"></div>${linesBox('rejL','rej')}${linesBox('rewL','rew')}
+  <div class="frm"><div style="grid-column:1/-1"><label>Remarks</label><input id="fNote"></div></div>
+  <p id="tot" class="note" data-bal="${t.bal}"></p><div class="row"><button class="btn g" id="go">Save &amp; print tags</button><button class="btn o" id="cx">Cancel</button></div></div>`;
+}
+function dcForm(tj){
+  const t=tj.tag,o=tj.op||{};
+  return `<div class="card"><h3>Send to supplier — ${esc(o.name)} (delivery challan)</h3><div class="frm"><div><label>Supplier *</label><select id="fSup">${opt(S.m.suppliers,o.supplier)}</select></div><div><label>Quantity to send *</label><input id="fQty" type="number" min="1" max="${t.bal}" value="${t.bal}"></div><div><label>Vehicle</label><input id="fVeh"></div><div><label>Expected back</label><input id="fExp" type="date"></div>${common()}<div style="grid-column:1/-1"><label>Remarks</label><input id="fNote"></div></div>
+  <div class="row" style="margin-top:10px"><button class="btn g" id="go">Make delivery challan</button><button class="btn o" id="cx">Cancel</button></div></div>`;
+}
+function reworkForm(tj){
+  const t=tj.tag;
+  return `<div class="card"><h3>Rework result</h3><div class="frm"><div><label>Rework bench / machine</label><select id="fMc"><option value="">Rework bench</option>${opt(S.m.machines,'')}</select></div>${common()}<div><label>OK after rework</label><input id="fOk" type="number" min="0" step="1" inputmode="numeric"></div></div><div style="height:10px"></div>${linesBox('rejL','rej')}
+  <div class="frm"><div style="grid-column:1/-1"><label>Remarks</label><input id="fNote"></div></div><p id="tot" class="note" data-bal="${t.bal}"></p><div class="row"><button class="btn g" id="go">Save &amp; print tags</button><button class="btn o" id="cx">Cancel</button></div></div>`;
+}
+function dispatchForm(tj){
+  const t=tj.tag;
+  return `<div class="card"><h3>Finished goods — dispatch</h3><div class="frm"><div><label>Quantity *</label><input id="fQty" type="number" min="1" max="${t.bal}" value="${t.bal}"></div><div><label>Invoice / delivery ref</label><input id="fRef"></div>${common()}</div><div class="row" style="margin-top:10px"><button class="btn g" id="go">Record dispatch</button><button class="btn o" id="cx">Cancel</button></div></div>`;
+}
+const DISPO=['Scrapped','Returned to supplier','Accepted under concession','Sorted / regraded'];
+function disposeForm(tj){
+  if(tj.tag.dispo)return `<p class="note">Disposition: <b>${esc(tj.tag.dispo)}</b>${tj.tag.dispo_note?' — '+esc(tj.tag.dispo_note):''}</p>`;
+  return `<div class="card"><h3>Decide what happens to these rejected parts</h3><div class="frm"><div><label>Disposition *</label><select id="fDp">${DISPO.map(d=>`<option>${d}</option>`).join('')}</select></div><div style="grid-column:span 2"><label>Note (customer / authority reference is needed for a concession)</label><input id="fNote"></div></div><div class="row" style="margin-top:10px"><button class="btn g" id="go">Save decision</button><button class="btn o" id="cx">Cancel</button></div></div>`;
+}
+function wireForm(tj){
+  const t=tj.tag,o=tj.op||{},go=$('#go'),cx=$('#cx');if(cx)cx.onclick=()=>{window.__act=0;$('#act').innerHTML='';$('#sc').focus()};if(!go)return;
+  if($('#fOk'))$('#fOk').oninput=sum;sum();
+  go.onclick=async()=>{
+    go.disabled=true;say('');
+    try{
+      if(['RM','OK'].includes(t.kind)&&t.loc==='op'&&o.type==='supplier'){
+        saveCommon();const r=await call('kmr_mmd_dc_create',{p:Object.assign({tag_no:t.tag_no,supplier_code:idv('fSup'),qty:idv('fQty'),vehicle:idv('fVeh'),expected_date:idv('fExp'),note:idv('fNote')},cmn())});
+        const g=await call('kmr_mmd_dc_get',{p_no:r.dc_no});window.__act=0;showDoc('Delivery challan '+r.dc_no,P.dc(g.dc,co(),g.rs,t.tag_no,(S.m.suppliers||[]).find(s=>s.code===g.dc.supplier_code)),()=>route());
+      }else if(['RM','OK'].includes(t.kind)&&t.loc==='op'){
+        saveCommon();const res=await call('kmr_mmd_entry',{p:Object.assign({tag_no:t.tag_no,machine:idv('fMc'),ok:idv('fOk'),rej_lines:readLines('rejL'),rew_lines:readLines('rewL'),note:idv('fNote')},cmn())});window.__act=0;resultDoc('Tags for entry on '+t.tag_no,res);
+      }else if(t.kind==='REW'){
+        saveCommon();const res=await call('kmr_mmd_rework',{p:Object.assign({tag_no:t.tag_no,machine:idv('fMc'),ok:idv('fOk'),rej_lines:readLines('rejL'),note:idv('fNote')},cmn())});window.__act=0;resultDoc('Rework result — '+t.tag_no,res);
+      }else if(t.kind==='OK'&&t.loc==='fg'){
+        saveCommon();await call('kmr_mmd_dispatch',{p:Object.assign({tag_no:t.tag_no,qty:idv('fQty'),ref:idv('fRef')},cmn())});window.__act=0;say('Dispatch recorded.',1);await route();
+      }else if(t.kind==='REJ'){
+        await call('kmr_mmd_dispose',{p_tag:t.tag_no,p_action:idv('fDp'),p_note:idv('fNote')});window.__act=0;say('Decision saved.',1);await route();
+      }
+    }catch(e){say(e.message);go.disabled=false;window.scrollTo({top:0,behavior:'smooth'})}
+  };
+}
+/* a DC scanned: the goods receipt (GRN) screen */
+async function dcScreen(no){
+  if(!hasF('mmd.supplier-dc-grn')){KMRLock.need('mmd.supplier-dc-grn');return}
+  const g=await call('kmr_mmd_dc_get',{p_no:no});window.__act=1;const d=g.dc,rs=g.rs,pend=d.qty-d.received_qty,A=$('#act');
+  A.innerHTML=`<div class="card"><div class="row" style="margin:0"><b style="font-size:17px">${esc(d.dc_no)}</b><span class="chip ${d.status==='closed'?'g':d.status==='cancelled'?'x':'a'}">${esc(d.status)}</span><span class="grow"></span><button class="btn s o" id="rpDc">Reprint DC</button></div>
+  <div class="kv" style="margin-top:8px"><div><span>Supplier</span><b>${esc(d.supplier_name||d.supplier_code)}</b></div><div><span>Process</span><b>${esc(d.op_name)}</b></div><div><span>Part</span><b>${esc(rs.part_code)} · ${esc(rs.part_name||'')}</b></div><div><span>Route sheet</span><b>${esc(rs.rs_no)}</b></div><div><span>Sent</span><b>${N(d.qty)} on ${P.D(d.dispatch_at)}</b></div><div><span>Received so far</span><b>${N(d.received_qty)}</b></div><div><span>Pending</span><b>${N(pend)}</b></div><div><span>Expected back</span><b>${P.D(d.expected_date)}</b></div></div></div>
+  ${ed()&&pend>0&&['open','part'].includes(d.status)?`<div class="card"><h3>Goods receipt (GRN)</h3><div class="frm"><div><label>Received OK</label><input id="fOk" type="number" min="0" step="1" inputmode="numeric"></div><div><label>Supplier invoice / DC no.</label><input id="fInv"></div>${common()}<div style="grid-column:1/-1"><label>Remarks</label><input id="fNote"></div></div><div style="height:10px"></div>${linesBox('rejL','rej')}<p id="tot" class="note" data-bal="${pend}"></p><div class="row"><button class="btn g" id="go">Save GRN &amp; print tags</button><button class="btn o" id="cx">Cancel</button></div></div>`:''}`;
+  $('#rpDc').onclick=()=>showDoc('Delivery challan '+d.dc_no,P.dc(d,co(),rs,'',(S.m.suppliers||[]).find(s=>s.code===d.supplier_code)));
+  wireLines();if($('#fOk'))$('#fOk').oninput=sum;sum();
+  const go=$('#go');if($('#cx'))$('#cx').onclick=()=>{window.__act=0;A.innerHTML='';$('#sc').focus()};
+  if(go)go.onclick=async()=>{go.disabled=true;say('');try{saveCommon();const rl=readLines('rejL');const res=await call('kmr_mmd_grn',{p:Object.assign({dc_no:d.dc_no,ok:idv('fOk'),inv_no:idv('fInv'),rej_lines:rl,note:idv('fNote')},cmn())});
+    const nd=await call('kmr_mmd_dc_get',{p_no:d.dc_no}),gr=nd.grns[nd.grns.length-1]||{grn_no:res.grn_no,ok_qty:+idv('fOk')||0,rej_qty:0,received_at:new Date().toISOString()};window.__act=0;
+    resultDoc('GRN '+res.grn_no,res,`<div class="doc-wrap">${P.grn(Object.assign({},gr,{grn_no:res.grn_no}),nd.dc,co(),nd.rs,rl)}</div>`)}catch(e){say(e.message);go.disabled=false;window.scrollTo({top:0,behavior:'smooth'})}};
+  A.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function rsView(no){
+  const r=S.x.rs.find(s=>s.rs_no===no);if(!r)throw new Error('No route sheet with the number “'+no+'”.');await rsDlg(r.id);
+}
+function voidDlg(id){
+  open(`<h3 style="margin:0 0 8px">Void this entry</h3><p class="note">The entry stays in the record, marked void with your reason (IATF traceability). The quantity returns to the source tag — only possible while the tags it made are still unused.</p><label class="lbl">Reason *</label><input id="vr" placeholder="e.g. wrong quantity typed"><div class="row" style="margin-top:12px"><button class="btn r" id="vg">Void entry</button><button class="btn o" id="cls">Cancel</button></div>`);
+  $('#cls').onclick=closeM;$('#vg').onclick=async()=>{try{await call('kmr_mmd_void',{p_entry:id,p_reason:$('#vr').value});closeM();say('Entry voided.',1);await route()}catch(e){alert(e.message)}};
+}
+/* camera scan */
+let cam=null;
+function stopCam(){if(cam){cam.stop=1;try{cam.stream.getTracks().forEach(t=>t.stop())}catch(e){}cam=null}}
+async function startCam(){
+  open(`<div class="row"><b class="grow">Point the camera at the QR code</b><button class="btn o" id="cls">Close</button></div><video id="vid" playsinline muted style="width:100%;border-radius:10px;background:#000"></video>`);$('#cls').onclick=closeM;
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}),v=$('#vid');v.srcObject=stream;await v.play();cam={stream};const det=new BarcodeDetector({formats:['qr_code']});
+    const tick=async()=>{if(!cam||cam.stop)return;try{const r=await det.detect(v);if(r.length){const val=r[0].rawValue;closeM();openCode(val);return}}catch(e){}setTimeout(tick,250)};tick();
+  }catch(e){closeM();say('The camera could not be opened ('+e.message+'). Use the scanner or type the number.')}
+}
+
+/* ---------- 2. ISSUE RAW MATERIAL ---------- */
+function drawIssue(){
+  const m=S.m,e=ed();
+  $('#issue').innerHTML=!e?'<p class="note">You have view access only.</p>':`<p class="note">Issue raw material from the RM store to the shop floor. This makes the route sheet (all operations of the part, in order) and the first QR tag — the RM tag. ${m.has_rmp?'The stock in Raw Material Planning goes down by the kg issued.':''}</p>
+  <div class="card"><div class="frm"><div><label>Part *</label><select id="iPart"><option value="">Choose…</option>${opt(m.parts,'',p=>p.code+' — '+(p.name||''))}</select></div><div><label>Raw material</label><select id="iMat">${opt(m.materials,'',x=>x.code+' — '+(x.name||''))}</select></div><div><label>Qty to be produced (pcs) *</label><input id="iQty" type="number" min="1" inputmode="numeric"></div><div><label>Heat / lot code *</label><input id="iHeat" placeholder="from the mill test certificate"></div><div><label>Mill test certificate no.</label><input id="iMtc"></div><div><label>Material issued (kg)</label><input id="iKg" type="number" min="0" step="any" placeholder="auto from BOM"></div><div><label>Due date</label><input id="iDue" type="date"></div><div style="grid-column:1/-1"><label>Remarks</label><input id="iNote"></div></div>
+  <div id="iSum" class="note"></div><div class="row"><button class="btn g" id="iGo">Issue &amp; print RM tag</button></div></div>`;
+  if(!e)return;
+  const upd=()=>{const p=m.parts.find(x=>x.code===$('#iPart').value),r=p&&m.routes[p.code]||[];if(p&&p.material&&!$('#iMat').dataset.t)$('#iMat').value=p.material;
+    $('#iSum').innerHTML=p?`Route (${r.length} operations): ${r.map(o=>esc(o.name)+(o.type==='supplier'?' <span class="chip a">supplier</span>':'')).join(' → ')||'<span class="late">none — add the routing in Operations Master › Cycle times</span>'}`:''};
+  $('#iPart').onchange=()=>{$('#iMat').dataset.t='';upd()};$('#iMat').onchange=()=>{$('#iMat').dataset.t=1};
+  $('#iGo').onclick=async()=>{const b=$('#iGo');b.disabled=true;say('');try{const tj=await call('kmr_mmd_issue',{p:{part_code:idv('iPart'),material_code:idv('iMat'),qty:idv('iQty'),heat_code:idv('iHeat'),mill_cert:idv('iMtc'),rm_kg:idv('iKg'),due_date:idv('iDue'),notes:idv('iNote')}});S.x=null;showDoc('RM tag '+tj.tag.tag_no+' — route sheet '+tj.rs.rs_no,P.tag(tj,co())+P.table(tj,co()),()=>{history.replaceState(null,'',location.pathname+location.search+'#go=scan');route()})}catch(x){say(x.message);b.disabled=false}};
+}
+
+/* ---------- 3. ROUTE SHEETS ---------- */
+function opsBar(pr){return `<div class="bar" title="operations completed / in progress">${pr.map(o=>`<i class="${o.rs_qty&&o.ok>=o.rs_qty-o.rej?'d':o.arrived?'c':''}"></i>`).join('')}</div>`}
+function drawRs(){
+  const x=S.x;
+  $('#rs').innerHTML=`<table><thead><tr><th>Route sheet</th><th>Part</th><th>Customer</th><th class="n">Qty</th><th>Operations</th><th class="n">On floor</th><th class="n">At supplier</th><th class="n">FG</th><th class="n">Rejected</th><th>Due</th><th>Status</th><th></th></tr></thead><tbody>${x.rs.map(r=>{const late=r.due_date&&r.status==='open'&&r.due_date<x.today;return `<tr><td><b>${esc(r.rs_no)}</b><div class="mut">${P.D(r.created_at)}</div></td><td>${esc(r.part_code)}<div class="mut">${esc(r.part_name||'')}</div></td><td>${esc(r.customer_name||'—')}</td><td class="n">${N(r.qty)}</td><td>${r.ops_n} ops</td><td class="n">${N(r.wip_qty)}${r.rew_open?`<div class="mut">${N(r.rew_open)} rework</div>`:''}</td><td class="n">${N(r.supplier_qty)}</td><td class="n">${N(r.fg_qty)}</td><td class="n">${N(r.rej_qty)}</td><td class="${late?'late':''}">${P.D(r.due_date)}</td><td><span class="chip ${r.status==='open'?'b':r.status==='closed'?'g':'x'}">${r.status}</span></td><td><button class="btn s o" data-rs="${r.id}">Open</button></td></tr>`}).join('')||'<tr><td colspan="12" class="mut">No route sheets yet.</td></tr>'}</tbody></table>`;
+  document.querySelectorAll('[data-rs]').forEach(b=>b.onclick=()=>rsDlg(b.dataset.rs));
+}
+async function rsDlg(id){
+  const r=S.x.rs.find(s=>s.id===id);if(!r)return;let tr;try{tr=await call('kmr_mmd_trace',{p_q:r.rs_no})}catch(e){tr=null}
+  // trace is a gated feature — without it show the route sheet from the tags we already have
+  const tg=S.x.tags.filter(t=>t.rs_no===r.rs_no&&t.status==='open'&&t.bal>0);
+  const one=tr&&tr.rs[0];
+  open(`<div class="row"><b class="grow" style="font-size:16px">${esc(r.rs_no)} — ${esc(r.part_code)} ${esc(r.part_name||'')}</b><span class="chip ${r.status==='open'?'b':'g'}">${r.status}</span><button class="btn o s" id="cls">Close</button></div>
+  <div class="kv"><div><span>Customer</span><b>${esc(r.customer_name||'—')}</b></div><div><span>Qty</span><b>${N(r.qty)}</b></div><div><span>Heat code</span><b>${esc(r.heat_code)}</b></div><div><span>Material</span><b>${esc(r.rm_material||'')}</b></div><div><span>Due</span><b>${P.D(r.due_date)}</b></div></div>
+  <h4>Where the parts are now</h4>${tg.length?`<table style="min-width:520px"><thead><tr><th>Tag</th><th>Type</th><th>At</th><th class="n">Qty</th></tr></thead><tbody>${tg.map(t=>`<tr><td>${esc(t.tag_no)}</td><td><span class="chip ${kindChip(t.kind)[1]}">${kindChip(t.kind)[0]}</span></td><td>${esc(t.loc==='fg'?'Finished goods':t.op_name||t.loc)}</td><td class="n">${N(t.bal)}</td></tr>`).join('')}</tbody></table>`:'<p class="note">Nothing is waiting on this route sheet.</p>'}
+  ${one?`<h4>Operations</h4><div class="sheet">${P.table({rs:one.rs,progress:one.progress,entry:null},co())}</div>`:''}
+  <div class="row noprint">${one?'<button class="btn" id="pp">Print data table</button>':''}${ed()&&r.status==='open'?'<button class="btn r s" id="cn">Cancel route sheet</button>':''}</div>`);
+  $('#cls').onclick=closeM;if($('#pp'))$('#pp').onclick=()=>window.print();
+  if($('#cn'))$('#cn').onclick=async()=>{const why=prompt('Reason for cancelling the route sheet?');if(!why)return;try{await call('kmr_mmd_rs_cancel',{p_rs:id,p_reason:why});closeM();say('Route sheet cancelled.',1);await route()}catch(e){alert(e.message)}};
+}
+
+/* ---------- 4. SUPPLIER DC / GRN ---------- */
+function drawSup(){
+  const x=S.x,open_=x.dcs.filter(d=>['open','part'].includes(d.status)),wait=x.tags.filter(t=>t.status==='open'&&t.bal>0&&t.loc==='op'&&t.op_type==='supplier'&&['RM','OK'].includes(t.kind));
+  $('#sup').innerHTML=`<b>Ready to send to a supplier</b><p class="note">These pieces have finished their last in-house operation and the next one is a supplier process. Open the tag to make the delivery challan.</p>
+  <table><thead><tr><th>Tag</th><th>Part</th><th>Process</th><th class="n">Qty</th><th></th></tr></thead><tbody>${wait.map(t=>`<tr><td>${esc(t.tag_no)}</td><td>${esc(t.part_code)}<div class="mut">${esc(t.rs_no)}</div></td><td>${esc(t.op_name)}</td><td class="n">${N(t.bal)}</td><td>${ed()?`<button class="btn s" data-go="${esc(t.tag_no)}">Make DC</button>`:''}</td></tr>`).join('')||'<tr><td colspan="5" class="mut">Nothing waiting.</td></tr>'}</tbody></table>
+  <div style="height:16px"></div><b>At suppliers — pending receipt</b><table><thead><tr><th>DC</th><th>Sent</th><th>Supplier</th><th>Part</th><th>Process</th><th class="n">Sent qty</th><th class="n">Received</th><th class="n">Pending</th><th>Expected</th><th></th></tr></thead><tbody>${open_.map(d=>{const late=d.expected_date&&d.expected_date<x.today;return `<tr><td><b>${esc(d.dc_no)}</b></td><td>${P.D(d.dispatch_at)}</td><td>${esc(d.supplier_name||d.supplier_code)}</td><td>${esc(d.part_code)}<div class="mut">${esc(d.rs_no)}</div></td><td>${esc(d.op_name)}</td><td class="n">${N(d.qty)}</td><td class="n">${N(d.received_qty)}</td><td class="n"><b>${N(d.qty-d.received_qty)}</b></td><td class="${late?'late':''}">${P.D(d.expected_date)}${late?' — overdue':''}</td><td>${ed()?`<button class="btn s g" data-dc="${esc(d.dc_no)}">Receive (GRN)</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="10" class="mut">No material is out at suppliers.</td></tr>'}</tbody></table>`;
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=async()=>{history.replaceState(null,'',location.pathname+location.search+'#go=scan');await route();openCode(b.dataset.go)});
+  document.querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{history.replaceState(null,'',location.pathname+location.search+'#go=scan');await route();openCode(b.dataset.dc)});
+}
+
+/* ---------- WIP MAP & THROUGHPUT ALERTS ---------- */
+function drawWip(){$('#wip').innerHTML=MMDDash.wip(S.m,S.x);document.querySelectorAll('#wip [data-go]').forEach(b=>b.onclick=async()=>{history.replaceState(null,'',location.pathname+location.search+'#go=scan');await route();openCode(b.dataset.go)})}
+/* ---------- DASHBOARDS ---------- */
+async function drawDash(days,kind){
+  days=days||+store('dd')||30;kind=kind||'rej';store('dd',days);const x=await call('kmr_mmd_data',{p_days:Math.max(days,7)});
+  $('#dash').innerHTML=`<div class="row"><label class="mut">Period</label><select id="dpD" style="width:auto">${[7,30,60,90].map(d=>`<option value="${d}"${d===days?' selected':''}>Last ${d} days</option>`).join('')}</select><span class="grow"></span><button class="btn o s noprint" onclick="window.print()">Print</button></div>`+MMDDash.dash(S.m,x,days,kind);
+  $('#dpD').onchange=()=>drawDash(+$('#dpD').value,kind);$('#dpK').onchange=()=>drawDash(days,$('#dpK').value);
+}
+
+/* ---------- 5. REJECTION & REWORK ---------- */
+function drawRej(){
+  const x=S.x,rej=x.tags.filter(t=>t.kind==='REJ'&&!t.dispo&&t.status!=='void'),rew=x.tags.filter(t=>t.kind==='REW'&&t.status==='open'),done=x.tags.filter(t=>t.kind==='REJ'&&t.dispo).slice(-12).reverse();
+  const row=(t,btn)=>`<tr><td><b>${esc(t.tag_no)}</b><div class="mut">${dt(t.created_at)}</div></td><td>${esc(t.part_code)}<div class="mut">${esc(t.rs_no)}</div></td><td>${esc(t.reason||'')}</td><td>${esc(t.spec||'')}</td><td>${esc(t.actual||'')}</td><td class="n">${N(t.bal||t.qty)}</td><td>${btn}</td></tr>`,H='<thead><tr><th>Tag</th><th>Part</th><th>Reason</th><th>Specification</th><th>Actual</th><th class="n">Qty</th><th></th></tr></thead>';
+  $('#rej').innerHTML=`<b>Rejected — waiting for a decision</b><p class="note">Every rejected piece needs a disposition: scrapped, returned to the supplier, accepted under concession (with the customer’s reference) or sorted / regraded.</p><table>${H}<tbody>${rej.map(t=>row(t,ed()?`<button class="btn s" data-go="${esc(t.tag_no)}">Decide</button>`:'')).join('')||'<tr><td colspan="7" class="mut">Nothing is waiting for a decision.</td></tr>'}</tbody></table>
+  <div style="height:16px"></div><b>Rework — waiting to be reworked</b><table>${H}<tbody>${rew.map(t=>row(t,ed()?`<button class="btn s" data-go="${esc(t.tag_no)}">Enter result</button>`:'')).join('')||'<tr><td colspan="7" class="mut">No rework pending.</td></tr>'}</tbody></table>
+  <div style="height:16px"></div><b>Recent decisions</b><table><thead><tr><th>Tag</th><th>Part</th><th>Reason</th><th class="n">Qty</th><th>Decision</th><th>Note</th></tr></thead><tbody>${done.map(t=>`<tr><td>${esc(t.tag_no)}</td><td>${esc(t.part_code)}</td><td>${esc(t.reason||'')}</td><td class="n">${N(t.qty)}</td><td>${esc(t.dispo)}</td><td class="mut">${esc(t.dispo_note||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="mut">—</td></tr>'}</tbody></table>`;
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=async()=>{history.replaceState(null,'',location.pathname+location.search+'#go=scan');await route();openCode(b.dataset.go)});
+}
+
+/* ---------- 6. LOSS HOURS (D codes) ---------- */
+function drawLoss(){
+  const x=S.x,m=S.m,tot=x.loss.reduce((a,l)=>a+(+l.minutes||0),0);
+  $('#loss').innerHTML=`${ed()?`<div class="card"><h3>Enter a loss</h3><div class="frm"><div><label>Date</label><input id="lDate" type="date" value="${today()}"></div><div><label>Shift</label><select id="lSh">${opt(m.shifts,guessShift(),s=>s.code+' — '+(s.name||''))}</select></div><div><label>Machine *</label><select id="lMc"><option value="">Choose…</option>${opt(m.machines,'')}</select></div><div><label>Loss (D code) *</label><select id="lCode"><option value="">Choose…</option>${opt(m.loss_codes,'',l=>l.code+' — '+l.name+(l.category?' ('+l.category+')':''))}</select></div><div><label>Minutes lost *</label><input id="lMin" type="number" min="1" max="1440" inputmode="numeric"></div><div><label>Part (optional)</label><select id="lPart"><option value="">—</option>${opt(m.parts,'',p=>p.code+' — '+(p.name||''))}</select></div><div><label>Operator</label><input id="lOp" value="${esc(store('op'))}"></div><div style="grid-column:span 2"><label>Remark</label><input id="lRem"></div></div><div class="row" style="margin-top:10px"><button class="btn g" id="lGo">Save loss</button></div></div>`:''}
+  <div class="row"><b class="grow">Losses — last 60 days</b><span class="chip b">${N(Math.round(tot/6)/10)} hours in total</span></div>
+  <table><thead><tr><th>Date</th><th>Shift</th><th>Machine</th><th>D code</th><th class="n">Minutes</th><th>Part</th><th>Remark</th><th></th></tr></thead><tbody>${x.loss.slice(0,60).map(l=>`<tr><td>${P.D(l.loss_date+'T00:00:00')}</td><td>${esc(l.shift||'')}</td><td>${esc(l.machine_code)}</td><td>${esc(l.d_code)} — ${esc(l.d_name||'')}</td><td class="n">${N(l.minutes)}</td><td>${esc(l.part_code||'')}</td><td class="mut">${esc(l.remark||'')}</td><td>${ed()?`<button class="btn s o" data-lv="${l.id}">Void</button>`:''}</td></tr>`).join('')||'<tr><td colspan="8" class="mut">No losses entered yet.</td></tr>'}</tbody></table>`;
+  if($('#lGo'))$('#lGo').onclick=async()=>{try{store('op',idv('lOp'));await call('kmr_mmd_loss_save',{p:{loss_date:idv('lDate'),shift:idv('lSh'),machine_code:idv('lMc'),d_code:idv('lCode'),minutes:idv('lMin'),part_code:idv('lPart'),operator:idv('lOp'),remark:idv('lRem')}});say('Loss saved.',1);await route()}catch(e){say(e.message)}};
+  document.querySelectorAll('[data-lv]').forEach(b=>b.onclick=async()=>{const why=prompt('Reason for voiding this loss entry?');if(!why)return;try{await call('kmr_mmd_loss_void',{p_id:b.dataset.lv,p_reason:why});await route()}catch(e){say(e.message)}});
+}
+
+/* ---------- 7. TRACEABILITY ---------- */
+function drawTrace(){
+  $('#trace').innerHTML=`<p class="note">Type a heat code, route sheet, tag, DC, GRN or part number — the whole chain comes up: material received → every operation, who did it, quantities, rejections, supplier processes, dispatch. This is the record an IATF 16949 / ISO 9001 audit asks for (clause 8.5.2 identification and traceability).</p>
+  <form class="scan" id="tf"><input id="tq" placeholder="H-23871  /  RS-2609-0001  /  TG-…  /  DC-…  /  DP-1101" autocapitalize="characters"><button class="btn">Trace</button></form><div id="tr"></div>`;
+  $('#tf').onsubmit=async(ev)=>{ev.preventDefault();try{const r=await call('kmr_mmd_trace',{p_q:$('#tq').value});say('');$('#tr').innerHTML=r.rs.map(traceHtml).join('')}catch(e){say(e.message);$('#tr').innerHTML=''}};
+}
+function traceHtml(o){
+  const r=o.rs,E={process:'Process',rework:'Rework',dc:'DC sent',grn:'GRN',dispatch:'Dispatch'};
+  return `<div class="card"><h3>${esc(r.rs_no)} — ${esc(r.part_code)} ${esc(r.part_name||'')} <span class="chip ${r.status==='open'?'b':'g'}">${r.status}</span></h3><div class="kv"><div><span>Customer</span><b>${esc(r.customer_name||'—')}</b></div><div><span>Heat code</span><b>${esc(r.heat_code)}</b></div><div><span>Mill cert</span><b>${esc(r.mill_cert||'—')}</b></div><div><span>Material</span><b>${esc(r.rm_material||'')} ${esc(r.rm_size||'')}</b></div><div><span>Issued</span><b>${dt(r.created_at)} by ${esc(r.created_by||'')}</b></div><div><span>Qty</span><b>${N(r.qty)}</b></div></div>
+  <div style="overflow-x:auto"><table><thead><tr><th>When</th><th>Step</th><th>Operation / machine</th><th class="n">OK</th><th class="n">Rej</th><th class="n">Rew</th><th>Operator</th><th>Engineer</th><th>Note</th></tr></thead><tbody>${o.entries.map(e=>`<tr${e.status==='void'?' style="opacity:.5;text-decoration:line-through"':''}><td>${dt(e.entry_at)}</td><td>${E[e.kind]||e.kind}</td><td>${esc(e.op_name||'')}<div class="mut">${esc(e.machine||'')}</div></td><td class="n">${N(e.ok_qty)}</td><td class="n">${N(e.rej_qty)}</td><td class="n">${N(e.rew_qty)}</td><td>${esc(e.operator||'')}</td><td>${esc(e.engineer||'')}</td><td class="mut">${esc(e.void_reason?'VOID: '+e.void_reason:e.note||'')}</td></tr>`).join('')||'<tr><td colspan="9" class="mut">No entries.</td></tr>'}</tbody></table></div>
+  ${o.dcs.length?`<p><b>Supplier processes:</b> ${o.dcs.map(d=>`${esc(d.dc_no)} → ${esc(d.supplier_name||d.supplier_code)} (${N(d.qty)} sent, ${N(d.received_qty)} back)`).join(' · ')}</p>`:''}
+  <p class="mut">${o.tags.length} tags: ${o.tags.map(t=>esc(t.tag_no)+' '+t.kind+(t.dispo?' ['+esc(t.dispo)+']':'')).join(' · ')}</p></div>`;
+}
+
+
+/* ---------- ERP production history: the daily production records of the old ERP, searched by period ---------- */
+const HS={f:null,a:'',b:'',m:[],p:[],o:[],s:[],q:'',r:null};
+async function drawErp(){
+  const adm=QP.ctx&&QP.ctx.role==='admin';
+  if(!HS.f)HS.f=await call('kmr_mmd_hist_facets');
+  const F=HS.f;
+  if(!HS.a&&F.last){const td=today(),to=F.last>td?td:F.last,d=new Date(to+'T00:00:00Z');d.setUTCDate(d.getUTCDate()-30);HS.b=to;HS.a=d.toISOString().slice(0,10)}
+  const imp=adm?`<div class="box noprint"><h3>Bring in the ERP production history</h3><p class="mut">Choose the file Unit-2_ERP_Production.json.gz. Records already here are skipped, so it is safe to import again. It holds about 212,000 daily records (2012 to 2026) and takes a few minutes.</p><div class="row"><input type="file" id="hf" accept=".json,.gz"><button class="btn" data-a="hist-go">Import</button></div><div id="hp" class="mut"></div></div>`:'';
+  if(!F.total){$('#erp').innerHTML=imp+'<p class="mut">No ERP production history has been imported yet.</p>';return}
+  $('#erp').innerHTML=imp+`<p class="note">${Number(F.total).toLocaleString('en-IN')} records from ${F.first} to ${F.last}. Choose the period and, if you like, machines, parts, operators or shifts, then press <b>Search</b>.</p>
+  <div class="row noprint" style="align-items:flex-end"><div><label class="mut" style="font-size:12px;font-weight:600;display:block">From date</label><input type="date" id="ha" value="${HS.a}" style="width:auto"></div><div><label class="mut" style="font-size:12px;font-weight:600;display:block">To date</label><input type="date" id="hb" value="${HS.b}" style="width:auto"></div><div id="hm"></div><div id="hpp"></div><div id="ho"></div><div id="hs"></div><div><label class="mut" style="font-size:12px;font-weight:600;display:block">Search text</label><input id="hq" value="${esc(HS.q)}" placeholder="process, reason…" style="max-width:180px"></div><button class="btn" data-a="hist-find">🔍 Search</button></div><div id="hr"></div>`;
+  if(window.KMRSel){const m=(id,l,k,a)=>KMRSel.multi($('#'+id),{label:l,options:a.map(v=>({v,l:v})),value:HS[k],onChange:x=>{HS[k]=x}});m('hm','Machine','m',F.machines);m('hpp','Part','p',F.parts);m('ho','Operator','o',F.operators);m('hs','Shift','s',F.shifts)}
+  if(HS.r)showErp()
+}
+async function findErp(){HS.a=$('#ha').value;HS.b=$('#hb').value;HS.q=$('#hq').value.trim();if(!HS.a&&!HS.b)return say('Choose a From date, a To date, or both.');if(HS.a&&HS.b&&HS.a>HS.b)return say('The From date is after the To date.');
+  HS.r=await call('kmr_mmd_hist_find',{p_from:HS.a||null,p_to:HS.b||null,p_machines:HS.m,p_parts:HS.p,p_operators:HS.o,p_shifts:HS.s,p_q:HS.q||null,p_limit:2000});showErp()}
+function showErp(){const R=HS.r,n0=(v)=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:0}),n1=(v)=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:1});
+  $('#hr').innerHTML=`<div class="kpis"><div class="kpi"><b>${n0(R.total)}</b><span>Records found</span></div><div class="kpi" style="--c:var(--g)"><b>${n0(R.qty)}</b><span>Pieces produced</span></div><div class="kpi" style="--c:var(--b2)"><b>${n1(R.hours)}</b><span>Machine hours booked</span></div><div class="kpi" style="--c:var(--a)"><b>${n1(R.idle)}</b><span>Idle / downtime hours</span></div><div class="kpi" style="--c:var(--r)"><b>${n0(R.scrap)}</b><span>Scrap pieces</span></div><div class="kpi"><b>${R.eff==null?'—':R.eff+'%'}</b><span>Average efficiency</span></div></div>
+  ${R.total>R.rows.length?`<p class="note">Showing the latest ${R.rows.length} of ${n0(R.total)} records. The totals above cover all of them; narrow the dates to see the rest.</p>`:''}
+  <div class="sc"><table class="lt" data-nodate><thead><tr><th>Date</th><th>Shift</th><th>Machine</th><th>Operator</th><th>Part no.</th><th>Part name</th><th>Process</th><th class="n">Qty</th><th class="n">Hours</th><th class="n">Cycle time (s)</th><th class="n">Efficiency %</th><th class="n">Idle hrs</th><th>Reasons</th></tr></thead><tbody>${R.rows.map(r=>`<tr><td>${esc(r[1])}</td><td>${esc(r[2]||'')}</td><td>${esc(r[3]||'')}</td><td>${esc(r[4]||'')}</td><td>${esc(r[5]||'')}</td><td>${esc(r[6]||'')}</td><td>${esc(r[7]||'')}</td><td class="n">${n0(r[11])}</td><td class="n">${n1(r[10])}</td><td class="n">${n1(r[12])}</td><td class="n">${r[14]?n1(r[14]):''}</td><td class="n">${r[15]?n1(r[15]):''}</td><td>${esc(r[18]||'')}</td></tr>`).join('')||'<tr><td colspan="13" class="mut">No records for this selection.</td></tr>'}</tbody></table></div>`}
+async function importErp(){const f=($('#hf')||{files:[]}).files[0];if(!f)return say('Choose the ERP production file first.');const out=$('#hp');out.textContent='Reading '+f.name+'…';let txt;
+  if(/\.gz$/i.test(f.name)){if(!window.DecompressionStream)return say('Please use a current Chrome or Edge to open .gz files.');txt=await new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text()}else txt=await f.text();
+  const A=JSON.parse(txt).rows||[];let n=0;for(let i=0;i<A.length;i+=1000){n+=await call('kmr_mmd_hist_import',{p_rows:A.slice(i,i+1000)});out.textContent='Importing… '+Math.min(i+1000,A.length).toLocaleString('en-IN')+' of '+A.length.toLocaleString('en-IN')+' ('+Math.round(Math.min(i+1000,A.length)*100/A.length)+'%)'}
+  out.textContent='';say('Import finished: '+n.toLocaleString('en-IN')+' records added; '+(A.length-n).toLocaleString('en-IN')+' were already here.',true);HS.f=null;HS.r=null;await drawErp()}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a="hist-go"],[data-a="hist-find"]');if(!b)return;(async()=>{try{b.dataset.a==='hist-go'?await importErp():await findErp()}catch(err){say(err.message)}})()});
+
+(async()=>{try{await QP.init('mmd');if(!QP.ctx)return;await route()}catch(e){say(e.message)}})();
+</script><script src="/it/apps/kmr-select.js"></script><script src="/it/apps/back.js"></script><script src="/it/apps/kmr-present-link.js"></script></body></html>

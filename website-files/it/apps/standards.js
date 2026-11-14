@@ -150,6 +150,9 @@ rmp:[
 ['ISO','9.1.1 / 9.1.3','Monitoring, measurement; analysis and evaluation','Dashboard compares budget with actual cost by supplier, material and week.'],
 ['IATF','9.1.1.1','Monitoring of manufacturing processes','Work sheet shows stock, balance to start and raw material to purchase per part.']],
 mmd:[
+['ISO','8.5.1','Control of production and service provision','The daily production records of the old ERP (machine, shift, operator, part, quantity, hours, efficiency, downtime reason) are kept and can be searched by period, machine, part and operator.'],
+['IATF','8.5.1.5','Total productive maintenance','Idle and downtime hours with their reasons are kept for every machine and day, so lost time can be analysed against the machine.'],
+['IATF','9.1.1.1','Monitoring and measurement of manufacturing processes','Pieces produced, scrap and machine efficiency per part and process are available for the period chosen, as evidence for process performance.'],
 ['ISO','8.5.2','Identification and traceability','Material, WIP and outsourced lots are tracked with their identification.'],
 ['IATF','8.5.2.1','Identification and traceability (supplemental)','Receipt, issue and WIP records allow tracing a lot through the process.'],
 ['ISO','8.4','Externally provided processes','Supplier delivery challans and goods receipt are recorded.'],

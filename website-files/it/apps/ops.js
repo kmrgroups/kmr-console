@@ -5,20 +5,46 @@
   const T = (k, l, extra) => Object.assign({ k, l }, extra || {});
   const same = (a, b) => String(a || "").trim().toLowerCase() === String(b).toLowerCase();
   const KINDS = [
-    { kind: "parts", label: "Parts", icon: "⚙", code: "Part number", name: "Part name", fields: [T("customer", "Customer"), T("drawing_no", "Drawing no."), T("revision", "Revision"), T("material", "Material"), T("weight_kg", "Weight (kg)", { type: "number" }), T("annual_volume", "Annual volume", { type: "number" }), T("status", "Status", { opts: ["Development", "PPAP", "Production", "Obsolete"] })] },
+    { kind: "parts", label: "Parts", icon: "⚙", code: "Part number", name: "Part name", fields: [T("customer", "Customer"), T("drawing_no", "Drawing no."), T("revision", "Revision"), T("material", "Material"), T("weight_kg", "Weight (kg)", { type: "number" }), T("annual_volume", "Annual volume", { type: "number" }), T("abc_class", "ABC class (A runner · B repeater · C stranger)", { opts: ["A", "B", "C"] }), T("min_stock_days", "Minimum stock (days of sales, blank = class default)", { type: "number" }), T("status", "Status", { opts: ["Development", "PPAP", "Production", "Obsolete"] })] },
     { kind: "customers", label: "Customers", icon: "🏭", code: "Customer code", name: "Customer name", fields: [T("gstin", "GSTIN / tax ID"), T("city", "City"), T("country", "Country"), T("contact", "Contact person"), T("email", "Email"), T("phone", "Phone"), T("payment_terms", "Payment terms"), T("supplier_code", "Our supplier code (given by this customer)"), T("address", "Address"), T("cc_symbol", "Their CC symbol"), T("sc_symbol", "Their SC symbol"), T("approval", "Customer engineering approval")] },
     { kind: "suppliers", label: "Suppliers", icon: "🚚", code: "Supplier code", name: "Supplier name", fields: [T("category", "Category", { opts: ["Raw material", "Outsourced process", "Consumables", "Tooling", "Gauges & calibration", "Services"] }), T("gstin", "GSTIN / tax ID"), T("city", "City"), T("contact", "Contact person"), T("email", "Email"), T("phone", "Phone"), T("approved", "Approved supplier", { opts: ["Yes", "Conditional", "No"] }), T("rating", "Rating (%)", { type: "number" })] },
-    { kind: "machines", label: "Machines", icon: "🛠", code: "Machine code", name: "Machine name", fields: [T("type", "Type", { opts: ["CNC Turning", "VMC", "HMC", "Grinding", "Gear Hobbing", "Broaching", "Press", "Welding", "Assembly", "Inspection", "Other"] }), T("make", "Make"), T("model", "Model"), T("cell", "Cell / line"), T("available_days", "Available days / month (blank = plant standard)", { type: "number" }), T("hours_per_day", "Hours per day (blank = plant standard)", { type: "number" }), T("status", "Status", { opts: ["Running", "Breakdown", "Idle", "Scrapped"] }), T("capacity", "Capacity (e.g. swing Ø 350, L 300)"), T("processes", "Processes it can do (Process Documents codes, e.g. TURN1, TURN2, VMC)"), T("max_size_mm", "Max job size (mm)", { type: "number" }), T("capability_mm", "Capability ± mm", { type: "number" }), T("pm_frequency", "PM frequency", { opts: ["Weekly", "Monthly", "Quarterly", "Half-yearly", "Yearly"] }), T("remarks", "Remarks")] },
+    { kind: "machines", label: "Machines", icon: "🛠", code: "Machine code", name: "Machine name", fields: [T("type", "Type", { opts: ["CNC Turning", "VMC", "HMC", "Grinding", "Gear Hobbing", "Broaching", "Press", "Welding", "Assembly", "Inspection", "Other"] }), T("length_mm", "Machine length (mm) — floor space", { type: "number" }), T("width_mm", "Machine width (mm) — floor space", { type: "number" }), T("make", "Make"), T("model", "Model"), T("control", "Control system", { opts: ["Fanuc 0i-MF Plus","Fanuc 0i-MF","Fanuc 0i-TF Plus","Fanuc 0i-TF","Fanuc 0i-F Plus","Fanuc 0i-MD","Fanuc 0i-TD","Fanuc 0i-Mate-MD","Fanuc 0i-Mate-TD","Fanuc 0i-Mate-F","Fanuc 0i-C","Fanuc 18i","Fanuc 21i","Fanuc 30i-B","Fanuc 31i-B","Fanuc 31i-B5","Fanuc 32i-B","Fanuc 35i-B","Fanuc 30i-A / 31i-A","Fanuc 16i / 18i-MB / 18i-TB","Siemens Sinumerik 808D","Siemens Sinumerik 808D Advanced","Siemens Sinumerik 828D","Siemens Sinumerik 840D sl","Siemens Sinumerik ONE","Siemens Sinumerik 840D","Siemens Sinumerik 810D","Siemens Sinumerik 802D sl","Siemens Sinumerik 802S/C","Mitsubishi M80","Mitsubishi M80V","Mitsubishi M800","Mitsubishi M70","Mitsubishi M70V","Mitsubishi M700","Mitsubishi E70","Mitsubishi C70","Heidenhain TNC 640","Heidenhain TNC 620","Heidenhain TNC 320","Heidenhain TNC 530","Heidenhain iTNC 530","Haas NGC","Haas Classic","Mazak Mazatrol SmoothAi","Mazak Mazatrol SmoothX","Mazak Mazatrol SmoothG","Mazak Mazatrol Matrix","Mazak Mazatrol Fusion 640","Okuma OSP-P500","Okuma OSP-P300","Okuma OSP-P200","Okuma OSP-E100","Brother CNC-C00","Brother CNC-D00","Brother CNC-B00","Fagor 8070","Fagor 8065","Fagor 8055","Syntec 22MA","Syntec 21MA","Syntec 10MA","KND K2000","KND K1000","GSK 988T","GSK 980TDi","GSK 25i","LNC","Hurco WinMax","Num 1060","Num Flexium","Bosch Rexroth MTX","Delta NC300","Hyundai Wia i-CNC","Doosan Fanuc i Series","Other"], add: true }), T("cell", "Cell / line"), T("available_days", "Available days / month (blank = plant standard)", { type: "number" }), T("hours_per_day", "Hours per day (blank = plant standard)", { type: "number" }), T("status", "Status", { opts: ["Running", "Breakdown", "Idle", "Scrapped"] }), T("capacity", "Capacity (e.g. swing Ø 350, L 300)"), T("processes", "Processes it can do (Process Documents codes, e.g. TURN1, TURN2, VMC)"), T("max_size_mm", "Max job size (mm)", { type: "number" }), T("capability_mm", "Capability ± mm", { type: "number" }), T("pm_frequency", "PM frequency", { opts: ["Weekly", "Monthly", "Quarterly", "Half-yearly", "Yearly"] }), T("asset_no", "Asset no."), T("serial_no", "Serial no."), T("installed_on", "Installed on", { type: "date" }), T("criticality", "Criticality", { opts: ["A", "B", "C"] }), T("remarks", "Remarks")] },
     { kind: "gauges", label: "Gauges", icon: "📏", code: "Gauge ID", name: "Gauge name", fields: [T("type", "Type", { opts: ["Vernier", "Micrometer", "Bore gauge", "Plug gauge", "Ring gauge", "Height gauge", "CMM", "Dial", "Other"] }), T("make", "Make"), T("model", "Model"), T("serial_no", "Serial no."), T("range", "Range"), T("least_count", "Least count"), T("tolerance", "Tolerance"), T("department", "Department"), T("criticality", "Criticality", { opts: ["Critical", "Major", "Minor"] }), T("cal_source", "Calibrated", { opts: ["Internal", "External"] }), T("lab", "Calibration lab"), T("custodian", "Custodian"), T("cal_freq_months", "Calibration every (months) — pick or type", { type: "number", list: ["1", "3", "6", "9", "12", "18", "24", "36"] }), T("last_calibrated", "Last calibrated", { type: "date" }), T("next_due", "Next due (auto from frequency)", { type: "date" }), T("location", "Location", { from: "machines", extra: ["Gauge room"] }), T("gauge_room_no", "Gauge room location number", { showIf: { k: "location", v: "Gauge room" } })] },
-    { kind: "tools", label: "Tools", icon: "🔩", code: "Tool code", name: "Tool name", fields: [T("type", "Type", { opts: ["Insert", "Drill", "Tap", "Reamer", "End mill", "Boring bar", "Fixture", "Die", "Other"] }), T("size", "Size / grade"), T("make", "Make"), T("tool_life", "Tool life (pcs)", { type: "number" }), T("cost", "Cost", { type: "number" }), T("stock", "In stock", { type: "number" })] },
-    { kind: "consumables", label: "Consumables", icon: "🧴", code: "Item code", name: "Item name", fields: [T("processes", "Used in processes (Process Documents codes, e.g. TURN1, VMC, WASH)"), T("uom", "Unit"), T("min_stock", "Minimum stock", { type: "number" }), T("rate", "Rate", { type: "number" }), T("supplier", "Supplier")] },
-    { kind: "raw_materials", label: "Raw material", icon: "🧱", code: "Material code", name: "Material name", fields: [T("grade", "Grade"), T("specification", "Specification"), T("form", "Form", { opts: ["Bar", "Forging", "Casting", "Sheet", "Tube", "Other"] }), T("size", "Size"), T("supplier", "Supplier"), T("rate_per_kg", "Rate per kg", { type: "number" })] },
+    { kind: "tools", label: "Tools", icon: "🔩", code: "Tool code", name: "Tool name", fields: [T("type", "Type", { opts: ["Insert", "Drill", "Tap", "Reamer", "End mill", "Boring bar", "Fixture", "Die", "Other"] }), T("size", "Size / grade"), T("make", "Make"), T("tool_life", "Tool life (pcs)", { type: "number" }), T("cost", "Cost", { type: "number" }), T("stock", "In stock", { type: "number" }), T("part_process", "Used for part / process"), T("machine", "Machine(s)"), T("source", "Supplier / source"), T("rate", "List rate", { type: "number" }), T("discount", "Discount (fraction, e.g. 0.65 = 65%)", { type: "number" }), T("edges", "Cutting edges"), T("resharpening", "Number of re-sharpenings"), T("life_per_edge", "Tool life per edge / re-sharpening (pcs)"), T("life_note", "Tool life note"), T("rol", "Reorder level (minimum stock)", { type: "number" }), T("rrs", "Quantity to purchase (RRS)", { type: "number" })] },
+    { kind: "consumables", label: "Consumables", icon: "🧴", code: "Item code", name: "Item name", fields: [T("processes", "Used in processes (Process Documents codes, e.g. TURN1, VMC, WASH)"), T("uom", "Unit"), T("min_stock", "Minimum stock", { type: "number" }), T("rate", "Rate", { type: "number" }), T("supplier", "Supplier"), T("grade", "Grade")] },
+    { kind: "raw_materials", label: "Raw material", icon: "🧱", code: "Material code", name: "Material name", fields: [T("grade", "Grade"), T("specification", "Specification"), T("form", "Form", { opts: ["Bar", "Forging", "Casting", "Sheet", "Tube", "Other"] }), T("size", "Size"), T("supplier", "Supplier"), T("rate_per_kg", "Rate per kg", { type: "number" }), T("nature", "Nature (leaded / non-leaded)"), T("min_kg", "Minimum stock (kg)", { type: "number" }), T("max_kg", "Maximum stock (kg)", { type: "number" }), T("used_for", "Used for parts")] },
     { kind: "rate_contracts", label: "Rate contracts", icon: "📄", code: "Contract no.", name: "Party", fields: [T("party_type", "Party type", { opts: ["Supplier", "Customer"] }), T("item", "Item / part"), T("rate", "Rate", { type: "number" }), T("currency", "Currency"), T("uom", "Unit"), T("valid_from", "Valid from", { type: "date" }), T("valid_to", "Valid to", { type: "date" }), T("terms", "Terms")] },
-    { kind: "cycle_times", label: "Cycle times", icon: "⏱", code: "Part + operation", name: "Operation", fields: [T("part_no", "Part number"), T("machine", "Machine"), T("cycle_time_sec", "Cycle time (s)", { type: "number" }), T("alternates", "Alternate machines (comma-separated)"), T("setup_min", "Set-up (min)", { type: "number" }), T("parts_per_cycle", "Parts per cycle", { type: "number" })] },
+    { kind: "cycle_times", label: "Cycle times", icon: "⏱", code: "Part + operation", name: "Operation", fields: [T("part_no", "Part number"), T("op_no", "Operation no.", { type: "number" }), T("op_type", "Done", { opts: ["In-house", "Supplier process"] }), T("supplier", "Supplier (if supplier process)"), T("machine", "Machine"), T("cycle_time_sec", "Cycle time (s)", { type: "number" }), T("alternates", "Alternate machines (comma-separated)"), T("setup_min", "Set-up (min)", { type: "number" }), T("parts_per_cycle", "Parts per cycle", { type: "number" })] },
+    { kind: "bom", label: "Bill of material", icon: "🧾", code: "Part / material", name: "Part name", fields: [T("part_no", "Part number"), T("material", "Raw material code"), T("form", "Blank", { opts: ["Bar", "Forging", "Casting", "Sheet", "Tube", "Other"] }), T("size", "Size"), T("blank_kg", "Raw material per piece (kg, with allowances)", { type: "number" }), T("finished_kg", "Finished weight (kg)", { type: "number" }), T("loss_pct", "Extra loss (%)", { type: "number" }), T("cut_mm", "Cut length (mm)", { type: "number" }), T("pcs_per_bar", "Pieces per bar", { type: "number" }), T("drawing_rev", "Drawing revision it was worked out from"), T("basis", "How it was worked out"), T("status", "Status", { opts: ["Draft", "Approved"] }), T("revision", "BOM revision"), T("approved_by", "Approved by"), T("approved_on", "Approved on", { type: "date" })] },
+    { kind: "loss_codes", label: "Loss codes (D codes)", std: true, icon: "⏳", code: "D code", name: "Loss", fields: [T("category", "OEE loss", { opts: ["Availability", "Performance", "Quality"] }), T("group", "Group", { opts: ["Breakdown", "Set-up & changeover", "Tooling", "Material", "Manpower", "Utilities", "Planning", "Quality wait", "Speed", "Planned stop", "Other"] }), T("planned", "Planned stop (not counted against OEE)", { opts: ["No", "Yes"] }), T("owner", "Owner", { opts: ["Production", "Maintenance", "Quality", "Stores", "Planning", "Tool room", "HR / Admin", "Management"] }), T("note", "Note")] },
+    { kind: "defect_codes", label: "Rejection & rework reasons", std: true, icon: "⚠", code: "Reason code", name: "Reason", fields: [T("type", "Applies to", { opts: ["Rejection", "Rework", "Either"] }), T("category", "Category", { opts: ["Dimensional", "Surface", "Material", "Process", "Handling", "Tooling", "Casting / forging", "Heat treatment", "Marking & packing"] }), T("cause_class", "Cause class (6M)", { opts: ["Man", "Machine", "Material", "Method", "Measurement", "Environment"] }), T("process", "Typical process"), T("rework_route", "Rework method (if reworkable)")] },
+    { kind: "shifts", label: "Shifts", std: true, icon: "🕒", code: "Shift", name: "Shift name", fields: [T("start", "Starts (HH:MM)"), T("end", "Ends (HH:MM)"), T("break_min", "Planned breaks (min)", { type: "number" })] },
     { kind: "cft", label: "CFT team & key contacts", icon: "👥", code: "Employee / contact ID", name: "Name", fields: [T("function", "Function", { opts: ["Quality", "Production", "Engineering", "Maintenance", "Purchase", "Stores", "Sales", "Management", "Customer contact", "Supplier contact"] }), T("cft_role", "Role", { opts: ["CFT leader", "CFT member", "Key contact", "Escalation"] }), T("email", "Email"), T("phone", "Phone"), T("organisation", "Organisation (for external contacts)")] },
     { kind: "plant_standards", label: "Plant standards", icon: "🏗", code: "Plant / unit code", name: "Plant name", single: true, fields: [T("oee", "OEE (%)", { type: "number" }), T("hoursPerDay", "Working hours per day", { type: "number" }), T("daysPerMonth", "Working days per month (when no holiday calendar)", { type: "number" }), T("weeklyOff", "Weekly off", { opts: ["Sunday", "Saturday & Sunday", "Friday", "None"] }), T("warnPct", "Warn when machine load is above (%)", { type: "number" }), T("transferLagHours", "Transfer time between operations (h)", { type: "number" }), T("lotSize", "Transfer lot size (pcs)", { type: "number" }), T("levelTargetPct", "Levelling target (%)", { type: "number" })] },
     { kind: "documents", label: "Documents & records", icon: "📚", code: "Document no.", name: "Title", fields: [T("doc_type", "Type", { opts: ["Quality manual", "Policy", "Procedure", "Work instruction", "Form / format", "Record", "Customer-specific requirement", "External standard"] }), T("iatf_clause", "IATF 16949 clause"), T("revision", "Revision"), T("effective_date", "Effective from", { type: "date" }), T("owner", "Owner"), T("review_due", "Review due", { type: "date" })], file: true },
   ];
+  /** standard lists a plant can load in one click (existing codes are never overwritten) */
+  const L = (c, n, cat, g, pl, ow) => ({ code: c, name: n, data: { category: cat, group: g, planned: pl, owner: ow } });
+  const Dd = (c, n, ty, cat, cl, pr, rw) => ({ code: c, name: n, data: Object.assign({ type: ty, category: cat, cause_class: cl, process: pr }, rw ? { rework_route: rw } : {}) });
+  const STD = {
+    loss_codes: [L("D01", "Machine breakdown — mechanical", "Availability", "Breakdown", "No", "Maintenance"), L("D02", "Machine breakdown — electrical / electronic", "Availability", "Breakdown", "No", "Maintenance"), L("D03", "Hydraulic / pneumatic / coolant system failure", "Availability", "Breakdown", "No", "Maintenance"),
+      L("D04", "CNC program / controller problem", "Availability", "Breakdown", "No", "Production"), L("D05", "Waiting for maintenance", "Availability", "Breakdown", "No", "Maintenance"), L("D06", "Set-up / changeover", "Availability", "Set-up & changeover", "No", "Production"),
+      L("D07", "First-piece approval waiting", "Availability", "Quality wait", "No", "Quality"), L("D08", "Waiting for inspection / quality decision", "Availability", "Quality wait", "No", "Quality"), L("D09", "Tool breakage / unplanned tool change", "Availability", "Tooling", "No", "Tool room"),
+      L("D10", "Planned tool change / insert indexing", "Availability", "Tooling", "No", "Production"), L("D11", "Fixture / gauge not available", "Availability", "Tooling", "No", "Tool room"), L("D12", "No raw material", "Availability", "Material", "No", "Stores"),
+      L("D13", "Waiting for previous-process material", "Availability", "Material", "No", "Production"), L("D14", "No operator / absenteeism", "Availability", "Manpower", "No", "Production"), L("D15", "Power failure", "Availability", "Utilities", "No", "Maintenance"),
+      L("D16", "Compressed air / coolant / utility not available", "Availability", "Utilities", "No", "Maintenance"), L("D17", "No plan / no customer order", "Availability", "Planning", "No", "Planning"), L("D18", "Trial / development run", "Availability", "Planning", "No", "Management"),
+      L("D19", "Preventive maintenance (planned)", "Availability", "Planned stop", "Yes", "Maintenance"), L("D20", "Lunch / tea / shift change", "Availability", "Planned stop", "Yes", "Production"), L("D21", "5S / cleaning / meeting", "Availability", "Planned stop", "Yes", "Production"),
+      L("D22", "Minor stoppage (under 5 min)", "Performance", "Speed", "No", "Production"), L("D23", "Reduced speed / running below standard cycle time", "Performance", "Speed", "No", "Production"), L("D24", "Idling / waiting for loading", "Performance", "Speed", "No", "Production"),
+      L("D25", "Rework time", "Quality", "Quality wait", "No", "Quality"), L("D26", "Start-up / warm-up rejects", "Quality", "Quality wait", "No", "Production")],
+    defect_codes: [Dd("R01", "OD oversize", "Rework", "Dimensional", "Machine", "Turning", "Re-turn to size"), Dd("R02", "OD undersize", "Rejection", "Dimensional", "Method", "Turning"), Dd("R03", "Bore / ID undersize", "Rework", "Dimensional", "Machine", "Boring", "Re-bore"), Dd("R04", "Bore / ID oversize", "Rejection", "Dimensional", "Method", "Boring"),
+      Dd("R05", "Length / step out of tolerance", "Either", "Dimensional", "Method", "Turning"), Dd("R06", "Runout / concentricity out", "Either", "Dimensional", "Machine", "Turning"), Dd("R07", "Taper / ovality", "Either", "Dimensional", "Machine", "Turning"), Dd("R08", "Hole position / pitch out", "Rejection", "Dimensional", "Machine", "Drilling / VMC"),
+      Dd("R09", "Surface finish out", "Either", "Surface", "Tooling", "Finishing", "Re-finish / polish"), Dd("R10", "Tool marks / chatter", "Rework", "Surface", "Tooling", "Turning", "Re-finish"), Dd("R11", "Burr", "Rework", "Surface", "Method", "Deburring", "Deburr"), Dd("R12", "Thread defect", "Either", "Dimensional", "Tooling", "Threading", "Re-chase thread"),
+      Dd("R13", "Handling damage / dent", "Rejection", "Handling", "Man", "Any"), Dd("R14", "Rust / corrosion", "Either", "Handling", "Environment", "Any", "Clean / re-oil"), Dd("R15", "Crack", "Rejection", "Material", "Material", "Any"), Dd("R16", "Porosity / blow hole (casting)", "Rejection", "Casting / forging", "Material", "Casting"),
+      Dd("R17", "Shrinkage / cold shut (casting)", "Rejection", "Casting / forging", "Material", "Casting"), Dd("R18", "Forging lap / fold / under-fill", "Rejection", "Casting / forging", "Material", "Forging"), Dd("R19", "Hardness out of specification", "Rejection", "Heat treatment", "Method", "Heat treatment"), Dd("R20", "Distortion after heat treatment", "Either", "Heat treatment", "Method", "Heat treatment", "Straighten"),
+      Dd("R21", "Wrong programme / offset", "Either", "Process", "Man", "CNC"), Dd("R22", "Missing feature / operation skipped", "Either", "Process", "Man", "Any", "Complete the operation"), Dd("R23", "Tool wear / broken tool", "Either", "Tooling", "Machine", "Any"), Dd("R24", "Gauge / measurement error", "Either", "Process", "Measurement", "Inspection"),
+      Dd("R25", "Set-up rejection", "Rejection", "Process", "Man", "Any"), Dd("R26", "Marking / packing defect", "Rework", "Marking & packing", "Man", "Marking", "Re-mark / re-pack")],
+    shifts: [{ code: "A", name: "General / first shift", data: { start: "06:00", end: "14:00", break_min: 40 } }, { code: "B", name: "Second shift", data: { start: "14:00", end: "22:00", break_min: 40 } }, { code: "C", name: "Night shift", data: { start: "22:00", end: "06:00", break_min: 40 } }]
+  };
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const cols = (K) => [["code", K.code], ["name", K.name], ...K.fields.map((f) => [f.k, f.l])];
 
@@ -37,10 +63,13 @@
   }
   const csvCell = (v) => { v = String(v ?? ""); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
 
+  /** address of a screen inside the portal, so right-click › Open in new tab lands on it */
+  const hrefOf = (ctx, v) => (ctx.base || location.pathname + location.search) + "#" + v;
   window.KMR_OPS = {
     KINDS,
     /** ctx: { sb, slug, main, dialog, $, role, customerId } */
     async overview(ctx, note) {
+      if (ctx.setView) ctx.setView("ops");
       const { data: counts, error } = await ctx.sb.rpc("kmr_ops_counts", { p_slug: ctx.slug });
       const nSample = (counts && counts._sample) || 0, admin = ctx.role === "admin", edit = ctx.role === "admin" || ctx.role === "editor";
       const sampleBar = error ? "" : admin
@@ -48,25 +77,27 @@
             <div style="flex:1;min-width:240px"><b>Sample data</b><br><small style="color:var(--muted)">${nSample
               ? `${nSample} sample records are loaded, marked <span class="pill">Sample</span> in the lists. Flush removes only these. Records you have edited or imported over are yours and stay.`
               : "Try every list with one ready-made machining plant: 16 parts, 12 machines, 43 cycle times, plant standards, customers, suppliers, raw material, rate contracts, gauges, tools, consumables, CFT team and IATF 16949 documents. Nothing you already have is overwritten, and you can flush it all later."}</small></div>
-            ${nSample ? `<button class="btn ghost" id="opsFlush" style="height:42px;color:#B00E28;align-self:center;margin:0">Flush sample data</button>` : `<button class="btn" id="opsLoad" style="height:42px;align-self:center;margin:0">Load sample data</button>`}
+            ${nSample ? `<button class="btn ghost" id="opsFlush" style="height:42px;color:#B00E28;align-self:center;margin:0">${ctx.sampleOk === false ? "Remove leftover sample data" : "Flush sample data"}</button>` : ctx.sampleOk === false ? "" : `<button class="btn" id="opsLoad" style="height:42px;align-self:center;margin:0">Load sample data</button>`}
           </div>`
         : nSample ? `<p class="sub" style="margin-top:-12px">Includes ${nSample} sample records, marked <span class="pill">Sample</span>.</p>` : "";
       ctx.main.innerHTML = `<h1>Operations Master</h1><p class="sub">One set of master data for your company, used by every KMR app. ${ctx.role === "viewer" ? "You can view it." : "You can add, change and import."}</p>
         ${error ? `<p class="msg">${esc(error.message)}</p>` : ""}
         ${note ? `<div class="card" style="border-color:#1E7B4A;background:#E7F8EF;margin-bottom:12px">${note}</div>` : ""}
+        <details open style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:700;font-size:15px;margin-bottom:6px">Standards alignment</summary><div id="opsStd"></div></details>
         ${sampleBar}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
           <button class="btn ghost" id="opsXlsxExp" style="height:42px">Download all (Excel)</button>
           ${ctx.role === "admin" || ctx.role === "editor" ? `<label class="btn ghost" style="height:42px;cursor:pointer">Upload Excel workbook<input type="file" id="opsXlsxImp" accept=".xlsx" hidden></label>` : ""}
           <small style="color:var(--muted);align-self:center">One sheet per list. Fill it in Excel and upload it back — existing codes are updated, new ones added, nothing is deleted.</small>
         </div>
+        ${edit ? `<div class="card" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:16px;border-style:dashed;--c:transparent"><b>Bring in ERP purchase masters (tools, consumables, raw material, suppliers)</b><small style="color:var(--muted)">Choose the file Unit-2_ERP_Masters.json.gz. A record whose code or name is already here is skipped, so nothing is duplicated and nothing you typed is changed; blank fields of an existing record are filled. Safe to repeat.</small><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="file" id="opsErpFile" accept=".json,.gz"><button class="btn" id="opsErpGo" style="height:38px;margin:0">Import</button><span id="opsErpMsg" style="color:var(--muted)"></span></div></div>` : ""}
         <div class="cards">${KINDS.map((K) => {
           const all = (counts && counts[K.kind]) || 0, smp = (counts && counts["_sample_" + K.kind]) || 0, own = (counts && counts["_own_" + K.kind]) || 0;
           const b = (act, label, on, red) => `<button class="btn ghost" data-card="${act}" data-k="${K.kind}" style="height:32px;padding:0 10px;font-size:12.5px${red ? ";color:#B00E28" : ""}" ${on ? "" : "disabled"}>${label}</button>`;
-          return `<div class="card" style="--c:#0EA5E9;cursor:pointer" data-kind="${K.kind}"><div style="font-size:26px;line-height:1">${K.icon}</div><h3>${esc(K.label)}</h3>
+          return `<div class="card" style="--c:#0EA5E9;cursor:pointer;position:relative" data-kind="${K.kind}"><div style="font-size:26px;line-height:1">${K.icon}</div><h3><a class="stretch" href="${hrefOf(ctx, "ops/" + K.kind)}">${esc(K.label)}</a></h3>
             <p><b style="font-size:22px;color:var(--ink)">${all}</b> records${smp ? ` · <span class="pill">${smp} sample</span>` : ""}${own ? ` · <span class="pill ok">${own} yours</span>` : ""}</p>
             ${admin || edit ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto">
-              ${admin ? b("sload", "Load sample", !smp) + b("sflush", "Flush sample", smp, true) : ""}
+              ${admin ? (ctx.sampleOk === false ? "" : b("sload", "Load sample", !smp)) + (ctx.sampleOk === false && !smp ? "" : b("sflush", "Flush sample", smp, true)) : ""}
               <label class="btn ghost" data-card="dload" style="height:32px;padding:0 10px;font-size:12.5px;cursor:pointer">Load data<input type="file" accept=".json,application/json" data-dload="${K.kind}" hidden></label>
               ${admin ? b("dflush", "Flush data", own, true) : ""}
             </div>` : ""}</div>`;
@@ -76,15 +107,15 @@
           const bb = (act, label, on, red) => `<button class="btn ghost" data-drawing="${act}" style="height:32px;padding:0 10px;font-size:12.5px${red ? ";color:#B00E28" : ""}" ${on ? "" : "disabled"}>${label}</button>`;
           return `<div class="card" style="--c:#8B5CF6"><div style="font-size:26px;line-height:1">🎯</div><h3>Balloon Inspector drawings</h3>
           <p>${B ? `<b style="font-size:22px;color:var(--ink)">${nd + no}</b> report${nd + no === 1 ? "" : "s"}${nd ? ` · <span class="pill">${nd} sample</span>` : ""}${no ? ` · <span class="pill ok">${no} yours</span>` : ""}` : "Balloon Inspector is not in your company’s plan."}</p>
-          ${B ? `<p style="font-size:12.5px;color:var(--muted)">Load sample adds a ready-made drawing (Mounting Plate EX-2040) that is ballooned automatically when you open it in Balloon Inspector › Reports.</p>` : ""}
+          ${B && ctx.sampleOk !== false ? `<p style="font-size:12.5px;color:var(--muted)">Load sample adds a ready-made drawing (Mounting Plate EX-2040) that is ballooned automatically when you open it in Balloon Inspector › Reports.</p>` : ""}
           ${admin && B ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:auto">
-            ${bb("load", "Load sample", !nd)}${bb("flush", "Flush sample", nd, true)}
+            ${ctx.sampleOk === false ? "" : bb("load", "Load sample", !nd)}${ctx.sampleOk === false && !nd ? "" : bb("flush", "Flush sample", nd, true)}
             <label class="btn ghost" style="height:32px;padding:0 10px;font-size:12.5px;cursor:pointer">Load data<input type="file" accept=".json,application/json" id="biLoad" hidden></label>
             ${bb("dflush", "Flush data", no, true)}
             <a class="btn ghost" href="/it/balloon.html" style="height:32px;padding:0 10px;font-size:12.5px;grid-column:1/-1">Open Balloon Inspector</a></div>` : ""}</div>`;
         })() : ""}
         </div>`;
-      ctx.main.querySelectorAll("[data-kind]").forEach((el) => (el.onclick = (e) => { if (e.target.closest("[data-card],[data-dload],button,label,input")) return; this.list(ctx, el.dataset.kind); }));
+      ctx.main.querySelectorAll("[data-kind]").forEach((el) => (el.onclick = (e) => { if (e.target.closest("[data-card],[data-dload],button,label,input")) return; if (e.target.closest("a") && !(e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey)) return; e.preventDefault(); this.list(ctx, el.dataset.kind); }));
       ctx.main.querySelectorAll("[data-card]").forEach((btn) => btn.addEventListener("click", (e) => e.stopPropagation()));
       ctx.main.querySelectorAll("button[data-card]").forEach((btn) => (btn.onclick = (e) => { e.stopPropagation(); this.cardAction(ctx, btn.dataset.card, btn.dataset.k, btn); }));
       ctx.main.querySelectorAll("[data-dload]").forEach((inp) => (inp.onchange = (e) => this.loadData(ctx, inp.dataset.dload, e.target.files[0], inp)));
@@ -96,6 +127,22 @@
         const res = await ctx.sb.rpc(rpc, { p_slug: ctx.slug });
         if (res.error) { btn.disabled = false; alert(res.error.message); return this.overview(ctx); }
         this.overview(ctx, done(res.data));
+      };
+      if (window.KMRStd) KMRStd.draw(ctx.main.querySelector("#opsStd"), "ops");
+      const eg = ctx.main.querySelector("#opsErpGo");
+      if (eg) eg.onclick = async () => {
+        const f = ctx.main.querySelector("#opsErpFile").files[0], msg = ctx.main.querySelector("#opsErpMsg"); if (!f) { msg.textContent = "Choose the ERP file first."; return; }
+        eg.disabled = true;
+        try {
+          msg.textContent = "Reading…"; let txt;
+          if (/\.gz$/i.test(f.name)) { if (!window.DecompressionStream) throw new Error("Please use a current Chrome or Edge to open .gz files."); txt = await new Response(f.stream().pipeThrough(new DecompressionStream("gzip"))).text(); } else txt = await f.text();
+          const R = JSON.parse(txt).rows || [], tot = { added: 0, skipped: 0, filled: 0 };
+          for (let i = 0; i < R.length; i += 200) {
+            const { data, error } = await ctx.sb.rpc("kmr_ops_bulk", { p_slug: ctx.slug, p_rows: R.slice(i, i + 200) }); if (error) throw new Error(error.message);
+            tot.added += data.added; tot.skipped += data.skipped; tot.filled += data.filled; msg.textContent = "Importing… " + Math.min(i + 200, R.length) + " of " + R.length;
+          }
+          this.overview(ctx, "<b>ERP masters imported:</b> " + tot.added + " added, " + tot.skipped + " already here (skipped), " + tot.filled + " existing records had blank fields filled.");
+        } catch (e) { msg.textContent = e.message || String(e); eg.disabled = false; }
       };
       const xExp = ctx.main.querySelector("#opsXlsxExp"), xImp = ctx.main.querySelector("#opsXlsxImp");
       if (xExp) xExp.onclick = () => this.exportWorkbook(ctx, xExp);
@@ -253,39 +300,65 @@
       } catch (e) { alert(e.message || e); }
       if (input) input.value = "";
     },
+    /** machines that look like the same machine entered twice: same code ignoring spaces/dashes/case, same name, same asset no. or same serial no. */
+    dupGroups(rows) {
+      const norm = (s) => String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, "");
+      const live = rows.filter((r) => r.active !== false), par = new Map(), why = new Map();
+      const find = (x) => { while (par.get(x) !== x) { par.set(x, par.get(par.get(x))); x = par.get(x); } return x; };
+      live.forEach((r) => par.set(r.id, r.id));
+      const link = (key, label) => { const m = new Map(); live.forEach((r) => { const k = key(r); if (!k) return; (m.get(k) || m.set(k, []).get(k)).push(r); }); m.forEach((g) => { if (g.length < 2) return; g.forEach((r) => { par.set(find(r.id), find(g[0].id)); const w = why.get(r.id) || new Set(); w.add(label); why.set(r.id, w); }); }); };
+      link((r) => norm(r.code), "same code"); link((r) => norm(r.name), "same name"); link((r) => norm((r.data || {}).asset_no), "same asset no."); link((r) => norm((r.data || {}).serial_no), "same serial no.");
+      const groups = new Map(); live.forEach((r) => { if (!why.has(r.id)) return; const k = find(r.id); (groups.get(k) || groups.set(k, []).get(k)).push(r); });
+      return [...groups.values()].filter((g) => g.length > 1).map((g) => ({ rows: g, why: why }));
+    },
     async list(ctx, kind, note) {
       const K = KINDS.find((x) => x.kind === kind); const edit = ctx.role === "admin" || ctx.role === "editor";
-      ctx.main.innerHTML = `<p><button class="btn ghost" id="opsBack" style="height:36px">← Operations Master</button></p><h1>${K.icon} ${esc(K.label)}</h1><p class="msg">Loading…</p>`;
-      ctx.main.querySelector("#opsBack").onclick = () => this.overview(ctx);
+      if (ctx.setView) ctx.setView("ops/" + kind);
+      ctx.main.innerHTML = `<p><a class="btn ghost" id="opsBack" href="${hrefOf(ctx, "ops")}" style="height:36px">← Operations Master</a></p><h1>${K.icon} ${esc(K.label)}</h1><p class="msg">Loading…</p>`;
+      ctx.main.querySelector("#opsBack").onclick = (e) => { if (!(e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey)) return; e.preventDefault(); this.overview(ctx); };
       const { data, error } = await ctx.sb.rpc("kmr_ops_list", { p_slug: ctx.slug, p_kind: kind });
       if (error) { ctx.main.querySelector(".msg").textContent = error.message; return; }
       const rows = data || [];
-      const shown = [["code", K.code], ["name", K.name], ...K.fields.slice(0, 4).map((f) => [f.k, f.l])];
+      const okIds = (() => { try { return new Set(JSON.parse(localStorage.getItem("kmr-dup-ok-" + ctx.slug) || "[]")); } catch (e) { return new Set(); } })(), dups = kind === "machines" ? this.dupGroups(rows).filter((g) => !g.rows.every((r) => okIds.has(r.id))) : [], dupIds = new Set(); dups.forEach((g) => g.rows.forEach((r) => dupIds.add(r.id)));
+      const dupWhy = (r) => { const s = new Set(); dups.forEach((g) => { if (g.rows.includes(r)) (g.why.get(r.id) || []).forEach((w) => s.add(w)); }); return [...s].join(", "); };
+      const shown = [["code", K.code], ["name", K.name], ...K.fields.slice(0, K.kind === "machines" ? 5 : 4).map((f) => [f.k, f.l])];
       ctx.main.innerHTML = `<p><button class="btn ghost" id="opsBack" style="height:36px">← Operations Master</button></p>
         <h1>${K.icon} ${esc(K.label)}</h1><p class="sub">${rows.length} records</p>
         ${note ? `<div class="card" style="border-color:#1E7B4A;background:#E7F8EF;margin-bottom:12px">${note}</div>` : ""}
+        ${dups.length ? `<div class="card" id="opsDup" style="border-color:#D97706;background:#FFF7E6;margin-bottom:12px"><b>⚠ ${dups.length} possible duplicate ${dups.length > 1 ? "groups" : "group"} found (${dupIds.size} machines)</b><div style="margin:4px 0 8px">These machines look like the same machine entered more than once. For each group, press <b>Keep</b> on the one that is right (the others in the group are deleted), <b>Delete</b> on a single wrong one, or <b>Both are different</b> to hide the warning. Before deleting, check that no cycle time or process plan uses the code you remove.</div>${dups.map((g, gi) => `<div style="background:#fff;border:1px solid #F0C36D;border-radius:10px;margin-bottom:8px;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="text-align:left"><th style="padding:6px 10px">Machine code</th><th>Name</th><th>Type</th><th>Make / model</th><th>Asset no.</th><th>Serial no.</th><th>Why flagged</th><th></th></tr></thead><tbody>${g.rows.map((r) => `<tr style="border-top:1px solid #F5E2B8"><td style="padding:6px 10px"><b>${esc(r.code)}</b></td><td>${esc(r.name)}</td><td>${esc((r.data || {}).type || "")}</td><td>${esc([(r.data || {}).make, (r.data || {}).model].filter(Boolean).join(" "))}</td><td>${esc((r.data || {}).asset_no || "")}</td><td>${esc((r.data || {}).serial_no || "")}</td><td>${esc(dupWhy(r))}</td><td style="text-align:right;white-space:nowrap;padding-right:8px">${edit ? `<button class="btn ghost" data-dk="${gi}:${r.id}" style="height:30px">Keep</button> <button class="btn ghost" data-dd="${r.id}" style="height:30px;color:#B00E28">Delete</button>` : ""}</td></tr>`).join("")}</tbody></table>${edit ? `<div style="padding:4px 10px 8px"><button class="btn ghost" data-dn="${gi}" style="height:30px">Both are different — hide this warning</button></div>` : ""}</div>`).join("")}</div>` : ""}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
           <input id="opsQ" placeholder="Search…" style="height:42px;border-radius:12px;border:1px solid #D3DBE6;padding:0 14px;min-width:240px;flex:1">
           ${edit ? `<button class="btn" id="opsAdd" style="height:42px">+ Add</button><label class="btn ghost" style="height:42px;cursor:pointer">Import CSV<input type="file" id="opsImp" accept=".csv,text/csv" hidden></label>` : ""}
+          ${edit && K.std ? `<button class="btn ghost" id="opsStd" style="height:42px">Add standard ${esc(K.label.toLowerCase())}</button>` : ""}
           <button class="btn ghost" id="opsExp" style="height:42px">Export CSV</button>
           ${ctx.role === "admin" ? `<span style="flex:1"></span>${rows.some((r) => r.sample)
             ? `<button class="btn ghost" id="opsKFlush" style="height:42px;color:#B00E28">Flush sample ${esc(K.label.toLowerCase())} (${rows.filter((r) => r.sample).length})</button>`
-            : `<button class="btn ghost" id="opsKLoad" style="height:42px">Load sample ${esc(K.label.toLowerCase())}</button>`}` : ""}
+            : ctx.sampleOk === false ? "" : `<button class="btn ghost" id="opsKLoad" style="height:42px">Load sample ${esc(K.label.toLowerCase())}</button>`}` : ""}
         </div>
         <div class="card" style="padding:0;overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:14px">
           <thead><tr style="background:#F5F7FB;text-align:left">${shown.map((c) => `<th style="padding:10px 12px;white-space:nowrap">${esc(c[1])}</th>`).join("")}${K.file ? '<th style="padding:10px 12px">File</th>' : ""}<th></th></tr></thead>
           <tbody id="opsBody"></tbody></table></div>`;
       const body = ctx.main.querySelector("#opsBody");
-      const val = (r, k) => (k === "code" ? r.code : k === "name" ? r.name : (r.data || {})[k]);
+      const cname = {};
+      if (K.fields.some((f) => f.k === "customer") && K.kind !== "customers") { const cr = await ctx.sb.rpc("kmr_ops_list", { p_slug: ctx.slug, p_kind: "customers" }); const cl = Array.isArray(cr.data) ? cr.data : ((cr.data && cr.data.records) || []); cl.forEach((x) => { cname[x.code] = x.name; }); }
+      const val = (r, k) => (k === "code" ? r.code : k === "name" ? r.name : k === "customer" ? (cname[(r.data || {}).customer] || (r.data || {}).customer) : (r.data || {})[k]);
       const draw = (q) => {
-        const f = rows.filter((r) => !q || JSON.stringify([r.code, r.name, r.data]).toLowerCase().includes(q.toLowerCase()));
-        body.innerHTML = f.map((r) => `<tr style="border-top:1px solid var(--line)${r.active === false ? ";opacity:.5" : ""}">${shown.map((c) => `<td style="padding:9px 12px">${c[0] === "code" ? `<b>${esc(val(r, c[0]))}</b>${r.sample ? ' <span class="pill">Sample</span>' : ""}` : esc(val(r, c[0]) ?? "")}</td>`).join("")}
+        const f = rows.filter((r) => !q || JSON.stringify([r.code, r.name, r.data, val(r, "customer")]).toLowerCase().includes(q.toLowerCase()));
+        body.innerHTML = f.map((r) => `<tr style="border-top:1px solid var(--line)${r.active === false ? ";opacity:.5" : ""}${dupIds.has(r.id) ? ";background:#FFF1CC" : ""}">${shown.map((c) => `<td style="padding:9px 12px">${c[0] === "code" ? `<b>${esc(val(r, c[0]))}</b>${r.sample ? ' <span class="pill">Sample</span>' : ""}${dupIds.has(r.id) ? ' <span class="pill" style="background:#D97706;color:#fff">Duplicate?</span>' : ""}` : esc(val(r, c[0]) ?? "")}</td>`).join("")}
           ${K.file ? `<td style="padding:9px 12px">${r.data && r.data.file_path ? `<button class="btn ghost" data-file="${esc(r.data.file_path)}" style="height:32px">Open</button>` : '<small style="color:var(--muted)">—</small>'}</td>` : ""}
           <td style="padding:9px 12px;text-align:right"><button class="btn ghost" data-id="${r.id}" style="height:32px">${edit ? "Edit" : "View"}</button></td></tr>`).join("") || `<tr><td colspan="9" style="padding:18px;color:var(--muted)">${rows.length ? "No match." : "No records yet."}</td></tr>`;
         body.querySelectorAll("[data-id]").forEach((b) => (b.onclick = () => this.edit(ctx, K, rows.find((r) => r.id === b.dataset.id))));
         body.querySelectorAll("[data-file]").forEach((b) => (b.onclick = async () => { const s = await ctx.sb.storage.from("kmr-docs").createSignedUrl(b.dataset.file, 300); if (s.data) window.open(s.data.signedUrl, "_blank"); }));
       };
       draw("");
+      const armed = { k: null }, dupPanel = ctx.main.querySelector("#opsDup");
+      if (dupPanel) {
+        const del = async (id) => { const res = await ctx.sb.rpc("kmr_ops_delete", { p_slug: ctx.slug, p_kind: "machines", p_id: id }); if (res.error) throw new Error(res.error.message); };
+        const arm = (b, label, fn) => { if (armed.k === b) return fn(); armed.k = b; const o = b.textContent; b.textContent = "Press again to " + label; b.style.background = "#B00E28"; b.style.color = "#fff"; setTimeout(() => { if (armed.k === b) { armed.k = null; b.textContent = o; b.style.background = ""; b.style.color = ""; } }, 4000); };
+        dupPanel.querySelectorAll("[data-dk]").forEach((b) => (b.onclick = () => arm(b, "keep this one", async () => { try { const [gi, id] = b.dataset.dk.split(":"); const g = dups[+gi]; let n = 0; for (const r of g.rows) if (r.id !== id) { await del(r.id); n++; } this.list(ctx, "machines", `<b>Duplicate reviewed:</b> kept ${esc(g.rows.find((r) => r.id === id).code)}, deleted ${n} other${n > 1 ? "s" : ""}.`); } catch (e) { alert(e.message || e); } })));
+        dupPanel.querySelectorAll("[data-dd]").forEach((b) => (b.onclick = () => arm(b, "delete", async () => { try { await del(b.dataset.dd); this.list(ctx, "machines", "<b>Machine deleted.</b>"); } catch (e) { alert(e.message || e); } })));
+        dupPanel.querySelectorAll("[data-dn]").forEach((b) => (b.onclick = () => { try { const g = dups[+b.dataset.dn], s = JSON.parse(localStorage.getItem("kmr-dup-ok-" + ctx.slug) || "[]"); g.rows.forEach((r) => s.push(r.id)); localStorage.setItem("kmr-dup-ok-" + ctx.slug, JSON.stringify(s)); } catch (e) { /* storage blocked */ } this.list(ctx, "machines", "<b>Warning hidden</b> for that group on this device."); }));
+      }
       ctx.main.querySelector("#opsQ").oninput = (e) => draw(e.target.value);
       ctx.main.querySelector("#opsBack").onclick = () => this.overview(ctx);
       const kLoad = ctx.main.querySelector("#opsKLoad"), kFlush = ctx.main.querySelector("#opsKFlush");
@@ -299,6 +372,16 @@
       if (kFlush) kFlush.onclick = () => {
         if (!confirm(`Remove the sample records from ${K.label}? Records you added or changed are kept.`)) return;
         kRun(kFlush, "kmr_ops_sample_flush", (n) => `<b>Sample ${esc(K.label.toLowerCase())} flushed:</b> ${n} removed. Records you added or changed are kept. Every KMR app now uses the rest.`);
+      };
+      const stdB = ctx.main.querySelector("#opsStd");
+      if (stdB) stdB.onclick = async () => {
+        const have = new Set(rows.map((r) => String(r.code).toLowerCase())), add = (STD[K.kind] || []).filter((x) => !have.has(x.code.toLowerCase()));
+        if (!add.length) { alert("All the standard " + K.label.toLowerCase() + " are already in the list."); return; }
+        if (!confirm(`Add ${add.length} standard ${K.label.toLowerCase()}? You can edit or remove any of them afterwards. Codes you already have are not changed.`)) return;
+        stdB.disabled = true; stdB.textContent = "Adding…";
+        const res = await ctx.sb.rpc("kmr_ops_save", { p_slug: ctx.slug, p_kind: K.kind, p_rows: add.map((x) => ({ code: x.code, name: x.name, data: x.data, active: true })) });
+        if (res.error) { stdB.disabled = false; alert(res.error.message); return; }
+        this.list(ctx, K.kind, `<b>${add.length} standard ${esc(K.label.toLowerCase())} added.</b> Edit them to match your plant; every KMR app uses this list.`);
       };
       ctx.main.querySelector("#opsExp").onclick = () => {
         const cs = cols(K); const lines = [cs.map((c) => csvCell(c[1])).join(",")].concat(rows.map((r) => cs.map((c) => csvCell(val(r, c[0]))).join(",")));
@@ -323,9 +406,10 @@
     },
     async edit(ctx, K, r) {
       for (const f of K.fields) if (f.from) { const res = await ctx.sb.rpc("kmr_ops_list", { p_slug: ctx.slug, p_kind: f.from }), L = Array.isArray(res.data) ? res.data : ((res.data && res.data.records) || []); f.opts = [...L.filter((x) => x.active !== false).map((x) => ({ v: x.code, l: `${x.code} · ${x.name}` })), ...(f.extra || [])]; }
+      for (const f of K.fields) if (f.add && f.opts) { try { const res = await ctx.sb.rpc("kmr_ops_list", { p_slug: ctx.slug, p_kind: K.kind }), L = Array.isArray(res.data) ? res.data : ((res.data && res.data.records) || []); const have = new Set(f.opts); L.forEach((x) => { const v = x.data && x.data[f.k]; String(v || "").split(", ").forEach((y) => { if (y && !have.has(y)) { have.add(y); f.opts = [...f.opts, y]; } }); }); } catch (e) { /* keep the built-in list */ } }
       const edit = ctx.role === "admin" || ctx.role === "editor"; const isNew = !r; r = r || { code: "", name: "", data: {}, active: true };
       const input = (f, v) => f.from ? `<div class="in"><input id="of_${f.k}" list="dl_${f.k}" value="${esc(v ?? "")}" placeholder="Pick a machine, or type" ${edit ? "" : "readonly"}><datalist id="dl_${f.k}">${f.opts.map((o) => `<option value="${esc(o.v || o)}" label="${esc(o.l || o)}"></option>`).join("")}</datalist></div>`
-        : f.opts ? `<select id="of_${f.k}" ${edit ? "" : "disabled"}><option value=""></option>${(v && !f.opts.some((o) => (o.v || o) === v) ? [...f.opts, v] : f.opts).map((o) => { const ov = typeof o === "string" ? o : o.v, ol = typeof o === "string" ? o : o.l; return `<option value="${esc(ov)}" ${ov === v ? "selected" : ""}>${esc(ol)}</option>`; }).join("")}</select>`
+        : f.opts ? `<select id="of_${f.k}" data-multi ${f.add ? "data-add" : ""} ${edit ? "" : "disabled"}><option value=""></option>${(v && !f.opts.some((o) => (o.v || o) === v) ? [...f.opts, v] : f.opts).map((o) => { const ov = typeof o === "string" ? o : o.v, ol = typeof o === "string" ? o : o.l; return `<option value="${esc(ov)}" ${ov === v ? "selected" : ""}>${esc(ol)}</option>`; }).join("")}</select>`
         : `<div class="in"><input id="of_${f.k}" type="${f.type || "text"}" ${f.list ? `list="dl_${f.k}"` : ""} value="${esc(v ?? "")}" ${edit ? "" : "readonly"}>${f.list ? `<datalist id="dl_${f.k}">${f.list.map((o) => `<option value="${o}"></option>`).join("")}</datalist>` : ""}</div>`;
       ctx.dialog(isNew ? `Add — ${K.label}` : `${esc(r.code)} · ${K.label}`, `
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:0 14px;max-height:62vh;overflow:auto;padding-right:4px">
@@ -346,7 +430,7 @@
         $("#of_last_calibrated").onchange = auto; $("#of_cal_freq_months").oninput = $("#of_cal_freq_months").onchange = auto;
       }
       $("#ofSave").onclick = async () => {
-        const m = $("#ofM"); m.className = "msg"; m.textContent = "Saving…";
+        const m = $("#ofM"); m.className = "msg"; m.style.color = ""; m.textContent = "Saving…";
         const data = Object.assign({}, r.data || {}); K.fields.forEach((f) => { let v = $("#of_" + f.k).value.trim(); if (f.showIf && !same($("#of_" + f.showIf.k).value, f.showIf.v)) v = ""; if (v) data[f.k] = v; else delete data[f.k]; });
         const code = $("#of_code").value.trim(); if (!code) { m.textContent = `${K.code} is required.`; return; }
         const file = K.file && $("#of_file") && $("#of_file").files[0];
@@ -356,6 +440,11 @@
           const up = await ctx.sb.storage.from("kmr-docs").upload(path, file, { contentType: file.type || "application/octet-stream" });
           if (up.error) { m.textContent = "Upload failed: " + up.error.message; return; }
           data.file_path = path; data.file_name = file.name;
+        }
+        if (K.kind === "machines" && $("#of_name") && m._dupOk !== code + "|" + $("#of_name").value) {
+          const nz = (s) => String(s == null ? "" : s).toLowerCase().replace(/[^a-z0-9]+/g, ""), lr = await ctx.sb.rpc("kmr_ops_list", { p_slug: ctx.slug, p_kind: "machines" });
+          const hit = (lr.data || []).filter((o) => o.active !== false && (isNew || o.id !== r.id)).map((o) => { const w = []; if (nz(o.code) === nz(code)) w.push("code"); if (nz($("#of_name").value) && nz(o.name) === nz($("#of_name").value)) w.push("name"); if (nz(data.asset_no) && nz((o.data || {}).asset_no) === nz(data.asset_no)) w.push("asset no."); if (nz(data.serial_no) && nz((o.data || {}).serial_no) === nz(data.serial_no)) w.push("serial no."); return w.length ? `${o.code} (${o.name || "no name"}: same ${w.join(", ")})` : null; }).filter(Boolean);
+          if (hit.length) { m._dupOk = code + "|" + $("#of_name").value; m.style.color = "#B45309"; m.innerHTML = `⚠ <b>This looks like a duplicate of:</b> ${hit.map(esc).join("; ")}. If it is really a different machine, press Save again. Otherwise cancel and edit the existing one.`; return; }
         }
         const res = await ctx.sb.rpc("kmr_ops_save", { p_slug: ctx.slug, p_kind: K.kind, p_rows: [Object.assign(isNew ? {} : { id: r.id }, { code, name: $("#of_name").value.trim(), data, active: $("#of_active").checked })] });
         if (res.error) { m.textContent = /duplicate|unique/.test(res.error.message) ? `${K.code} "${code}" already exists.` : res.error.message; return; }
