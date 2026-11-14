@@ -47,11 +47,17 @@ $psx = 'C:\Windows\SysWOW64\WindowsPowerShell\v1.0\powershell.exe'; if ((Test-Pa
 ''; 'Testing the ERP connection and the key. Nothing is sent yet...'
 $out = Join-Path $src 'ERP_bridge_test_result.txt'
 & $psx -NoProfile -ExecutionPolicy Bypass -File (Join-Path $dst 'bridge.ps1') -Test 2>&1 | Tee-Object -FilePath $out
-# starts by itself (hidden) whenever this Windows user signs in
-$startup = [Environment]::GetFolderPath('Startup')
-$sh = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $startup 'KMR ERP Bridge.lnk'))
-$sh.TargetPath = 'wscript.exe'; $sh.Arguments = '//B "' + (Join-Path $dst 'tray-hidden.vbs') + '"'; $sh.WorkingDirectory = $dst; $sh.WindowStyle = 7; $sh.Save()
-Start-Process 'wscript.exe' ('//B "' + (Join-Path $dst 'tray-hidden.vbs') + '"')
+# starts by itself whenever this Windows user signs in: a normal Windows scheduled task (falls back to a Startup shortcut if Windows refuses)
+$tr = '"' + $psx + '" -NoProfile -WindowStyle Hidden -File "' + (Join-Path $dst 'tray.ps1') + '"'
+$ok = $false
+try { & schtasks /Create /TN 'KMR ERP Bridge' /TR $tr /SC ONLOGON /RL LIMITED /F 2>&1 | Out-Null; if ($LASTEXITCODE -eq 0) { $ok = $true } } catch { }
+if ($ok) { try { & schtasks /Run /TN 'KMR ERP Bridge' 2>&1 | Out-Null } catch { $ok = $false } }
+if (-not $ok) {
+  $startup = [Environment]::GetFolderPath('Startup')
+  $sh = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path $startup 'KMR ERP Bridge.lnk'))
+  $sh.TargetPath = 'wscript.exe'; $sh.Arguments = '//B "' + (Join-Path $dst 'tray-hidden.vbs') + '"'; $sh.WorkingDirectory = $dst; $sh.WindowStyle = 7; $sh.Save()
+  Start-Process 'wscript.exe' ('//B "' + (Join-Path $dst 'tray-hidden.vbs') + '"')
+}
 ''; 'Done. Look near the clock (click the ^ arrow if it is hidden): a round icon - green = fine, amber = working now, red = a problem.'
 'It starts by itself, hidden, every time this Windows user signs in. The first run reads the whole ERP history, so give it some time.'
 'Please send ERP_bridge_test_result.txt.'
