@@ -115,7 +115,7 @@
   /* ---------- the recorder: all voices mixed + a picture of the room, saved in parts of 10 minutes ---------- */
   function Recorder(o) {   // o: { tiles(): [{el, name}], video: true|false, onPart(blob, seconds, mime), onError(msg) }
     const AC = window.AudioContext || window.webkitAudioContext; let ac = null, dest = null, cv = null, ctx = null, mr = null, timer = null, draw = null, started = 0, partStart = 0, on = false, mime = "";
-    const pick = () => { const c = o.video ? ["video/webm;codecs=vp8,opus", "video/webm"] : ["audio/webm;codecs=opus", "audio/webm"]; return c.find((x) => window.MediaRecorder && MediaRecorder.isTypeSupported(x)) || ""; };
+    const pick = () => { const c = o.video ? ["video/webm;codecs=vp8,opus", "video/webm", "video/mp4"] : ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]; return c.find((x) => window.MediaRecorder && MediaRecorder.isTypeSupported(x)) || ""; };
     function paint() {
       const t = o.tiles().filter((x) => x.el && x.el.videoWidth), W = cv.width, H = cv.height; ctx.fillStyle = "#0b1020"; ctx.fillRect(0, 0, W, H);
       if (!t.length) return; const cols = Math.ceil(Math.sqrt(t.length)), rows = Math.ceil(t.length / cols), w = W / cols, h = H / rows;

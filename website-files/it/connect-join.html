@@ -1,0 +1,114 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex">
+<title>KMR Connect · Quick session</title><script src="/it/company-config.js"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,Segoe UI,Arial,sans-serif;background:#0c1a3a;color:#fff;min-height:100vh}
+.w{max-width:960px;margin:0 auto;padding:14px}h1{font-size:19px;margin:6px 0 2px}.m{color:#b8c4e0;font-size:13px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #3b4d7a;background:#13244f;color:#fff;font-size:16px;margin:6px 0}
+button{padding:11px 15px;border-radius:10px;border:0;background:#f3c55a;color:#1a1305;font-weight:700;font-size:14px;cursor:pointer;margin:3px}
+button.o{background:#1f3266;color:#fff}button.r{background:#c0392b;color:#fff}button:disabled{opacity:.4}
+.code{font:700 30px ui-monospace,Consolas,monospace;letter-spacing:4px;background:#13244f;border-radius:12px;padding:10px 16px;display:inline-block;margin:6px 0}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:8px;margin:10px 0}
+.t{position:relative;background:#000;border-radius:12px;overflow:hidden;aspect-ratio:16/9}.t video{width:100%;height:100%;object-fit:contain;background:#000}
+.t b{position:absolute;left:8px;bottom:6px;background:#000a;padding:2px 8px;border-radius:8px;font-size:12px}
+.dot{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border:4px solid #ff3b30;border-radius:50%;pointer-events:none;animation:p 1.6s forwards}@keyframes p{to{opacity:0;transform:scale(1.8)}}
+.card{background:#13244f;border-radius:12px;padding:10px;margin:8px 0}#chat{max-height:160px;overflow:auto;font-size:14px}#chat div{margin:3px 0}.hide{display:none}.bad{color:#ff9b8f}.ok{color:#8be9a8}
+</style></head><body><div class="w">
+<h1>KMR Connect · Quick session</h1><div class="m">Video, voice, screen, chat and files. Nothing to install — works in the phone or computer browser.</div>
+<div id="join" class="card"><label>Your name</label><input id="nm" placeholder="Your name" autocomplete="name">
+<label>Session code</label><input id="cd" placeholder="Code, e.g. K7M2-9QXA" autocapitalize="characters" autocomplete="off">
+<button id="go">Join the session</button> <button class="o" id="new">Start a new session</button><div id="st" class="m"></div></div>
+<div id="live" class="hide">
+<div class="card"><div class="m">Session code — share it with the other person, or send this link:</div><div class="code" id="cshow"></div><div><button class="o" id="cp">Copy link</button><button class="o" id="wa">Send on WhatsApp</button></div></div>
+<div class="g" id="vg"></div>
+<div id="ctl"><button class="o" id="mic">Mute</button><button class="o" id="cam">Camera off</button><button class="o" id="scr">Share my screen</button><button class="o" id="rec">Record</button><label class="o" style="display:inline-block"><button class="o" id="fb" type="button">Send a file</button></label><input type="file" id="fi" class="hide"><button class="r" id="lv">Leave</button></div>
+<div class="m" id="hint">Tap on someone's shared screen to point at that place; they will see a red circle.</div><div id="st2" class="m"></div>
+<div class="card"><div id="chat"></div><div style="display:flex;gap:6px"><input id="ci" placeholder="Type a message"><button id="cs">Send</button></div></div>
+<div class="card hide" id="files"><b>Files received</b><div id="fl"></div></div></div>
+</div>
+<script src="/it/apps/connect-rtc.js"></script>
+<script type="module">
+const R = window.CNRTC, $ = (i) => document.getElementById(i), P = new URLSearchParams(location.hash.slice(1));
+const AL = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const norm = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, ""), pretty = (c) => c.slice(0, 4) + "-" + c.slice(4);
+const gen = () => { const a = crypto.getRandomValues(new Uint8Array(8)); return [...a].map((x) => AL[x % AL.length]).join(""); };
+$("nm").value = localStorage.getItem("cnj_name") || ""; if (P.get("c")) $("cd").value = pretty(norm(P.get("c")));
+let room = null, local = null, cam = null, mic = null, share = null, rec = null, code = "", me = "";
+const tiles = new Map(); let sb = null;
+async function client() {
+  if (sb) return sb; if (/[?&]demo=1/.test(location.search)) return null; const cc = window.COMPANY_CONFIG || {}; let key = cc.supabaseAnonKey, url = cc.supabaseUrl || "https://dehlcusptkzfhqvpfyjh.supabase.co";
+  if (!key) { const j = await (await fetch("/it/console/api/public-config")).json(); key = j.key; if (j.url) url = j.url; }
+  const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"); return (sb = createClient(url, key));
+}
+function tile(id, name, stream, mine) {
+  let t = tiles.get(id); if (!t) {
+    const d = document.createElement("div"); d.className = "t"; d.innerHTML = '<video autoplay playsinline></video><b></b>'; const v = d.querySelector("video"); if (mine) v.muted = true;
+    d.onclick = (e) => { if (mine) return; const r = d.getBoundingClientRect(); room.data({ t: "pt", x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height }); };
+    $("vg").append(d); t = { d, v, name }; tiles.set(id, t);
+  }
+  t.d.querySelector("b").textContent = name + (mine ? " (you)" : ""); t.name = name; if (stream && t.v.srcObject !== stream) { t.v.srcObject = stream; t.v.play().catch(() => { }); } return t;
+}
+const say = (m, k) => { $("st2").textContent = m; $("st2").className = "m " + (k || ""); };
+const chat = (who, txt) => { const d = document.createElement("div"); d.innerHTML = "<b>" + esc(who) + ":</b> " + esc(txt); $("chat").append(d); $("chat").scrollTop = 1e9; };
+async function media() {
+  for (const c of [{ audio: true, video: { facingMode: "user", width: { ideal: 640 } } }, { audio: true }]) { try { return await navigator.mediaDevices.getUserMedia(c); } catch (e) { /* try next */ } }
+  return new MediaStream();
+}
+async function start(c, name) {
+  code = c; me = name || "Guest"; $("join").classList.add("hide"); $("live").classList.remove("hide"); $("cshow").textContent = pretty(code);
+  local = await media(); cam = local.getVideoTracks()[0] || null; mic = local.getAudioTracks()[0] || null; if (!cam) $("cam").disabled = true; if (!mic) $("mic").disabled = true;
+  if (!navigator.mediaDevices.getDisplayMedia) { $("scr").disabled = true; $("scr").textContent = "Screen share: not on this phone"; }
+  tile("me", me, local, true);
+  const names = new Map();
+  room = R.Room({
+    sb: await client(), key: "q-" + code, stream: local, user: { name: me },
+    onStatus: (m) => say(m),
+    onTrack: (id, t, st) => { const p = room.peers.get(id); tile(id, (p && p.info && p.info.name) || "Guest", st, false); if (rec && t.kind === "audio") rec.addTrack(t); },
+    onPeer: (id, p) => { tile(id, (p.info && p.info.name) || "Guest", p.link.stream, false); say("Connected: " + ((p.info && p.info.name) || "Guest"), "ok"); },
+    onGone: (id) => { const t = tiles.get(id); if (t) { t.d.remove(); tiles.delete(id); } say("Someone left."); },
+    onData: (id, m, p) => {
+      const who = (p && p.info && p.info.name) || "Guest";
+      if (m.t === "chat") chat(who, m.x);
+      else if (m.t === "pt") { const t = tiles.get("me"); if (t) { const d = document.createElement("div"); d.className = "dot"; d.style.left = m.x * 100 + "%"; d.style.top = m.y * 100 + "%"; t.d.append(d); setTimeout(() => d.remove(), 1700); } chat(who, "(pointed at your screen)"); }
+      else if (m.t === "fs") { names.set(m.id, { name: m.name, parts: [], n: m.n, who }); }
+      else if (m.t === "fp") { const f = names.get(m.id); if (!f) return; f.parts.push(Uint8Array.from(atob(m.d), (c) => c.charCodeAt(0))); if (f.parts.length === f.n) { const u = URL.createObjectURL(new Blob(f.parts)); $("files").classList.remove("hide"); const a = document.createElement("div"); a.innerHTML = esc(f.who) + ": <a download=\"" + esc(f.name) + "\" href=\"" + u + "\">" + esc(f.name) + "</a>"; $("fl").append(a); names.delete(m.id); } }
+    }
+  });
+}
+$("new").onclick = () => { $("cd").value = pretty(gen()); $("st").textContent = "New code ready. Press “Join the session”, then give the code to the other person."; };
+$("go").onclick = () => {
+  const c = norm($("cd").value), n = $("nm").value.trim(); if (c.length !== 8) { $("st").textContent = "Please enter the 8-character code."; $("st").className = "m bad"; return; }
+  if (!n) { $("st").textContent = "Please type your name."; $("st").className = "m bad"; return; }
+  localStorage.setItem("cnj_name", n); start(c, n).catch((e) => { $("st").textContent = e.message; });
+};
+const link = () => location.origin + "/it/connect-join.html#c=" + code;
+$("cp").onclick = async () => { try { await navigator.clipboard.writeText(link()); say("Link copied.", "ok"); } catch (e) { prompt("Copy this link:", link()); } };
+$("wa").onclick = () => window.open("https://wa.me/?text=" + encodeURIComponent("Join my KMR Connect session: " + link() + "  (code " + pretty(code) + ")"), "_blank");
+$("mic").onclick = () => { if (!mic) return; mic.enabled = !mic.enabled; $("mic").textContent = mic.enabled ? "Mute" : "Unmute"; };
+$("cam").onclick = () => { if (!cam) return; cam.enabled = !cam.enabled; $("cam").textContent = cam.enabled ? "Camera off" : "Camera on"; };
+$("scr").onclick = async () => {
+  try {
+    if (share) { share.getTracks().forEach((t) => t.stop()); share = null; room.setTrack("video", cam); tile("me", me, local, true); $("scr").textContent = "Share my screen"; return; }
+    share = await navigator.mediaDevices.getDisplayMedia({ video: true }); const t = share.getVideoTracks()[0]; room.setTrack("video", t); tile("me", me, share, true); $("scr").textContent = "Stop sharing";
+    t.onended = () => { if (share) $("scr").onclick(); };
+  } catch (e) { say("Screen sharing was not started.", "bad"); share = null; }
+};
+const sendChat = () => { const v = $("ci").value.trim(); if (!v) return; room.data({ t: "chat", x: v }); chat("You", v); $("ci").value = ""; };
+$("cs").onclick = sendChat; $("ci").onkeydown = (e) => { if (e.key === "Enter") sendChat(); };
+$("fb").onclick = () => $("fi").click();
+$("fi").onchange = async () => {
+  const f = $("fi").files[0]; if (!f) return; if (f.size > 25 * 1048576) { say("Files up to 25 MB can be sent here.", "bad"); return; }
+  const buf = new Uint8Array(await f.arrayBuffer()), CH = 32768, n = Math.max(1, Math.ceil(buf.length / CH)), id = Math.random().toString(36).slice(2);
+  room.data({ t: "fs", id, name: f.name, n }); say("Sending " + f.name + "…");
+  for (let i = 0; i < n; i++) { let s = ""; const part = buf.subarray(i * CH, (i + 1) * CH); for (let j = 0; j < part.length; j += 8192) s += String.fromCharCode.apply(null, part.subarray(j, j + 8192)); room.data({ t: "fp", id, d: btoa(s) }); if (i % 8 === 7) await new Promise((r) => setTimeout(r, 40)); }
+  say("Sent " + f.name, "ok"); $("fi").value = "";
+};
+$("rec").onclick = () => {
+  if (rec) { rec.stop(); rec = null; $("rec").textContent = "Record"; $("rec").className = "o"; return; }
+  rec = R.Recorder({ video: true, tiles: () => [...tiles.values()].map((t) => ({ el: t.v, name: t.name })), onError: (m) => say(m, "bad"),
+    onPart: (blob, secs, mime) => { const u = URL.createObjectURL(blob), a = document.createElement("a"); a.href = u; a.download = "KMR-session-" + code + "." + (/mp4/.test(mime) ? "mp4" : "webm"); a.textContent = "Download the recording (" + Math.round(secs / 60 * 10) / 10 + " min)"; $("files").classList.remove("hide"); const d = document.createElement("div"); d.append(a); $("fl").append(d); say("Recording ready — download it below.", "ok"); } });
+  const au = []; if (mic) au.push(mic); tiles.forEach((t) => { const s = t.v.srcObject; if (s && t.v !== tiles.get("me").v) au.push(...s.getAudioTracks()); });
+  if (rec.start(au)) { $("rec").textContent = "Stop recording"; $("rec").className = "r"; }
+};
+$("lv").onclick = () => { try { if (rec) rec.stop(); room && room.leave(); local && local.getTracks().forEach((t) => t.stop()); share && share.getTracks().forEach((t) => t.stop()); } catch (e) { /* ignore */ } location.hash = ""; location.reload(); };
+if (P.get("c") && localStorage.getItem("cnj_name")) { /* link opened: just press Join */ }
+</script></body></html>
