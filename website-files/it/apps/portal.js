@@ -108,6 +108,7 @@
     const r = rows.find((x) => x.product_code === code);
     if (!r || !r.purchased || !r.ok) {
       const meta = META[code];
+      if (!DEV) return dialog(`${r ? r.product_name : code}`, "This app is not in your company's plan. Contact KMR to enable it.", `<a class="btn" href="${buyUrl(code)}">Contact KMR</a>`);
       if (!meta) return dialog(`${r ? r.product_name : code} — sample data`, "The sample-data version of this app is not available yet. Ask KMR for a demo.", `<a class="btn" href="${buyUrl(code)}">Contact KMR</a>`);
       location.href = meta.demo + (meta.demo.includes("?") ? "&" : "?") + "from=" + encodeURIComponent(SLUG);
       return;
@@ -133,7 +134,7 @@
     const m = META[r.product_code] || {}, im = imgOf(r), st = stats[r.product_code] || {};
     const noAcc = !locked && r.ok && !r.has_access && !r.is_contact && !isAdmin;
     const bad = Object.entries(st).find(([k, v]) => /overdue|open|due/i.test(k) && Number(v) > 0);
-    const sub = locked ? "Try with sample data" : !r.ok ? esc(r.status || "Paused") : noAcc ? "Ask your administrator" : (r.valid_until ? "Trial · until " + esc(r.valid_until) : esc(r.status || "Active"));
+    const sub = locked ? (DEV ? "Try with sample data" : "Not in your plan") : !r.ok ? esc(r.status || "Paused") : noAcc ? "Ask your administrator" : (r.valid_until ? "Trial · until " + esc(r.valid_until) : esc(r.status || "Active"));
     const inner = `${bad ? `<b class="bd">${esc(bad[1])} ${esc(bad[0])}</b>` : ""}<span class="ic">${im ? `<img src="${im}" alt="" loading="lazy">` : esc((r.product_name || "?")[0])}</span><h3>${esc(r.product_name)}</h3><small class="${locked || !r.ok ? "dim" : noAcc ? "dim" : "on"}">${sub}</small>`;
     const nm = esc(String(r.product_name || "").toLowerCase()), tip = esc((m.desc || "") + (Object.keys(st).length ? "  ·  " + Object.entries(st).map(([k, v]) => v + " " + k).join(", ") : ""));
     return noAcc ? `<div class="tile off" title="${tip}" data-name="${nm}" style="--c:${m.color}">${inner}</div>` : `<a class="tile${locked ? " lk" : ""}" title="${tip}" href="${appHref(r.product_code)}" data-open="${r.product_code}" data-name="${nm}" style="--c:${m.color}">${inner}</a>`;
@@ -222,8 +223,8 @@
 
   /* Sample data belongs in the KMR demo workspace only. A real company never gets the Load-sample buttons (the database refuses anyway).
      Before the 0049 database update the question cannot be answered, so nothing is hidden then. */
-  let SAMPLE_OK = true;
-  const ctxOf = () => ({ sb, slug: SLUG, main: document.querySelector(".main"), dialog, base: BASE, setView, sampleOk: SAMPLE_OK });
+  let SAMPLE_OK = true, DEV = false;
+  const ctxOf = () => ({ sb, slug: SLUG, main: document.querySelector(".main"), dialog, base: BASE, setView, sampleOk: SAMPLE_OK, dev: DEV });
   function dataView() { if (!window.KMR_DATA) return; setView("data"); return window.KMR_DATA.overview(ctxOf()); }
   /* All plants on one screen: each plant's apps and numbers side by side */
   async function plantsView() {
@@ -422,8 +423,9 @@
   }
 
   (async () => {
+    try { const d = await sb.rpc("kmr_is_staff"); DEV = !d.error && d.data === true; } catch (e) { DEV = false; }
     if (SLUG) { const { data } = await sb.rpc("kmr_portal_brand", { p_slug: SLUG }); if (data && data[0]) brand = data[0];
-      try { const w = await sb.rpc("kmr_workspace_info", { p_slug: SLUG }); if (!w.error && w.data && w.data.kind) SAMPLE_OK = w.data.kind === "demo"; } catch (e) { /* 0049 not applied yet */ } }
+      try { const w = await sb.rpc("kmr_workspace_info", { p_slug: SLUG }); if (!w.error && w.data && w.data.kind) SAMPLE_OK = w.data.kind === "demo" && DEV; } catch (e) { /* 0049 not applied yet */ } }
     if (SLUG) { try { const t = await sb.rpc("kmr_portal_theme", { p_slug: SLUG }); if (!t.error && typeof t.data === "string") THEME = t.data; } catch (e) { /* 0068 not applied yet: standard look */ } }
     if (brand.logo_url) setIcon(brand.logo_url);
     else { const k = await sb.rpc("kmr_platform_brand"); if (k.data && k.data.logo_url) { setIcon(k.data.logo_url); if (!SLUG) brand = { name: brand.name, logo_url: k.data.logo_url }; } }
