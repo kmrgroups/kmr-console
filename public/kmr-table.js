@@ -186,7 +186,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     // toolbar
     if (!t.previousElementSibling || !t.previousElementSibling.classList.contains("kmr-tt")) {
       const bar = document.createElement("div"); bar.className = "kmr-tt";
-      const dc = dateCol(t, hr);
+      const dc = t.hasAttribute("data-nodate") ? -1 : dateCol(t, hr);
       bar.innerHTML = '<input type="search" placeholder="Search this table…" aria-label="Search this table"><span class="kmr-cnt"></span><button type="button" hidden>Clear filters</button>' + (dc >= 0 ? '<span class="kd">From <input type="date" class="df"> To <input type="date" class="dt"> <button type="button" class="kb go">Search</button></span>' : '') + '<button type="button" class="kb x kxl">Excel</button><button type="button" class="kb p kpd">PDF</button>';
       t.parentNode.insertBefore(bar, t);
       const inp = bar.querySelector("input"); inp.value = st.q || "";

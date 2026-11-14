@@ -106,7 +106,8 @@ window.addEventListener('hashchange',route);
 
 const invs=()=>(S.d&&S.d.invoices)||[];
 const issued=()=>invs().filter(i=>i.status==='issued');
-const byId=(id)=>invs().find(i=>i.id===id);
+const shown=()=>S.found||invs();
+const byId=(id)=>(S.found||[]).find(i=>i.id===id)||invs().find(i=>i.id===id);
 
 /* ---------- Dashboard ---------- */
 function drawDash(){const fy=fyStart(),I=issued().filter(i=>i.inv_date>=fy);const sum=(k,a)=>(a||I).reduce((s,i)=>s+Number(i[k]||0),0);
@@ -123,9 +124,10 @@ function drawDash(){const fy=fyStart(),I=issued().filter(i=>i.inv_date>=fy);cons
 function newInv(){const s=sett();return {id:null,inv_date:td(),doc_type:'INV',supply_type:'B2B',reverse_charge:false,buyer_code:'',buyer_name:'',buyer_gstin:'',buyer_addr:'',buyer_loc:'',buyer_pin:'',buyer_state:'',po_no:'',po_date:'',dc_no:'',dc_date:'',vehicle_no:'',mode:'Road',transporter:'',transporter_id:'',distance_km:'',delivery_terms:'',pay_days:30,remarks:'',tcs_pct:0,lines:[blank()]}}
 const blank=()=>({item_code:'',description:'',hsn:'',uom:'Nos',qty:'',rate:'',discount:0,gst_rate:18,packing:''});
 function drawInv(){if(S.e)return drawEdit();if(S.view)return drawView();
-  const q=(S.q||'').toLowerCase();let L=invs().filter(i=>!q||[i.inv_no,i.buyer_name,i.po_no,i.dc_no].join(' ').toLowerCase().includes(q));
-  $('#inv').innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="new">+ New invoice</button>':''}<input id="q" class="grow" placeholder="Search number, customer, PO or challan" value="${esc(S.q||'')}" style="max-width:360px"><button class="btn o" data-a="csv">Download register (Excel)</button></div>
-  <div class="sc"><table class="lt"><thead><tr><th>Invoice no.</th><th>Date</th><th>Type</th><th>Customer</th><th>PO no.</th><th>Challan no.</th><th class="n">Taxable</th><th class="n">GST</th><th class="n">Total</th><th>Status</th><th>IRN</th><th>Tally</th></tr></thead><tbody>${L.map(i=>`<tr data-a="open" data-id="${i.id}" style="cursor:pointer"><td><b>${esc(i.inv_no||'(draft)')}</b></td><td>${dmy(i.inv_date)}</td><td>${esc(i.doc_type)}</td><td>${esc(i.buyer_name)}</td><td>${esc(i.po_no||'')}</td><td>${esc(i.dc_no||'')}</td><td class="n">${n2(i.taxable)}</td><td class="n">${n2(+i.cgst+ +i.sgst+ +i.igst)}</td><td class="n"><b>${n2(i.total)}</b></td><td>${chip(i.status)}</td><td>${i.irn?'✔':''}</td><td>${i.tally_at?'✔':''}</td></tr>`).join('')||'<tr><td colspan="12" class="mut">No invoices yet.</td></tr>'}</tbody></table></div>`;
+  const q=(S.q||'').toLowerCase();let L=shown().filter(i=>!q||[i.inv_no,i.buyer_name,i.po_no,i.dc_no].join(' ').toLowerCase().includes(q));
+  $('#inv').innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="new">+ New invoice</button>':''}<input id="q" class="grow" placeholder="Search number, customer, PO or challan" value="${esc(S.q||'')}" style="max-width:300px"><label class="mut">From <input type="date" id="pf" value="${esc((S.range||{}).a||'')}" style="width:auto"></label><label class="mut">To <input type="date" id="pt" value="${esc((S.range||{}).b||'')}" style="width:auto"></label><button class="btn" data-a="psearch">Search</button>${S.found?'<button class="btn o" data-a="pclear">Show last 6 months</button>':''}</div>
+  ${S.found?`<p class="note">Showing ${S.found.length} of ${S.foundTotal} invoices from ${dmy((S.range||{}).a)||'the start'} to ${dmy((S.range||{}).b)||'today'}${S.foundTotal>S.found.length?' (first '+S.found.length+'; narrow the dates to see the rest)':''}.</p>`:'<p class="note">Showing the last 6 months. Choose From and To dates and click Search to look at any other period.</p>'}
+  <div class="sc"><table class="lt" data-nodate><thead><tr><th>Invoice no.</th><th>Date</th><th>Type</th><th>Customer</th><th>PO no.</th><th>Challan no.</th><th class="n">Taxable</th><th class="n">GST</th><th class="n">Total</th><th>Status</th><th>IRN</th><th>Tally</th></tr></thead><tbody>${L.map(i=>`<tr data-a="open" data-id="${i.id}" style="cursor:pointer"><td><b>${esc(i.inv_no||'(draft)')}</b></td><td>${dmy(i.inv_date)}</td><td>${esc(i.doc_type)}</td><td>${esc(i.buyer_name)}</td><td>${esc(i.po_no||'')}</td><td>${esc(i.dc_no||'')}</td><td class="n">${n2(i.taxable)}</td><td class="n">${n2(+i.cgst+ +i.sgst+ +i.igst)}</td><td class="n"><b>${n2(i.total)}</b></td><td>${chip(i.status)}</td><td>${i.irn?'✔':''}</td><td>${i.tally_at?'✔':''}</td></tr>`).join('')||'<tr><td colspan="12" class="mut">No invoices yet.</td></tr>'}</tbody></table></div>`;
   const qi=$('#q');if(qi)qi.oninput=()=>{S.q=qi.value;const p=qi.selectionStart;drawInv();const n=$('#q');n.focus();n.setSelectionRange(p,p)}}
 function drawEdit(){const e=S.e,m=S.m||{customers:[],parts:[]};
   const f=(k,l,t,x)=>`<div><label>${l}</label><input data-f="${k}" type="${t||'text'}" value="${esc(e[k]==null?'':e[k])}" ${x||''}></div>`;
@@ -166,7 +168,7 @@ function docInv(i,copy){const s=sett(),intra=Number(i.igst||0)===0&&(Number(i.cg
   <div class="sg"><div>Prepared by</div><div>Checked by</div><div>For ${esc(s.legal_name||QP.ctx.company)} — Authorised signatory</div></div></div>`}
 function printInv(i){const c=['Original for Recipient','Duplicate for Transporter','Triplicate for Supplier'];$('#inv').innerHTML=`<div class="row noprint"><button class="btn o" data-a="vback">← Back</button><button class="btn" onclick="window.print()">Print / Save as PDF</button></div>`+c.map(x=>docInv(i,x)).join('');rep((TYPES[i.doc_type]||'Tax invoice')+' '+i.inv_no,i.inv_no,1)}
 function csv(){const H=['Invoice no','Date','Type','Customer','GSTIN','PO no','Challan no','Taxable','CGST','SGST','IGST','TCS','Round off','Total','Status','IRN','E-way bill'];
-  const q=(v)=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';dl('Invoice_register.csv','\ufeff'+[H.map(q).join(',')].concat(invs().map(i=>[i.inv_no,i.inv_date,i.doc_type,i.buyer_name,i.buyer_gstin,i.po_no,i.dc_no,i.taxable,i.cgst,i.sgst,i.igst,i.tcs,i.round_off,i.total,i.status,i.irn,i.ewb_no].map(q).join(','))).join('\n'),'text/csv')}
+  const q=(v)=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';dl('Invoice_register.csv','\ufeff'+[H.map(q).join(',')].concat(shown().map(i=>[i.inv_no,i.inv_date,i.doc_type,i.buyer_name,i.buyer_gstin,i.po_no,i.dc_no,i.taxable,i.cgst,i.sgst,i.igst,i.tcs,i.round_off,i.total,i.status,i.irn,i.ewb_no].map(q).join(','))).join('\n'),'text/csv')}
 
 /* ---------- E-invoice and e-way bill ---------- */
 const NSTATE=(i)=>(i.buyer_gstin||'').slice(0,2)||i.buyer_state||sett().state_code;
@@ -215,6 +217,8 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
  try{
   if(a==='new'){S.e=newInv();drawInv()}
   else if(a==='open'){S.view=b.dataset.id;drawInv()}
+  else if(a==='psearch'){const x=$('#pf').value,y=$('#pt').value;if(!x&&!y)return say('Choose a From date, a To date, or both.');if(x&&y&&x>y)return say('The From date is after the To date.');const r=await call('kmr_inv_find',{p_from:x||null,p_to:y||null,p_q:null});S.range={a:x,b:y};S.found=r.invoices;S.foundTotal=r.total;S.q='';drawInv()}
+  else if(a==='pclear'){S.found=null;S.range=null;drawInv()}
   else if(a==='back'){S.e=null;S.view=null;S.pr=null;drawInv()}
   else if(a==='vback'){S.pr=null;drawInv()}
   else if(a==='edit'){const i=byId(S.view);S.e=JSON.parse(JSON.stringify(i));S.e.lines=(S.e.lines||[]).map(l=>({...l}));S.view=null;['po_date','dc_date'].forEach(k=>{if(!S.e[k])S.e[k]=''});drawInv()}
@@ -228,7 +232,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]')
   else if(a==='print'){S.pr=1;printInv(byId(S.view))}
   else if(a==='csv')csv();
   else if(a==='erp-go'){const f=($('#erpf')||{files:[]}).files[0];if(!f)return say('Choose the ERP file first.');const out=$('#erpp');out.textContent='Reading '+f.name+'…';let txt;if(/\.gz$/i.test(f.name)){if(!window.DecompressionStream)return say('Please use a current Chrome or Edge to open .gz files.');txt=await new Response(f.stream().pipeThrough(new DecompressionStream('gzip'))).text()}else txt=await f.text();
-    const A=JSON.parse(txt).invoices||[];let n=0,i=0;for(;i<A.length;i+=100){const r=await call('kmr_inv_import',{p:{invoices:A.slice(i,i+100)}});n+=r.invoices||0;out.textContent='Importing… '+Math.min(i+100,A.length)+' of '+A.length+' ('+Math.round(Math.min(i+100,A.length)*100/A.length)+'%)'}
+    const A=(JSON.parse(txt).invoices||[]).map(v=>{const pd=String(v.pay_days==null?'':v.pay_days);if(pd!==''&&!/^\d+$/.test(pd)){v.remarks=(v.remarks?v.remarks+'. ':'')+'Payment: '+pd;v.pay_days=''}return v});let n=0,i=0;for(;i<A.length;i+=100){const r=await call('kmr_inv_import',{p:{invoices:A.slice(i,i+100)}});n+=r.invoices||0;out.textContent='Importing… '+Math.min(i+100,A.length)+' of '+A.length+' ('+Math.round(Math.min(i+100,A.length)*100/A.length)+'%)'}
     out.textContent='';say('Import finished: '+n+' invoices added; '+(A.length-n)+' were already here.','ok');await load();paint()}
   else if(a==='more'){S.months=36;await load();paint()}
   else if(a==='einv'){const L=picked('e').map(byId).filter(Boolean);if(!L.length)return say('Tick at least one invoice.');dl('E-invoice_'+td()+'.json',JSON.stringify(L.map(einvJson),null,1))}
