@@ -1,128 +1,84 @@
-/* KMR searchable dropdown - one shared script for every KMR app, Console and HRM.
-   Every <select> opens a popup with a search box. Optional attributes on a <select>:
-     data-multi  : a "Select multiple" switch appears; several values are stored joined as "A, B"
-     data-add    : typing a value that is not in the list offers "+ Add ..."
-     data-native : leave this one as the browser's own dropdown
-   A <select multiple> works as a multi-select list. Values, events and form behaviour are unchanged. */
+/* KMR searchable / multi-select dropdowns.
+   1) Every ordinary <select> on the page (6 or more choices) becomes a dropdown with a search box (add data-plain to skip one).
+   2) KMRSel.multi(host, {label, options:[{v,l}], value:[...], onChange(arr)}) makes a filter dropdown where several choices can be ticked,
+      with Search, Select all and Clear. Nothing ticked = all. */
 (function () {
-  if (window.__kmrSelect) return; window.__kmrSelect = 1;
-  var pop = null, cur = null, SEP = ", ", openW = 0, popPlace = null;
-  function css() {
-    if (document.getElementById("kmr-sel-css")) return;
-    var s = document.createElement("style"); s.id = "kmr-sel-css";
-    s.textContent = ".kmr-sp{position:fixed;z-index:2147483000;box-shadow:0 10px 30px rgba(0,0,0,.28);border:1px solid rgba(128,128,128,.45);border-radius:8px;display:flex;flex-direction:column;font:14px/1.3 system-ui,sans-serif;overflow:hidden}" +
-      ".kmr-sp input[type=search]{margin:8px;padding:8px 10px;font:inherit;border:1px solid rgba(128,128,128,.55);border-radius:6px;background:transparent;color:inherit;outline:none;width:auto}" +
-      ".kmr-sp input[type=search]:focus{border-color:#2563eb}.kmr-sp .kl{overflow:auto;flex:1;padding:0 4px 6px}" +
-      ".kmr-sp .ko{padding:7px 10px;border-radius:5px;cursor:pointer;display:flex;gap:8px;align-items:center}.kmr-sp .ko.hi{background:rgba(37,99,235,.16)}.kmr-sp .ko.on{font-weight:700}" +
-      ".kmr-sp .kg{padding:6px 10px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;opacity:.65}.kmr-sp .kf{display:flex;gap:10px;align-items:center;padding:6px 10px;border-top:1px solid rgba(128,128,128,.3);font-size:12.5px}" +
-      ".kmr-sp .kf button{font:inherit;padding:4px 10px;border-radius:6px;border:1px solid rgba(128,128,128,.55);background:transparent;color:inherit;cursor:pointer}.kmr-sp .kn{padding:10px;opacity:.7}.kmr-sp .ko{min-height:40px;touch-action:manipulation}.kmr-sp input[type=search]{font-size:16px}.kmr-sp .kx{width:16px;text-align:center}";
-    document.head.appendChild(s);
-  }
-  function ok(sel) { return sel && sel.tagName === "SELECT" && !sel.disabled && !sel.hasAttribute("data-native") && !(sel.size > 1) && !sel.closest(".kmr-sp"); }
-  function close() { if (pop) { pop.remove(); pop = null; } if (popPlace && window.visualViewport) { window.visualViewport.removeEventListener("resize", popPlace); window.visualViewport.removeEventListener("scroll", popPlace); } popPlace = null; cur = null; }
-  function fire(sel) { sel.dispatchEvent(new Event("input", { bubbles: true })); sel.dispatchEvent(new Event("change", { bubbles: true })); }
-  function items(sel) {
-    var out = [];
-    Array.prototype.forEach.call(sel.children, function (c) {
-      if (c.tagName === "OPTGROUP") { out.push({ g: c.label }); Array.prototype.forEach.call(c.children, function (o) { out.push({ o: o }); }); }
-      else if (c.tagName === "OPTION") out.push({ o: c });
-    });
-    return out.filter(function (x) { return !(x.o && x.o.hasAttribute("data-kmr-synth")); });
-  }
-  function open(sel) {
-    if (!ok(sel)) return; close(); css(); cur = sel;
-    var nat = sel.multiple, mm = !nat && sel.hasAttribute("data-multi"), add = sel.hasAttribute("data-add");
-    var curVal = nat ? Array.prototype.filter.call(sel.options, function (o) { return o.selected && o.value !== ""; }).map(function (o) { return o.value; }) : (sel.value || "").split(mm ? SEP : "\u0000").filter(Boolean);
-    var multi = nat || (mm && curVal.length > 1), chosen = {}; curVal.forEach(function (v) { chosen[v] = 1; });
-    var cs = getComputedStyle(sel), r = sel.getBoundingClientRect();
-    pop = document.createElement("div"); pop.className = "kmr-sp";
-    var bg = cs.backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = getComputedStyle(document.body).backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = "#fff";
-    pop.style.background = bg; pop.style.color = cs.color || "inherit";
-    pop.innerHTML = '<input type="search" placeholder="Search..." autocomplete="off" spellcheck="false" data-nospell><div class="kl" role="listbox"></div>' +
-      (mm ? '<div class="kf"><label><input type="checkbox" class="km"' + (multi ? " checked" : "") + '> Select multiple</label></div>' : "") +
-      '<div class="kf kd" style="display:none"><button type="button" class="kok">Done</button><button type="button" class="kc">Clear</button></div>';
-    document.body.appendChild(pop);
-    var w = Math.max(r.width, 240); pop.style.width = Math.min(w, window.innerWidth - 16) + "px";
-    var left = Math.min(Math.max(8, r.left), window.innerWidth - w - 8); pop.style.left = left + "px";
-    var vv = window.visualViewport, small = window.innerWidth <= 640 || (window.matchMedia && matchMedia("(pointer:coarse)").matches);
-    openW = window.innerWidth;
-    function place() {
-      if (!pop) return;
-      if (small) {   /* phone: sheet at the top of the visible area, so the keyboard never hides the list */
-        var vh = vv ? vv.height : window.innerHeight, top = vv ? vv.offsetTop : 0, lft = vv ? vv.offsetLeft : 0, vw = vv ? vv.width : window.innerWidth;
-        pop.style.left = (lft + 8) + "px"; pop.style.width = (vw - 16) + "px"; pop.style.bottom = "auto"; pop.style.top = (top + 8) + "px";
-        pop.style.maxHeight = Math.max(160, Math.min(vh - 16, vh * 0.7)) + "px"; return;
-      }
-      var below = window.innerHeight - r.bottom, h = Math.min(340, Math.max(below, r.top) - 12);
-      pop.style.maxHeight = Math.max(160, h) + "px"; if (below >= 220 || below >= r.top) pop.style.top = (r.bottom + 2) + "px"; else pop.style.bottom = (window.innerHeight - r.top + 2) + "px";
-    }
-    place(); popPlace = place; if (vv) { vv.addEventListener("resize", place); vv.addEventListener("scroll", place); }
-    var inp = pop.querySelector("input[type=search]"), list = pop.querySelector(".kl"), done = pop.querySelector(".kd"), hi = 0, vis = [];
-    var all = items(sel);
-    function sync() { done.style.display = multi ? "flex" : "none"; }
-    function draw() {
-      var q = inp.value.trim().toLowerCase(), html = "", lastG = null; vis = [];
-      all.forEach(function (x) {
-        if (x.g != null) { lastG = x.g; return; }
-        var t = x.o.text || ""; if (q && t.toLowerCase().indexOf(q) < 0 && String(x.o.value).toLowerCase().indexOf(q) < 0) return;
-        if (x.o.value === "" && q) return;
-        if (lastG != null) { html += '<div class="kg">' + esc(lastG) + "</div>"; lastG = null; }
-        var on = multi ? !!chosen[x.o.value] : (x.o.value === sel.value);
-        html += '<div class="ko' + (on ? " on" : "") + (x.o.disabled ? " dis" : "") + '" data-i="' + vis.length + '">' + (multi ? '<span class="kx">' + (on ? "\u2611" : "\u2610") + "</span>" : "") + "<span>" + esc(t === "" ? "\u2014" : t) + "</span></div>";
-        vis.push(x.o);
+  if (window.KMRSel) return;
+  const css = document.createElement("style");
+  css.textContent = `.ks-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:130px;border:1px solid #D3DBE6;border-radius:8px;background:#fff;color:#16233A;padding:6px 10px;font:500 13px "Segoe UI",Roboto,Arial,sans-serif;cursor:pointer;text-align:left;min-height:34px}
+.ks-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.ks-btn i{font-style:normal;color:#64748B;font-size:10px}.ks-btn.on{border-color:#7C3AED;background:#F5F0FF}.ks-btn[disabled]{opacity:.55;cursor:default}
+.ks-wrap{display:inline-block;vertical-align:top;min-width:150px;max-width:260px}.ks-lab{display:block;font-size:12px;color:#64748B;font-weight:600;margin-bottom:2px}
+.ks-pop{position:fixed;z-index:2147483100;width:280px;max-width:calc(100vw - 16px);background:#fff;color:#16233A;border:1px solid #E3E8EF;border-radius:12px;box-shadow:0 18px 50px rgba(20,30,70,.28);padding:8px;font:500 13px "Segoe UI",Roboto,Arial,sans-serif}
+.ks-pop input.ks-q{width:100%!important;box-sizing:border-box;height:32px;border:1px solid #D3DBE6;border-radius:8px;padding:0 10px;font:500 13px "Segoe UI",Arial,sans-serif;background:#fff;color:#16233A}
+.ks-pop .ks-act{display:flex;justify-content:space-between;margin:6px 2px 4px;font-size:12px}.ks-pop .ks-act a{color:#7C3AED;font-weight:700;cursor:pointer}
+.ks-pop .ks-l{max-height:250px;overflow:auto;border:1px solid #EEF1F6;border-radius:8px;padding:2px;margin-top:6px}
+.ks-pop .ks-o{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;line-height:1.25;width:auto!important;margin:0!important;color:#16233A!important;font-size:13px!important}.ks-pop .ks-o:hover,.ks-pop .ks-o.cur{background:#F5F0FF}
+.ks-pop .ks-o input{width:16px!important;height:16px!important;min-width:16px!important;padding:0!important;margin:0;accent-color:#7C3AED;flex:none}.ks-pop .ks-o span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ks-pop .ks-none{padding:10px;color:#8A96A8;text-align:center}.ks-pop .ks-done{margin-top:6px;width:100%;border:0;border-radius:8px;padding:7px;font-weight:700;color:#fff;background:#7C3AED;cursor:pointer}`;
+  document.head.append(css);
+  let pop = null;
+  const close = () => { if (pop) { pop.remove(); pop = null; document.removeEventListener("keydown", esc, true); } };
+  const esc = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("mousedown", (e) => { if (pop && !pop.contains(e.target) && !e.target.closest(".ks-btn")) close(); }, true);
+  window.addEventListener("scroll", (e) => { if (pop && !pop.contains(e.target)) close(); }, true);
+  window.addEventListener("resize", close);
+
+  /* the dropdown list: multi=true gives tick boxes; pick() is called with the full array of chosen values */
+  function openList(btn, options, chosen, multi, pick) {
+    close();
+    const sel = new Set(chosen.map(String));
+    pop = document.createElement("div"); pop.className = "ks-pop";
+    pop.innerHTML = '<input class="ks-q" type="search" placeholder="Search…" autocomplete="off">' + (multi ? '<div class="ks-act"><a data-k="all">Select all</a><a data-k="none">Clear</a></div>' : "") + '<div class="ks-l"></div>' + (multi ? '<button type="button" class="ks-done">Done</button>' : "");
+    document.body.append(pop);
+    const r = btn.getBoundingClientRect(), h = Math.min(400, window.innerHeight - 20);
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 290)) + "px";
+    pop.style.top = (r.bottom + 4 + 360 > window.innerHeight && r.top > 360 ? Math.max(8, r.top - 4 - Math.min(h, 360)) : r.bottom + 4) + "px";
+    const L = pop.querySelector(".ks-l"), Q = pop.querySelector(".ks-q");
+    const draw = () => {
+      const f = Q.value.trim().toLowerCase(); L.textContent = "";
+      const shown = options.filter((o) => !f || String(o.l).toLowerCase().includes(f));
+      if (!shown.length) { const d = document.createElement("div"); d.className = "ks-none"; d.textContent = "No match"; L.append(d); return; }
+      shown.slice(0, 500).forEach((o) => {
+        const lab = document.createElement("label"); lab.className = "ks-o" + (!multi && sel.has(String(o.v)) ? " cur" : "");
+        if (multi) { const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = sel.has(String(o.v)); cb.onchange = () => { cb.checked ? sel.add(String(o.v)) : sel.delete(String(o.v)); pick([...sel]); }; lab.append(cb); }
+        const s = document.createElement("span"); s.textContent = o.l === "" ? "(blank)" : o.l; s.title = o.l; lab.append(s);
+        if (!multi) lab.onclick = (e) => { e.preventDefault(); close(); pick([String(o.v)]); };
+        L.append(lab);
       });
-      var exact = all.some(function (x) { return x.o && x.o.text.toLowerCase() === q; });
-      if (add && q && !exact) { html += '<div class="ko ka" data-i="add">+ Add \u201c' + esc(inp.value.trim()) + "\u201d</div>"; }
-      if (!html) html = '<div class="kn">Nothing found</div>';
-      list.innerHTML = html; if (hi >= vis.length + (add && q && !exact ? 1 : 0)) hi = 0; mark(); sync();
-    }
-    function mark() { var els = list.querySelectorAll(".ko"); Array.prototype.forEach.call(els, function (e, i) { e.classList.toggle("hi", i === hi); }); var e = els[hi]; if (e && e.scrollIntoView) e.scrollIntoView({ block: "nearest" }); }
-    function apply() {
-      if (nat) { Array.prototype.forEach.call(sel.options, function (o) { o.selected = !!chosen[o.value]; }); }
-      else if (multi || mm) {
-        var vals = Object.keys(chosen); Array.prototype.forEach.call(sel.querySelectorAll("option[data-kmr-synth]"), function (o) { o.remove(); });
-        var order = Array.prototype.map.call(sel.options, function (o) { return o.value; }); vals.sort(function (a, b) { var x = order.indexOf(a), y = order.indexOf(b); return (x < 0 ? 1e9 : x) - (y < 0 ? 1e9 : y); });
-        var v = vals.join(SEP); var has = Array.prototype.some.call(sel.options, function (o) { return o.value === v; });
-        if (v && !has) { var o = new Option(v, v); o.setAttribute("data-kmr-synth", "1"); sel.appendChild(o); }
-        sel.value = v;
-      }
-      fire(sel);
-    }
-    function pick(o, isAdd) {
-      if (isAdd) { var t = inp.value.trim(); if (!t) return; var ex = Array.prototype.filter.call(sel.options, function (x) { return x.value.toLowerCase() === t.toLowerCase(); })[0]; if (!ex) { ex = new Option(t, t); ex.setAttribute("data-added", "1"); sel.appendChild(ex); all = items(sel); } o = ex; }
-      if (!o || o.disabled) return;
-      if (multi) { if (o.value === "") chosen = {}; else if (chosen[o.value]) delete chosen[o.value]; else chosen[o.value] = 1; apply(); draw(); inp.focus(); }
-      else { if (mm || nat) { chosen = {}; if (o.value) chosen[o.value] = 1; apply(); } else { sel.value = o.value; fire(sel); } close(); sel.focus(); }
-    }
-    inp.addEventListener("input", function () { hi = 0; draw(); });
-    inp.addEventListener("keydown", function (e) {
-      var n = list.querySelectorAll(".ko").length;
-      if (e.key === "ArrowDown") { hi = Math.min(n - 1, hi + 1); mark(); e.preventDefault(); }
-      else if (e.key === "ArrowUp") { hi = Math.max(0, hi - 1); mark(); e.preventDefault(); }
-      else if (e.key === "Enter") { e.preventDefault(); var el = list.querySelectorAll(".ko")[hi]; if (el) { if (el.dataset.i === "add") pick(null, true); else pick(vis[+el.dataset.i]); } }
-      else if (e.key === "Escape") { e.preventDefault(); var s = sel; close(); s.focus(); }
-      else if (e.key === "Tab") { close(); }
-    });
-    list.addEventListener("mousedown", function (e) { e.preventDefault(); });
-    list.addEventListener("click", function (e) { var el = e.target.closest(".ko"); if (!el) return; if (el.dataset.i === "add") pick(null, true); else pick(vis[+el.dataset.i]); });
-    var km = pop.querySelector(".km"); if (km) km.addEventListener("change", function () { multi = km.checked; if (!multi && Object.keys(chosen).length > 1) { var f = Object.keys(chosen)[0]; chosen = {}; chosen[f] = 1; apply(); } draw(); inp.focus(); });
-    pop.querySelector(".kok").addEventListener("click", function () { var s = sel; close(); s.focus(); });
-    pop.querySelector(".kc").addEventListener("click", function () { chosen = {}; apply(); draw(); inp.focus(); });
-    draw(); var first = list.querySelector(".ko.on"); if (first && !multi) { hi = Array.prototype.indexOf.call(list.querySelectorAll(".ko"), first); mark(); }
-    setTimeout(function () { try { inp.focus({ preventScroll: true }); } catch (x) { inp.focus(); } }, 0);
+      if (shown.length > 500) { const d = document.createElement("div"); d.className = "ks-none"; d.textContent = "Type to narrow the list (" + shown.length + " choices)"; L.append(d); }
+    };
+    Q.oninput = draw; draw(); Q.focus();
+    pop.querySelectorAll(".ks-act a").forEach((a) => { a.onclick = () => { const f = Q.value.trim().toLowerCase(); const vis = options.filter((o) => !f || String(o.l).toLowerCase().includes(f)); if (a.dataset.k === "all") vis.forEach((o) => sel.add(String(o.v))); else if (f) vis.forEach((o) => sel.delete(String(o.v))); else sel.clear(); pick([...sel]); draw(); }; });
+    const dn = pop.querySelector(".ks-done"); if (dn) dn.onclick = close;
+    document.addEventListener("keydown", esc, true);
   }
-  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-  var lastOpen = 0;
-  document.addEventListener("mousedown", function (e) {
-    var t = e.target; if (pop && !t.closest(".kmr-sp") && t !== cur) close();
-    if (e.button !== 0) return; var sel = t.closest && t.closest("select"); if (ok(sel)) { e.preventDefault(); lastOpen = Date.now(); open(sel); }
-  }, true);
-  document.addEventListener("click", function (e) { var sel = e.target.closest && e.target.closest("select"); if (ok(sel)) { e.preventDefault(); if (!pop && Date.now() - lastOpen > 600) open(sel); } }, true);
-  document.addEventListener("keydown", function (e) {
-    var sel = e.target; if (!ok(sel) || pop) return;
-    if (e.key === "Enter" || e.key === " " || e.key === "F4" || (e.altKey && (e.key === "ArrowDown" || e.key === "ArrowUp"))) { e.preventDefault(); open(sel); }
-  }, true);
-  window.addEventListener("resize", function () { if (pop && window.innerWidth !== openW) close(); });   /* keyboard opening only changes height - keep the list open */
-  window.addEventListener("scroll", function (e) { if (!pop) return; var t = e.target; if (t && t.closest && t.closest(".kmr-sp")) return; if (t === document || t === window || t === document.documentElement) return; close(); }, true);
-  window.KMRSelect = { open: open, close: close };
+
+  /* filter dropdown with several choices */
+  function multi(host, o) {
+    host.classList.add("ks-wrap");
+    let val = (o.value || []).map(String);
+    host.innerHTML = (o.label ? '<span class="ks-lab"></span>' : "") + '<button type="button" class="ks-btn"><span></span><i>▼</i></button>';
+    if (o.label) host.querySelector(".ks-lab").textContent = o.label;
+    const b = host.querySelector(".ks-btn"), t = b.querySelector("span");
+    const show = () => { const n = val.length; const map = new Map((o.options || []).map((x) => [String(x.v), x.l])); t.textContent = !n ? "All" : n === 1 ? (map.get(val[0]) || val[0]) : n + " selected"; b.classList.toggle("on", n > 0); };
+    show();
+    b.onclick = () => { if (pop) { close(); return; } openList(b, o.options || [], val, true, (arr) => { val = arr; show(); if (o.onChange) o.onChange(arr.slice()); }); };
+    return { get: () => val.slice(), set: (a) => { val = a.map(String); show(); } };
+  }
+
+  /* ordinary <select>: same choices, plus a search box */
+  function enhance(s) {
+    if (s._ks || s.multiple || s.hasAttribute("data-plain") || s.closest(".kmr-pop,.ks-pop") || s.options.length < 6) return;
+    s._ks = 1;
+    const b = document.createElement("button"); b.type = "button"; b.className = "ks-btn"; b.innerHTML = "<span></span><i>▼</i>";
+    const t = b.querySelector("span");
+    const sync = () => { const o = s.options[s.selectedIndex]; t.textContent = o ? o.text : ""; b.disabled = s.disabled; };
+    s.style.display = "none"; s.after(b); sync();
+    b.onclick = () => { if (pop) { close(); return; } openList(b, [...s.options].map((o) => ({ v: o.value, l: o.text, d: o.disabled })).filter((x) => !x.d), [s.value], false, (arr) => { s.value = arr[0]; sync(); s.dispatchEvent(new Event("input", { bubbles: true })); s.dispatchEvent(new Event("change", { bubbles: true })); }); };
+    s.addEventListener("change", sync); new MutationObserver(sync).observe(s, { childList: true, subtree: true, attributes: true });
+  }
+  const scan = (root) => (root || document).querySelectorAll("select").forEach(enhance);
+  new MutationObserver((ms) => { if (ms.some((m) => m.addedNodes.length)) scan(); }).observe(document.documentElement, { childList: true, subtree: true });
+  if (document.readyState !== "loading") scan(); else document.addEventListener("DOMContentLoaded", () => scan());
+  window.KMRSel = { multi, enhance, scan, close };
 })();
