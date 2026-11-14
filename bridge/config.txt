@@ -1,0 +1,14 @@
+# KMR universal ERP bridge settings (normally nothing to change)
+bridgeUrl = https://www.kmr-groups.com/it/console/api/erp/bridge
+despatchUrl = https://www.kmr-groups.com/it/console/api/sales/erp-sync
+despatchStartDate = 2026-11-01
+despatchLookbackDays = 40
+invoiceLookbackDays = 60
+productionLookbackDays = 45
+# minutes between runs of each kind (an unchanged ERP is never sent again)
+everyMinutesInvoices = 15
+everyMinutesProduction = 30
+everyMinutesPurchase = 360
+everyMinutesCalibration = 720
+# once in this many days everything is read again from the beginning (safe: nothing is duplicated)
+fullEveryDays = 30
