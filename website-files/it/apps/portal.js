@@ -106,6 +106,7 @@
 
   async function open(code) {
     const r = rows.find((x) => x.product_code === code);
+    if (r && r.purchased && !r.ok) return dialog(`${r.product_name} is ${esc(r.status || "paused")}`, "This app is switched off for this plant, so your data is not opened. Ask KMR to switch it on.", `<a class="btn" href="${buyUrl(code)}">Contact KMR</a>`);
     if (!r || !r.purchased || !r.ok) {
       const meta = META[code];
       if (!DEV) return dialog(`${r ? r.product_name : code}`, "This app is not in your company's plan. Contact KMR to enable it.", `<a class="btn" href="${buyUrl(code)}">Contact KMR</a>`);
