@@ -1,5 +1,5 @@
 "use client";
-import { startTransition, useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import type { ActionState } from "@/lib/action-state";
 
 /**
@@ -24,6 +24,8 @@ export function ActionForm({
 }) {
   const [state, formAction, pending] = useActionState<ActionState, FormData>(action, {});
   const ref = useRef<HTMLFormElement>(null);
+  const [armed, setArmed] = useState(false);
+  const [note, setNote] = useState("");
   useEffect(() => {
     if (resetOnSuccess && state.ok) ref.current?.reset();
     // a form inside a popup / panel closes it once it has saved
@@ -36,15 +38,24 @@ export function ActionForm({
       className={className ?? "stack"}
       onSubmit={(e) => {
         e.preventDefault();
-        if (e.currentTarget.querySelector('[data-uploading="1"]')) { window.alert("Please wait — a file is still uploading."); return; }
-        if (confirm && !window.confirm(confirm)) return;
+        if (e.currentTarget.querySelector('[data-uploading="1"]')) { setNote("Please wait — a file is still uploading."); return; }
+        setNote("");
+        if (confirm && !armed) { setArmed(true); return; }   // asked on the screen itself (no browser pop-up)
+        setArmed(false);
         const data = new FormData(e.currentTarget);
         startTransition(() => formAction(data));
       }}
     >
       {hidden && Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       {children}
-      <div><button className={`btn${variant ? " " + variant : ""}`} disabled={pending}>{pending ? pendingLabel ?? "Please wait…" : submitLabel}</button></div>
+      {armed
+        ? <div className="alert warn" role="alertdialog" style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{ flex: "1 1 220px" }}>{confirm}</span>
+            <button className={`btn${variant ? " " + variant : ""}`} disabled={pending}>Yes, continue</button>
+            <button type="button" className="btn secondary" onClick={() => setArmed(false)}>Cancel</button>
+          </div>
+        : <div><button className={`btn${variant ? " " + variant : ""}`} disabled={pending}>{pending ? pendingLabel ?? "Please wait…" : submitLabel}</button></div>}
+      {note && <div className="alert error" role="alert">{note}</div>}
       {state.error && <div className="alert error" role="alert">{state.error}</div>}
       {state.ok && !state.flashed && <div className="alert ok" role="status">{state.ok}</div>}
       {state.link && !state.flashed && <CopyLink link={state.link} />}

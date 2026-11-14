@@ -18,6 +18,8 @@ import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
 import { deleteCustomerAction } from "./delete-action";
+import { AppsPanel, type PanelProduct } from "@/components/AppsPanel";
+import { saveSetup } from "@/app/setup-actions";
 
 export const metadata = { title: "Customer" };
 
@@ -252,87 +254,14 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         ) : <p className="muted">Nobody yet — the list fills when tools are switched on or the customer adds people.</p>}
       </div>
 
-      <div className="card">
-        <h2>Products</h2>
-        <div className="stack">
-          {(products ?? []).map((pr) => {
-            const l = (licences ?? []).find((x) => x.product_code === pr.code) as Licence | undefined;
-            const st = l ? effectiveStatus(l) : null;
-            return (
-              <div key={pr.code} style={{ border: "1px solid var(--border)", borderRadius: 10, padding: 16 }}>
-                <div className="spread" style={{ alignItems: "flex-start" }}>
-                  <div><b>{pr.name}</b> {st && <span className={`badge ${LICENCE_TONE[st]}`}>{st}</span>}<br /><small className="muted">{pr.description}</small></div>
-                  {l && <div style={{ textAlign: "right", fontSize: 13 }}>
-                    {l.valid_until ? <>Until <b>{fmtDate(l.valid_until)}</b></> : "No end date"}<br />
-                    {l.seats ? <>Limit {l.seats} {pr.seat_label}</> : `Unlimited ${pr.seat_label}`}
-                    {toolUse[pr.code] && <><br />Using {toolUse[pr.code].users} users · {toolUse[pr.code].items} {pr.code === "balloon" ? "reports" : pr.code === "pd" ? "projects" : "saved versions"}</>}
-                  </div>}
-                </div>
-
-                {l && (
-                  <>
-                    {l.product_slug && <p style={{ fontSize: 13, margin: "8px 0 0" }}>Workspace <b>{l.product_slug}</b> · sign-in <a href={`${env.platformUrl}${pr.app_path}`} target="_blank" rel="noopener" className="mono">{env.platformUrl}{pr.app_path}</a></p>}
-                    {(() => {
-                      const fl = ((feats ?? []) as Feature[]).filter((f) => f.product_code === pr.code);
-                      if (!fl.length) return null;
-                      const have = l.features ?? null;
-                      return <p style={{ fontSize: 13, margin: "8px 0 0" }}>Features: {have ? <><b>{fl.filter((f) => have.includes(f.key ?? "")).length} of {fl.length}</b> — {fl.filter((f) => have.includes(f.key ?? "")).map((f) => f.name).join(", ") || "none"}</> : <b>all {fl.length} (not restricted)</b>}</p>;
-                    })()}
-                    {manager && (
-                      <details style={{ marginTop: 10 }}>
-                        <summary className="btn secondary small">Change licence</summary>
-                        <div style={{ marginTop: 10 }}>
-                          <ActionForm action={saveLicence} submitLabel="Save licence" className="formgrid" hidden={{ customer_id: c.id, product_code: pr.code }}>
-                            <label className="field">Status<select name="status" defaultValue={l.status}>{["trial", "pilot", "active", "suspended", "expired", "cancelled"].map((s) => <option key={s}>{s}</option>)}</select></label>
-                            <label className="field">Valid until<input type="date" name="valid_until" defaultValue={l.valid_until ?? ""} /><span className="help">Empty = no end date</span></label>
-                            <label className="field">Limit ({pr.seat_label})<input type="number" name="seats" min={1} defaultValue={l.seats ?? ""} placeholder="Unlimited" /></label>
-                            <label className="field full">Notes<input name="notes" defaultValue={l.notes ?? ""} /></label>
-                          </ActionForm>
-                          <p className="muted" style={{ fontSize: 12.5 }}>Suspended, expired or cancelled stops the customer&apos;s access within a minute. Their data is kept.</p>
-                          {(() => {
-                            const fl = ((feats ?? []) as Feature[]).filter((f) => f.product_code === pr.code);
-                            if (!fl.length) return null;
-                            return (
-                              <div style={{ borderTop: "1px solid var(--border)", marginTop: 12, paddingTop: 12 }}>
-                                <b>Features this customer can use</b>
-                                <p className="muted" style={{ fontSize: 12.5, margin: "2px 0 8px" }}>A paid invoice switches on the features on it. You can also set them here; anything not ticked is locked in the app.</p>
-                                <ActionForm action={saveLicenceFeatures} submitLabel="Save features" hidden={{ customer_id: c.id, product_code: pr.code }}>
-                                  <label className="check" style={{ fontWeight: 400 }}><input type="radio" name="scope" value="all" defaultChecked={!l.features} /> All features (no restriction)</label>
-                                  <label className="check" style={{ fontWeight: 400 }}><input type="radio" name="scope" value="only" defaultChecked={!!l.features} /> Only the ticked features</label>
-                                  <div style={{ display: "grid", gap: 4, margin: "4px 0 4px 22px" }}>
-                                    {fl.map((f) => <label key={f.id} className="check" style={{ fontWeight: 400 }}><input type="checkbox" name="feature" value={f.key ?? ""} defaultChecked={f.is_core || !!l.features?.includes(f.key ?? "")} disabled={f.is_core} />{f.is_core && <input type="hidden" name="feature" value={f.key ?? ""} />} {f.name}{f.is_core ? " · core" : ""}</label>)}
-                                  </div>
-                                </ActionForm>
-                              </div>);
-                          })()}
-                        </div>
-                      </details>
-                    )}
-                  </>
-                )}
-
-                {!l && manager && (
-                  <details style={{ marginTop: 10 }}>
-                    <summary className="btn small">Switch on {pr.name}</summary>
-                    <div style={{ marginTop: 10 }}>
-                      <p className="muted" style={{ fontSize: 13 }}>Creates the company&apos;s workspace and its first administrator. The same email and password work in every KMR app.</p>
-                      <ActionForm action={enableTool} submitLabel={`Create ${pr.name} workspace`} pendingLabel="Setting up…" className="formgrid" hidden={{ customer_id: c.id, product_code: pr.code }}>
-                        <label className="field">Workspace name<input name="workspace" defaultValue={c.name} required /></label>
-                        <label className="field">Administrator name<input name="admin_name" defaultValue={c.contact_name ?? ""} required /></label>
-                        <label className="field">Administrator email<input name="admin_email" type="email" defaultValue={c.contact_email ?? ""} required /></label>
-                        <label className="field">Licence<select name="status" defaultValue="trial"><option value="trial">Trial</option><option value="pilot">Pilot</option><option value="active">Active</option></select></label>
-                        <label className="field">Valid until<input type="date" name="valid_until" defaultValue={addDays(today(), 30)} /></label>
-                        <label className="field">User limit<input type="number" name="seats" min={1} placeholder="Unlimited" defaultValue={5} /></label>
-                      </ActionForm>
-                    </div>
-                  </details>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
+      {manager && <div className="card">
+        <h2>Apps, subscription &amp; features</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Switch apps on or off, renew the subscription and choose the features, all here. Press Save once. Suspended or expired stops the customer&apos;s access within a minute; their data is kept.</p>
+        <ActionForm action={saveSetup} submitLabel="Save apps and renewals" pendingLabel="Saving…" className="stack" hidden={{ customer_id: c.id }}>
+          <AppsPanel today={today()} products={(products ?? []) as PanelProduct[]} features={((feats ?? []) as Feature[]).map((f) => ({ product_code: f.product_code, key: f.key ?? "", name: f.name, detail: f.detail, is_core: f.is_core }))}
+            licences={((licences ?? []) as Licence[]).map((l) => ({ product_code: l.product_code, status: l.status, valid_until: l.valid_until, seats: l.seats, features: l.features ?? null, info: [l.product_slug ? `Workspace ${l.product_slug}` : "", toolUse[l.product_code] ? `${toolUse[l.product_code].users} users · ${toolUse[l.product_code].items} items` : ""].filter(Boolean).join(" · ") }))} />
+        </ActionForm>
+      </div>}
 
       <div className="card">
         <div className="spread"><h2>Billing</h2>{manager && <a className="btn secondary small" href={p("/billing")}>Price list</a>}</div>
