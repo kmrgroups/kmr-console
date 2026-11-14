@@ -17,15 +17,20 @@ if (-not (Test-Path $units)) {
     'Reusing the ERP connections and keys of the older sync: ' + ((Get-Content $units | Where-Object { $_ -match '\|' } | ForEach-Object { $_.Split('|')[0] }) -join ', ')
   } else {
     $lines = @('# name | ERP connection on this PC | file that holds that unit''s sync key')
-    $seen = @{}
+    $seen = @{}; $units2 = @{}
     foreach ($root in 'HKCU:\SOFTWARE\ODBC\ODBC.INI', 'HKLM:\SOFTWARE\ODBC\ODBC.INI', 'HKLM:\SOFTWARE\Wow6432Node\ODBC\ODBC.INI') {
       if (Test-Path $root) { foreach ($k in (Get-ChildItem $root)) {
         if ($k.PSChildName -eq 'ODBC Data Sources') { continue }
-        $p = Get-ItemProperty $k.PSPath; $db = "$($p.Database)$($p.DATABASE)"; if ($db -eq '' -or $seen.ContainsKey($k.PSChildName)) { continue }
-        $seen[$k.PSChildName] = 1
+        $p = Get-ItemProperty $k.PSPath; $db = "$($p.Database)"; if ($db -eq '') { continue }
+        $id = ("$($p.Server)|$($p.Port)|$db").ToLower()
+        if ($seen.ContainsKey($id) -or $seen.ContainsKey($db.ToLower())) { continue }   # the same ERP database under another connection name: ask only once
+        $seen[$id] = 1; $seen[$db.ToLower()] = 1
         $guess = $(if ($db -match '3') { 'Unit-3' } elseif ($db -match '1') { 'Unit-1' } else { 'Unit-2' })
-        $u = Read-Host ('ERP connection "' + $k.PSChildName + '" (database ' + $db + ') - which unit is it? Type Unit-1, Unit-2 or Unit-3 [' + $guess + '], or - to skip')
+        $u = Read-Host ('ERP database "' + $db + '" (connection ' + $k.PSChildName + ') - which unit is it? Press Enter for ' + $guess + ', or type Unit-1 / Unit-3, or - to skip')
         if ($u -eq '') { $u = $guess }; if ($u -eq '-') { continue }
+        if ($u -match '^(?i)unit\s*-?\s*([123])$') { $u = 'Unit-' + $matches[1] } else { 'Please type Unit-1, Unit-2 or Unit-3 - skipped.'; continue }
+        if ($units2.ContainsKey($u)) { 'Unit ' + $u + ' is already set - skipped.'; continue }
+        $units2[$u] = 1
         $kf = 'key-' + $u.ToLower().Replace('-', '') + '.dat'
         $s = Read-Host ('Paste the sync key for ' + $u + ' (Sales Flow > Daily despatch > New key)') -AsSecureString
         if ($s.Length -gt 0) { $s | ConvertFrom-SecureString | Set-Content (Join-Path $dst $kf) }
