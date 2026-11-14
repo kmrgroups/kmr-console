@@ -80,7 +80,7 @@ const instOf=(id)=>(S.d.instruments||[]).find(i=>i.id===id);
 const partyOpts=()=>`<datalist id="parties">${parties().map(p=>`<option value="${esc(p)}">`).join('')}</datalist>`;
 const num=(v)=>v===''||v==null?0:Number(v);
 
-async function load(){S.d=await call('kmr_dcg_load',{p_all:!!S.all})}
+async function load(){S.d=await call('kmr_dcg_load',{p_months:S.months||3})}
 async function route(){
   const go=hashGo();
   if(go!==S.go){S.view=null;S.edit=null;S.grn=null;S.po=null;S.go=go}
@@ -91,7 +91,8 @@ async function route(){
 }
 function olderBar(){let el=$('#older');if(!el){el=document.createElement('div');el.id='older';el.className='noprint';$('#msg').after(el)}
   const o=S.d.older||{},n=(o.dcs||0)+(o.grns||0)+(o.pos||0);
-  el.innerHTML=S.all?`<p class="mut" style="margin:0 0 8px">Showing all history. <button class="btn o" data-a="recent">Show last 12 months only</button></p>`:(n?`<p class="mut" style="margin:0 0 8px">Showing the last 12 months. Older records are saved too: ${o.dcs||0} challans (${o.open_dcs||0} returnable ones still open), ${o.grns||0} GRNs and ${o.pos||0} purchase orders. <button class="btn o" data-a="all">Load all history</button></p>`:'')}
+  const m=S.months||3,more=(o.dcs||0)+(o.grns||0)+(o.pos||0);
+  el.innerHTML=`<p class="mut" style="margin:0 0 8px">Showing the last ${m} months. ${more?`Older records are saved too: ${o.dcs||0} challans (${o.open_dcs||0} returnable ones still open), ${o.grns||0} GRNs and ${o.pos||0} purchase orders. `:''}${m===3?'<button class="btn o" data-a="all">Show last 12 months</button>':'<button class="btn o" data-a="recent">Show last 3 months only</button>'}</p>`}
 function paint(){
   olderBar();
   const go=hashGo();
@@ -331,8 +332,8 @@ document.addEventListener('click',(e)=>{
   const a=b.dataset.a,id=b.dataset.id,i=+b.dataset.i;
   busy(async()=>{
     switch(a){
-      case 'all':S.all=true;await load();paint();break;
-      case 'recent':S.all=false;await load();paint();break;
+      case 'all':S.months=12;await load();paint();break;
+      case 'recent':S.months=3;await load();paint();break;
       case 'erp-go':await erpImport();break;
       case 'dc-new':S.edit=newDc();editDc();break;
       case 'dc-edit':{const d=dcOf(id);S.edit={...d,expected_return:d.expected_return||'',po_id:d.po_id||'',lines:d.lines.map(l=>({instrument_id:l.instrument_id||'',item_code:l.item_code||'',description:l.description,hsn:l.hsn||'',uom:l.uom,qty:String(l.qty),value:l.value==null?'':String(l.value),remarks:l.remarks||''}))};editDc();break}

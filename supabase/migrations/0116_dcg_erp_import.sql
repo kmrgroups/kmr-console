@@ -2,7 +2,7 @@
 -- 0116 — Delivery Challan & GRN: bulk import of the old ERP's delivery challans, GRNs and purchase orders, and a fast screen load.
 --  • kmr_dcg_import(slug, {pos, dcs, grns}) adds history in batches (safe to re-run: a number already there is skipped). It does NOT touch Calibration Hub
 --    or Raw Material stock — it only records what happened in the ERP.
---  • kmr_dcg_load now brings the last 12 months (plus nothing older) so the screen stays fast; p_all => true brings everything.
+--  • kmr_dcg_load now brings the last 3 months (plus nothing older) so the screen stays fast; p_months widens it (3, 12 or 36 months).
 -- Needs 0113. Safe to re-run.
 -- =====================================================================
 create or replace function public.kmr_dcg_import(p_slug text, p jsonb) returns jsonb language plpgsql security definer set search_path = console, public as $$
@@ -49,10 +49,11 @@ begin
   return jsonb_build_object('pos', np, 'dcs', nd, 'grns', ng);
 end $$;
 
--- the screen loads the last 12 months only (open challans and purchase orders older than that are still reachable with "Load all history")
+-- the screen loads the last 3 months only (older records stay saved; the screen offers 12 and 36 months)
 drop function if exists public.kmr_dcg_load(text);
-create or replace function public.kmr_dcg_load(p_slug text, p_all boolean default false) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
-declare cid uuid := console.qp_cid(p_slug, 'dcg'); since date := case when p_all then date '1900-01-01' else (current_date - interval '12 months')::date end;
+drop function if exists public.kmr_dcg_load(text, boolean);
+create or replace function public.kmr_dcg_load(p_slug text, p_months int default 3) returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+declare cid uuid := console.qp_cid(p_slug, 'dcg'); since date := (current_date - make_interval(months => greatest(1, least(coalesce(p_months, 3), 36))))::date;
 begin
   return jsonb_build_object(
     'pos', coalesce((select jsonb_agg(jsonb_strip_nulls(to_jsonb(p) - 'customer_id' || jsonb_build_object('lines', coalesce((select jsonb_agg(to_jsonb(l) - 'customer_id' order by l.sl) from console.dcg_po_lines l where l.po_id = p.id), '[]'::jsonb))) order by p.po_date desc nulls last, p.created_at desc)
@@ -62,10 +63,10 @@ begin
     'grns', coalesce((select jsonb_agg(jsonb_strip_nulls(to_jsonb(g) - 'customer_id' || jsonb_build_object('lines', coalesce((select jsonb_agg(to_jsonb(l) - 'customer_id' order by l.sl) from console.dcg_grn_lines l where l.grn_id = g.id), '[]'::jsonb))) order by g.grn_date desc, g.created_at desc)
                      from console.dcg_grn g where g.customer_id = cid and g.grn_date >= since), '[]'::jsonb),
     'older', jsonb_build_object(
-      'dcs', case when p_all then 0 else (select count(*) from console.dcg_dc d where d.customer_id = cid and d.dc_date < since) end,
-      'grns', case when p_all then 0 else (select count(*) from console.dcg_grn g where g.customer_id = cid and g.grn_date < since) end,
-      'pos', case when p_all then 0 else (select count(*) from console.dcg_po p where p.customer_id = cid and p.po_date < since) end,
-      'open_dcs', case when p_all then 0 else (select count(*) from console.dcg_dc d where d.customer_id = cid and d.dc_date < since and d.status in ('issued', 'part_returned') and d.kind = 'returnable') end),
+      'dcs', (select count(*) from console.dcg_dc d where d.customer_id = cid and d.dc_date < since),
+      'grns', (select count(*) from console.dcg_grn g where g.customer_id = cid and g.grn_date < since),
+      'pos', (select count(*) from console.dcg_po p where p.customer_id = cid and p.po_date < since),
+      'open_dcs', (select count(*) from console.dcg_dc d where d.customer_id = cid and d.dc_date < since and d.status in ('issued', 'part_returned') and d.kind = 'returnable')),
     'instruments', case when console.has_app(cid, 'calib') then coalesce((select jsonb_agg(jsonb_build_object('id', i.id, 'tag', i.tag, 'name', i.name, 'status', i.status, 'next_due', i.next_due, 'lab', i.lab, 'cal_source', i.cal_source) order by i.tag)
                      from console.cal_instruments i where i.customer_id = cid and i.status not in ('Scrapped', 'Scrap')), '[]'::jsonb) else '[]'::jsonb end,
     'rmp_open', case when console.has_app(cid, 'rmp') then coalesce((select count(*) from console.rmp_orders o where o.customer_id = cid and o.status in ('planned', 'ordered')
