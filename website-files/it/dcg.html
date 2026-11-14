@@ -75,12 +75,13 @@ const daysBetween=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:
 const rep=(title,doc,no)=>{if(window.KMRReport)window.KMRReport.set({title,doc:doc||'',format:'KMR/DCG/F-'+no,rev:'01',date:'2026-11-14'})};
 const fyStart=()=>{const d=td(),y=+d.slice(0,4),m=+d.slice(5,7);return (m<4?y-1:y)+'-04-01'};
 const dcOf=(id)=>S.d.dcs.find(x=>x.id===id),poOf=(id)=>S.d.pos.find(x=>x.id===id),grnOf=(id)=>S.d.grns.find(x=>x.id===id);
-const parties=()=>[...new Set([...S.d.dcs.map(d=>d.party_name),...S.d.pos.map(p=>p.supplier_name)].filter(Boolean))].sort();
+const opsP=()=>((S.items||{}).parties||[]);
+const parties=()=>[...new Set([...opsP().map(p=>p.name),...S.d.dcs.map(d=>d.party_name),...S.d.pos.map(p=>p.supplier_name)].filter(Boolean))].sort();
 const instOf=(id)=>(S.d.instruments||[]).find(i=>i.id===id);
 const partyOpts=()=>`<datalist id="parties">${parties().map(p=>`<option value="${esc(p)}">`).join('')}</datalist>`;
 const num=(v)=>v===''||v==null?0:Number(v);
 
-async function load(){S.d=await call('kmr_dcg_load',{p_months:S.months||3})}
+async function load(){S.d=await call('kmr_dcg_load',{p_months:S.months||3});if(!S.items&&!S.itemsBusy){S.itemsBusy=true;call('kmr_dcg_items',{}).then(r=>{S.items=r}).catch(()=>{S.items={items:[],parties:[]}}).finally(()=>{S.itemsBusy=false})}}
 async function route(){
   const go=hashGo();
   if(go!==S.go){S.view=null;S.edit=null;S.grn=null;S.po=null;S.go=go}
@@ -111,7 +112,8 @@ function onType(e){
   const t=e.target,o=t.dataset.o&&S[t.dataset.o];if(!o)return;
   if(t.dataset.l!==undefined)o.lines[+t.dataset.l][t.dataset.f]=t.value;
   else if(t.dataset.h){o[t.dataset.h]=t.value;
-    if(e.type==='change'&&t.dataset.h==='party_name'&&t.dataset.o==='edit'&&!o.party_addr){const p=S.d.dcs.find(x=>x.party_name===t.value&&x.party_addr);if(p){o.party_addr=p.party_addr||'';o.party_gstin=p.party_gstin||'';editDc()}}}
+    if(e.type==='change'&&t.dataset.h==='party_name'&&t.dataset.o==='edit'&&!o.party_addr){const p=S.d.dcs.find(x=>x.party_name===t.value&&x.party_addr),q=opsP().find(x=>x.name===t.value);if(p){o.party_addr=p.party_addr||'';o.party_gstin=p.party_gstin||'';editDc()}else if(q){o.party_addr=q.addr||'';o.party_gstin=q.gstin||'';editDc()}}
+    if(e.type==='change'&&t.dataset.h==='supplier_name'&&t.dataset.o==='po'&&!o.supplier_addr){const q=opsP().find(x=>x.name===t.value);if(q){o.supplier_addr=q.addr||'';if(!o.supplier_gstin)o.supplier_gstin=q.gstin||'';editPo()}}}
 }
 document.addEventListener('input',onType);document.addEventListener('change',onType);
 const busy=async(fn)=>{if(S.busy)return;S.busy=true;try{await fn()}catch(e){say(e.message)}finally{S.busy=false}};
@@ -135,6 +137,13 @@ function drawDc(){
   <div class="sc"><table class="lt" id="dct"><thead><tr><th>DC no.</th><th>Date</th><th>Type</th><th>Purpose</th><th>Sent to</th><th class="n">Items</th><th>Return by</th><th>Status</th><th class="noprint">Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="9" class="mut">No challans yet.</td></tr>'}</tbody></table></div>`;
 }
 const newDc=()=>({id:null,kind:'returnable',purpose:'calibration',dc_date:td(),party_name:'',party_addr:'',party_gstin:'',vehicle_no:'',mode:'',expected_return:'',po_id:'',remarks:'',lines:[]});
+
+const KIND={gauges:'Gauge',tools:'Tool',parts:'Part',raw_materials:'Raw material',consumables:'Consumable'};
+const itemList=(k)=>((S.items||{}).items||[]).filter(i=>i.kind===k);
+const itemOpts=(k)=>itemList(k).map(i=>`<option value="${esc(i.code)} — ${esc(i.name)}">`).join('');
+const itemBox=(o)=>{const k=S.ik||'gauges',n=((S.items||{}).items||[]).length;return `<div class="box noprint"><h3>Items from Operations Master</h3><div class="row"><select id="ibt" style="max-width:170px">${Object.entries(KIND).map(([v,l])=>`<option value="${v}" ${v===k?'selected':''}>${l}</option>`).join('')}</select><input id="ibi" list="ibl" placeholder="Type a code or name to search…" style="max-width:380px"><datalist id="ibl">${itemOpts(k)}</datalist><button class="btn o sm" data-a="${o}-addi">Add item</button></div><p class="note">${n?'Gauges, tools, parts, raw materials and consumables are taken from the Operations Master. For anything else use “+ Add item” and type it.':'The Operations Master has no items yet — type the items in the lines below.'}</p></div>`};
+const pickItem=()=>{const v=($('#ibi')||{}).value||'',k=($('#ibt')||{}).value||'gauges',c=v.split(' — ')[0].trim(),it=itemList(k).find(i=>i.code===c||(i.code+' — '+i.name)===v);return it?{item_code:it.code,description:it.name+(it.info?' ('+it.info+')':''),uom:it.uom||'Nos',hsn:it.hsn||''}:null};
+document.addEventListener('change',(e)=>{if(e.target.id==='ibt'){S.ik=e.target.value;const dl=$('#ibl');if(dl)dl.innerHTML=itemOpts(S.ik);const i=$('#ibi');if(i)i.value=''}});
 const blankLine=()=>({instrument_id:'',item_code:'',description:'',hsn:'',uom:'Nos',qty:'1',value:'',remarks:''});
 function editDc(){
   const e=S.edit,hc=QP.ctx.has_calib,pur=e.kind==='returnable'?PUR_R:PUR_N;
@@ -161,6 +170,7 @@ function editDc(){
    <div><label>Against PO (optional)</label><select data-o="edit" data-h="po_id"><option value="">—</option>${S.d.pos.filter(p=>p.status!=='cancelled').map(p=>`<option value="${p.id}" ${p.id===e.po_id?'selected':''}>${esc(p.po_no)} — ${esc(p.supplier_name)}</option>`).join('')}</select></div>
    <div style="grid-column:span 2"><label>Remarks</label><input data-o="edit" data-h="remarks" value="${esc(e.remarks)}"></div></div>
   ${gauge}
+  ${itemBox('dc')}
   <div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th><th>Gauge</th><th>Item code</th><th>Description</th><th>HSN</th><th>Unit</th><th class="n">Qty</th><th class="n">Value ₹</th><th></th></tr></thead><tbody>${lines||'<tr><td colspan="9" class="mut">No items yet — add a gauge above or add an item.</td></tr>'}</tbody></table></div>
   <div class="row noprint"><button class="btn o sm" data-a="dc-addl">+ Add item</button><span class="grow"></span><button class="btn o" data-a="dc-close">Close</button><button class="btn o" data-a="dc-save">Save draft</button><button class="btn" data-a="dc-saveissue">Save &amp; issue</button></div>`;
 }
@@ -208,6 +218,7 @@ function editPo(){
    <td class="num">${n3(l.received_qty)}</td><td>${Number(l.received_qty)>0?'':`<button class="btn o sm" data-a="po-rm" data-i="${i}">✕</button>`}</td></tr>`).join('');
   $('#po').innerHTML=`${partyOpts()}<h3 style="margin:0 0 6px">${e.id?'Purchase order '+esc(e.po_no):'New purchase order'}</h3>
   <div class="dg">${fld('po','po_no','PO number')}${fld('po','po_date','PO date','date')}<div><label>Supplier</label><input data-o="po" data-h="supplier_name" list="parties" value="${esc(e.supplier_name)}"></div>${fld('po','supplier_gstin','Supplier GSTIN')}<div style="grid-column:span 2"><label>Supplier address</label><input data-o="po" data-h="supplier_addr" value="${esc(e.supplier_addr)}"></div><div style="grid-column:span 2"><label>Remarks</label><input data-o="po" data-h="remarks" value="${esc(e.remarks)}"></div></div>
+  ${itemBox('po')}
   <div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th><th>Item code</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate ₹</th><th class="n">Received</th><th></th></tr></thead><tbody>${lines}</tbody></table></div>
   <div class="row noprint"><button class="btn o sm" data-a="po-addl">+ Add item</button><span class="grow"></span><button class="btn o" data-a="po-closeed">Close</button><button class="btn" data-a="po-save">Save PO</button></div>`;
 }
@@ -339,6 +350,8 @@ document.addEventListener('click',(e)=>{
       case 'dc-edit':{const d=dcOf(id);S.edit={...d,expected_return:d.expected_return||'',po_id:d.po_id||'',lines:d.lines.map(l=>({instrument_id:l.instrument_id||'',item_code:l.item_code||'',description:l.description,hsn:l.hsn||'',uom:l.uom,qty:String(l.qty),value:l.value==null?'':String(l.value),remarks:l.remarks||''}))};editDc();break}
       case 'dc-close':S.edit=null;drawDc();break;
       case 'dc-addl':S.edit.lines.push(blankLine());editDc();break;
+      case 'dc-addi':{const it=pickItem();if(!it)return say('Choose an item from the list first.');S.edit.lines.push({...blankLine(),...it});editDc();break}
+      case 'po-addi':{const it=pickItem();if(!it)return say('Choose an item from the list first.');S.po.lines.push({item_code:it.item_code,description:it.description,uom:it.uom,qty:'',rate:'',received_qty:0});editPo();break}
       case 'dc-rm':S.edit.lines.splice(i,1);editDc();break;
       case 'dc-addg':{const v=$('#gsel').value;if(!v)return;const g=instOf(v);S.edit.lines.push({...blankLine(),instrument_id:v,item_code:g.tag,description:g.name+' ('+g.tag+')'});editDc();break}
       case 'dc-adddue':{const lim=new Date(Date.now()+19800000+30*864e5).toISOString().slice(0,10),have=new Set(S.edit.lines.map(l=>l.instrument_id));

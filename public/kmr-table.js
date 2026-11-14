@@ -8,7 +8,7 @@
   const css = document.createElement("style");
   css.textContent = `
 .kmr-hid{display:none!important}
-th.kmr-th{position:relative;white-space:nowrap;user-select:none}
+th.kmr-th{position:sticky;top:0;z-index:3;white-space:nowrap;user-select:none}
 th.kmr-th .kmr-lab{cursor:pointer}
 th.kmr-th .kmr-ctl{display:inline-flex;align-items:center;gap:2px;margin-left:6px;vertical-align:middle;font-weight:400}
 th.kmr-th .kmr-fb{border:1px solid transparent;background:transparent;border-radius:6px;width:22px;height:22px;padding:0;cursor:pointer;color:inherit;opacity:.55;display:inline-grid;place-items:center;font:inherit;line-height:1}
@@ -26,10 +26,11 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
 .kmr-pop .sr button.on{background:#7C3AED;border-color:#7C3AED;color:#fff}
 .kmr-pop input.q{width:100%;height:32px;border:1px solid #D3DBE6;border-radius:8px;padding:0 10px;font:500 13px "Segoe UI",Arial,sans-serif;box-sizing:border-box}
 .kmr-pop input.q:focus{outline:none;border-color:#7C3AED}
+.kmr-pop .cnd{border:1px solid #EEF1F6;border-radius:8px;padding:6px;margin-bottom:8px;background:#F9FBFD}.kmr-pop .cnd select,.kmr-pop .cnd input{width:100%;box-sizing:border-box;height:30px;margin:2px 0;border:1px solid #D3DBE6;border-radius:7px;padding:0 8px;font:500 12.5px "Segoe UI",Arial,sans-serif;background:#fff;color:#16233A}.kmr-pop .cnd .cb{display:flex;gap:6px;margin-top:4px}.kmr-pop .cnd .cb button{flex:1;border:1px solid #D3DBE6;background:#fff;border-radius:8px;padding:5px;font:700 12px "Segoe UI",Arial,sans-serif;cursor:pointer;color:#16233A}.kmr-pop .cnd .cb button.go{background:#7C3AED;border-color:#7C3AED;color:#fff}.kmr-pop .cnd b{font-size:11.5px;color:#5E6B7E}
 .kmr-pop .acts{display:flex;justify-content:space-between;margin:8px 2px 4px;font-size:12px}.kmr-pop .acts a{color:#7C3AED;font-weight:700;cursor:pointer;text-decoration:none}
 .kmr-pop .lst{max-height:240px;overflow:auto;border:1px solid #EEF1F6;border-radius:8px;padding:2px}
 .kmr-pop label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;line-height:1.25}.kmr-pop label:hover{background:#F5F0FF}
-.kmr-pop label input{accent-color:#7C3AED;flex:none;margin:0}.kmr-pop label span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kmr-pop label em{font-style:normal;color:#8A96A8;font-size:11.5px}
+.kmr-pop label input{accent-color:#7C3AED;flex:none;margin:0}.kmr-pop label span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#16233A!important;font-size:13px!important;position:static!important;display:block!important}.kmr-pop label em{font-style:normal;color:#8A96A8!important;font-size:11.5px!important;position:static!important;display:block!important}
 .kmr-pop .none{padding:10px;color:#8A96A8;text-align:center}
 @media print{.kmr-tt,th.kmr-th .kmr-ctl{display:none!important}}`;
   document.head.append(css);
@@ -54,10 +55,25 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     m = String(s).match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})/); if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1]);
     return null;
   };
+  const OPS = [["", "— Choose a condition —"], ["eq", "Equals"], ["ne", "Does not equal"], ["gt", "Greater than"], ["ge", "Greater than or equal to"], ["lt", "Less than"], ["le", "Less than or equal to"], ["between", "Between"], ["begins", "Begins with"], ["ends", "Ends with"], ["contains", "Contains"], ["notcontains", "Does not contain"], ["blank", "Is blank"], ["notblank", "Is not blank"]];
+  const matchOp = (o, v) => {
+    const op = o.op, a = o.a == null ? "" : String(o.a), b = o.b == null ? "" : String(o.b);
+    if (op === "blank") return v === ""; if (op === "notblank") return v !== "";
+    const lv = v.toLowerCase(), la = a.toLowerCase();
+    if (op === "contains") return lv.includes(la); if (op === "notcontains") return !lv.includes(la);
+    if (op === "begins") return lv.startsWith(la); if (op === "ends") return lv.endsWith(la);
+    if (v === "") return false;
+    const c = (x, y) => { const dx = dateOf(x), dy = dateOf(y); if (dx != null && dy != null) return dx - dy; const nx = num(x), ny = num(y); if (nx != null && ny != null) return nx - ny; return String(x).toLowerCase().localeCompare(String(y).toLowerCase(), undefined, { numeric: true }); };
+    if (op === "eq") return c(v, a) === 0; if (op === "ne") return c(v, a) !== 0;
+    if (op === "gt") return c(v, a) > 0; if (op === "ge") return c(v, a) >= 0; if (op === "lt") return c(v, a) < 0; if (op === "le") return c(v, a) <= 0;
+    if (op === "between") return c(v, a) >= 0 && c(v, b) <= 0;
+    return true;
+  };
   const cmp = (a, b) => {
     if (a === b) return 0; if (a === "") return 1; if (b === "") return -1;
     const da = dateOf(a), db = dateOf(b); if (da != null && db != null) return da - db;
     const na = num(a), nb = num(b); if (na != null && nb != null) return na - nb;
+    if (na != null) return -1; if (nb != null) return 1;                                              // numbers first (smallest to largest), then words
     return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
   };
 
@@ -95,9 +111,9 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     const base = location.pathname + location.hash + "|" + [...hr.cells].map(txt).join("|");
     t.dataset.kmrk0 = base;
     const key = keyOf(t, hr);
-    const st = states.get(key) || { sort: null, f: {}, q: "" };
+    const st = states.get(key) || { sort: null, f: {}, q: "", o: {} }; if (!st.o) st.o = {};
     states.set(key, st); t._kmr = { st, hr, key };
-    const edit = bodyRows(t, hr).some((r) => r.querySelector("input:not([type=checkbox]):not([type=hidden]),select,textarea"));
+    const edit = !t.hasAttribute("data-sortedit") && bodyRows(t, hr).some((r) => r.querySelector("input:not([type=checkbox]):not([type=hidden]),select,textarea"));
     t._kmr.edit = edit;
     // serial-number column: renumbered after sorting / filtering
     const serial = new Set();
@@ -111,9 +127,9 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
       th.append(lab);
       const ctl = document.createElement("span"); ctl.className = "kmr-ctl";
       const ar = document.createElement("span"); ar.className = "kmr-ar"; ctl.append(ar);
-      if (!serial.has(i)) { const b = document.createElement("button"); b.type = "button"; b.className = "kmr-fb f"; b.title = "Filter / sort this column"; b.innerHTML = SVG_F; b.onclick = (e) => { e.stopPropagation(); openPop(t, i, b); }; ctl.append(b); }
+      if (!serial.has(i)) { const b = document.createElement("button"); b.type = "button"; b.className = "kmr-fb f"; b.title = "Filter / sort this column"; b.innerHTML = SVG_F; b.onclick = (e) => { e.stopPropagation(); openPop(t, [...hr.cells].indexOf(th), b); }; ctl.append(b); }
       th.append(ctl);
-      if (!edit && !serial.has(i)) lab.onclick = (e) => { e.stopPropagation(); setSort(t, i, st.sort && st.sort.c === i ? (st.sort.dir === "asc" ? "desc" : st.sort.dir === "desc" ? null : "asc") : "asc"); };
+      if (!edit && !serial.has(i)) lab.onclick = (e) => { e.stopPropagation(); const ci = [...hr.cells].indexOf(th); setSort(t, ci, st.sort && st.sort.c === ci ? (st.sort.dir === "asc" ? "desc" : st.sort.dir === "desc" ? null : "asc") : "asc"); };
       else lab.style.cursor = "default";
     });
     // toolbar
@@ -123,14 +139,14 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
       t.parentNode.insertBefore(bar, t);
       const inp = bar.querySelector("input"); inp.value = st.q || "";
       inp.oninput = () => { st.q = inp.value; apply(t); };
-      bar.querySelector("button").onclick = () => { st.f = {}; st.q = ""; inp.value = ""; apply(t); };
+      bar.querySelector("button").onclick = () => { st.f = {}; st.o = {}; st.q = ""; inp.value = ""; apply(t); };
     }
     // when the app re-draws the rows, keep the filters
     const tb = t.tBodies[0] || t;
     const mo = new MutationObserver(() => { if (t._kmr.busy) return; clearTimeout(t._kmr.tm); t._kmr.tm = setTimeout(() => apply(t, true), 60); });
     mo.observe(t, { childList: true, subtree: true, characterData: true }); t._kmr.mo = mo;
     live.add(t);
-    if (st.sort || st.q || Object.keys(st.f).length) apply(t, true); else counts(t);
+    if (st.sort || st.q || Object.keys(st.f).length || Object.keys(st.o).length) apply(t, true); else counts(t);
   }
 
   function setSort(t, c, dir) { t._kmr.st.sort = dir ? { c, dir } : null; apply(t); }
@@ -147,6 +163,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
         if ([...r.cells].some((c) => c.colSpan > 1 && c.colSpan >= hr.cells.length)) { r.classList.remove("kmr-hid"); return; }
         let show = true;
         for (const c of cols) { if (!st.f[c].has(cellVal(r.cells[+c]))) { show = false; break; } }
+        if (show) for (const c of Object.keys(st.o)) { if (!matchOp(st.o[c], cellVal(r.cells[+c]))) { show = false; break; } }
         if (show && q) show = txt(r).toLowerCase().includes(q) || [...r.cells].some((c) => cellVal(c).toLowerCase().includes(q));
         r.classList.toggle("kmr-hid", !show);
       });
@@ -156,13 +173,13 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
           const rs = [...b.rows].filter((r) => r !== hr && !([...r.cells].some((x) => x.colSpan > 1 && x.colSpan >= hr.cells.length)));
           const idx = new Map(rs.map((r, i) => [r, i]));
           const vals = new Map(rs.map((r) => [r, cellVal(r.cells[c])]));
-          const sorted = rs.slice().sort((a, b2) => m * cmp(vals.get(a), vals.get(b2)) || idx.get(a) - idx.get(b2));
+          const sorted = rs.slice().sort((a, b2) => { const va = vals.get(a), vb = vals.get(b2); if (va === "" && vb !== "") return 1; if (vb === "" && va !== "") return -1; return m * cmp(va, vb) || idx.get(a) - idx.get(b2); });          // empty cells always last
           if (sorted.some((r, i) => r !== rs[i])) sorted.forEach((r) => b.append(r));
         });
       }
       k.serial.forEach((i) => { let n = 0; bodyRows(t, hr).forEach((r) => { if (!r.classList.contains("kmr-hid") && r.cells[i] && /^\d+$/.test(txt(r.cells[i]) || "x") ) r.cells[i].textContent = ++n; }); });
       [...hr.cells].forEach((th, i) => {
-        const on = !!(st.f[i] && true), s = st.sort && st.sort.c === i;
+        const on = !!(st.f[i] || st.o[i]), s = st.sort && st.sort.c === i;
         th.classList.toggle("kmr-on", on);
         const ar = th.querySelector(".kmr-ar"); if (ar) ar.textContent = s ? (st.sort.dir === "asc" ? "▲" : "▼") : "";
       });
@@ -174,7 +191,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     const rows = bodyRows(t, k.hr).filter((r) => ![...r.cells].some((c) => c.colSpan > 1 && c.colSpan >= k.hr.cells.length));
     const vis = rows.filter((r) => !r.classList.contains("kmr-hid")).length, act = vis !== rows.length;
     bar.querySelector(".kmr-cnt").textContent = act ? `Showing ${vis} of ${rows.length}` : `${rows.length} rows`;
-    bar.querySelector("button").hidden = !(act || (k.st.q || "") || Object.keys(k.st.f).length);
+    bar.querySelector("button").hidden = !(act || (k.st.q || "") || Object.keys(k.st.f).length || Object.keys(k.st.o).length);
   }
 
   function closePop() { if (pop) { pop.remove(); pop = null; } }
@@ -184,14 +201,21 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     const rows = bodyRows(t, k.hr).filter((r) => ![...r.cells].some((x) => x.colSpan > 1 && x.colSpan >= k.hr.cells.length));
     // values offered: those that pass the other columns' filters
     const cnt = new Map();
-    rows.forEach((r) => { let ok = true; for (const o of Object.keys(st.f)) if (+o !== c && !st.f[o].has(cellVal(r.cells[+o]))) { ok = false; break; } const v = cellVal(r.cells[c]); if (ok || st.f[c]) cnt.set(v, (cnt.get(v) || 0) + (ok ? 1 : 0)); });
+    rows.forEach((r) => { let ok = true; for (const o of Object.keys(st.f)) if (+o !== c && !st.f[o].has(cellVal(r.cells[+o]))) { ok = false; break; } if (ok) for (const o of Object.keys(st.o)) if (+o !== c && !matchOp(st.o[o], cellVal(r.cells[+o]))) { ok = false; break; } const v = cellVal(r.cells[c]); if (ok || st.f[c]) cnt.set(v, (cnt.get(v) || 0) + (ok ? 1 : 0)); });
     const vals = [...cnt.keys()].sort(cmp);
     const sel = new Set(st.f[c] ? st.f[c] : vals);
     pop = document.createElement("div"); pop.className = "kmr-pop";
     const dir = st.sort && st.sort.c === c ? st.sort.dir : "";
-    pop.innerHTML = (k.edit ? "" : `<div class="sr"><button type="button" data-s="asc" class="${dir === "asc" ? "on" : ""}">▲ Sort A→Z</button><button type="button" data-s="desc" class="${dir === "desc" ? "on" : ""}">▼ Z→A</button></div>`) +
+    pop.innerHTML = (k.edit ? "" : `<div class="sr"><button type="button" data-s="asc" class="${dir === "asc" ? "on" : ""}">▲ Sort A→Z (smallest first)</button><button type="button" data-s="desc" class="${dir === "desc" ? "on" : ""}">▼ Z→A (largest first)</button></div>`) +
+      '<div class="cnd"><b>Filter by condition</b><select class="op">' + OPS.map(([v, l]) => `<option value="${v}">${l}</option>`).join("") + '</select><input class="v1" placeholder="Value"><input class="v2" placeholder="and"><div class="cb"><button type="button" class="go">Apply</button><button type="button" class="cl">Clear</button></div></div>' +
       '<input class="q" type="search" placeholder="Search values…"><div class="acts"><a data-a="all">Select all</a><a data-a="none">Clear</a><a data-a="reset">Reset</a></div><div class="lst"></div>';
     const lst = pop.querySelector(".lst"), q = pop.querySelector(".q");
+    const op = pop.querySelector(".op"), v1 = pop.querySelector(".v1"), v2 = pop.querySelector(".v2"), cur = st.o[c] || null;
+    const showV = () => { const o = op.value; v1.style.display = o && o !== "blank" && o !== "notblank" ? "" : "none"; v2.style.display = o === "between" ? "" : "none"; };
+    if (cur) { op.value = cur.op; v1.value = cur.a == null ? "" : cur.a; v2.value = cur.b == null ? "" : cur.b; } showV();
+    op.onchange = showV;
+    pop.querySelector(".cb .go").onclick = () => { if (!op.value) { delete st.o[c]; } else st.o[c] = { op: op.value, a: v1.value, b: v2.value }; apply(t); closePop(); };
+    pop.querySelector(".cb .cl").onclick = () => { delete st.o[c]; apply(t); closePop(); };
     const commit = () => { const all = vals.every((v) => sel.has(v)); if (all) delete st.f[c]; else st.f[c] = new Set(sel); apply(t); };
     const draw = () => {
       const f = q.value.toLowerCase(); lst.textContent = "";
@@ -226,7 +250,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
   let tm = null;
   function scan() {
     document.querySelectorAll("table").forEach((t) => {
-      if (t._kmr) { if (!t.isConnected) { live.delete(t); } else if (!t.previousElementSibling || !t.previousElementSibling.classList.contains("kmr-tt") || !t._kmr.hr.isConnected || [...t._kmr.hr.cells].some((th) => !th.classList.contains("kmr-th"))) { /* toolbar lost: re-enhance */ t._kmr.mo && t._kmr.mo.disconnect(); delete t._kmr; t.querySelectorAll(".kmr-th").forEach((th) => th.classList.remove("kmr-th")); const pv = t.previousElementSibling; if (pv && pv.classList.contains("kmr-tt")) pv.remove(); } else return; }
+      if (t._kmr) { if (!t.isConnected) { live.delete(t); } else if (!t.previousElementSibling || !t.previousElementSibling.classList.contains("kmr-tt") || !t._kmr.hr.isConnected || [...t._kmr.hr.cells].some((th) => !th.classList.contains("kmr-th"))) { /* toolbar lost: re-enhance */ t._kmr.mo && t._kmr.mo.disconnect(); delete t._kmr; t.querySelectorAll(".kmr-th").forEach((th) => { th.querySelectorAll(":scope > .kmr-ctl").forEach((x) => x.remove()); th.querySelectorAll(":scope > .kmr-lab").forEach((l) => { while (l.firstChild) th.insertBefore(l.firstChild, l); l.remove(); }); th.classList.remove("kmr-th", "kmr-on"); }); const pv = t.previousElementSibling; if (pv && pv.classList.contains("kmr-tt")) pv.remove(); } else return; }
       const hr = eligible(t); if (hr) enhance(t, hr);
     });
   }
