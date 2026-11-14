@@ -18,16 +18,38 @@ export const maxDuration = 300;
 export async function POST(req: Request) {
   const key = req.headers.get("x-sync-key") || "";
   if (!key) return NextResponse.json({ ok: false, error: "sync key missing" }, { status: 401 });
-  let body: { kind?: string; unit?: string; dryRun?: boolean; tables?: Tables };
+  let body: { kind?: string; unit?: string; dryRun?: boolean; tables?: Tables; stage?: { id: string; n: number; of: number } };
   try {
     let buf = Buffer.from(await req.arrayBuffer());
     if (req.headers.get("x-body-gzip") === "1") buf = gunzipSync(buf);
     body = JSON.parse(buf.toString("utf8"));
   } catch { return NextResponse.json({ ok: false, error: "body must be JSON (gzip allowed)" }, { status: 400 }); }
-  const kind = String(body.kind || ""), unit = String(body.unit || "").slice(0, 40) || "Unit", t = body.tables || {}, dry = !!body.dryRun;
+  const kind = String(body.kind || ""), unit = String(body.unit || "").slice(0, 40) || "Unit", dry = !!body.dryRun; let t: Tables = body.tables || {};
   const db = createAdminClient().schema("public");
   const who = await db.rpc("kmr_bridge_whoami", { p_key: key });
   if (who.error) return NextResponse.json({ ok: false, error: who.error.code === "KM403" ? who.error.message : "could not check the key" }, { status: who.error.code === "KM403" ? 403 : 500 });
+
+  // A big upload comes in small parts (one request is limited to about 4 MB): each part is kept until the last one arrives, then all are joined
+  const st = body.stage;
+  if (st && /^[A-Za-z0-9-]{8,64}$/.test(String(st.id)) && Number.isInteger(st.n) && Number.isInteger(st.of) && st.of >= 1 && st.of <= 200) {
+    const bucket = "bridge-stage", dir = `${who.data?.slug || "plant"}/${st.id}`;
+    const sb = createAdminClient();
+    try {
+      let up = await sb.storage.from(bucket).upload(`${dir}/${st.n}.json`, JSON.stringify(body.tables || {}), { contentType: "application/json", upsert: true });
+      if (up.error && /not found|bucket/i.test(up.error.message)) { await sb.storage.createBucket(bucket, { public: false }); up = await sb.storage.from(bucket).upload(`${dir}/${st.n}.json`, JSON.stringify(body.tables || {}), { contentType: "application/json", upsert: true }); }
+      if (up.error) throw new Error(up.error.message);
+      if (st.n < st.of - 1) return NextResponse.json({ ok: true, part: st.n + 1, of: st.of });
+      const joined: Tables = {};
+      for (let i = 0; i < st.of; i++) {
+        const f = await sb.storage.from(bucket).download(`${dir}/${i}.json`);
+        if (f.error || !f.data) throw new Error(`part ${i + 1} of ${st.of} is missing - the bridge will send it again`);
+        const part = JSON.parse(await f.data.text()) as Tables;
+        for (const [name, tb] of Object.entries(part)) { if (!tb) continue; const j = joined[name]; if (!j) joined[name] = { c: tb.c, r: tb.r.slice() }; else for (const r of tb.r) j.r.push(r); }
+      }
+      await sb.storage.from(bucket).remove(Array.from({ length: st.of }, (_, i) => `${dir}/${i}.json`));
+      t = joined;
+    } catch (e) { return NextResponse.json({ ok: false, error: (e as Error).message.slice(0, 300) }, { status: 500 }); }
+  }
 
   const run = async (fn: string, args: unknown, label: string, n: number) => {
     if (dry) return { dry: true };

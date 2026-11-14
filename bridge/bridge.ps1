@@ -120,7 +120,15 @@ function TableJson($t, $from, $to) {   # rows from..to-1 of a table read by Read
   '{"c":[' + $c + '],"r":[' + $r + ']}'
 }
 function TableJsonList($t, $list) { $c = ($t.cols | ForEach-Object { J $_ }) -join ','; '{"c":[' + $c + '],"r":[' + [string]::Join(',', @($list)) + ']}' }
-function Body($kind, $unit, $tablesJson) { '{"kind":"' + $kind + '","unit":' + (J $unit) + ',"dryRun":false,"tables":{' + $tablesJson + '}}' }
+function Body($kind, $unit, $tablesJson, $stage = '') { '{"kind":"' + $kind + '","unit":' + (J $unit) + ',"dryRun":false,' + $stage + '"tables":{' + $tablesJson + '}}' }
+# a big upload is cut into parts of at most 15000 rows (one request is limited to about 4 MB); the website joins them when the last part arrives
+function StagedBodies($kind, $unit, $list) {
+  $texts = New-Object System.Collections.ArrayList
+  foreach ($e in $list) { $t = $e[1]; $n = $t.rows.Count; if ($n -eq 0) { [void]$texts.Add('"' + $e[0] + '":' + (TableJson $t 0 0)) } else { for ($a = 0; $a -lt $n; $a += 15000) { [void]$texts.Add('"' + $e[0] + '":' + (TableJson $t $a ([Math]::Min($a + 15000, $n)))) } } }
+  $id = (Sha ([string]::Join('', $texts))).Substring(0, 32).ToLower()
+  $out = @(); for ($i = 0; $i -lt $texts.Count; $i++) { $out += (Body $kind $unit $texts[$i] ('"stage":{"id":"' + $id + '","n":' + $i + ',"of":' + $texts.Count + '},')) }
+  $out
+}
 
 # ---- per unit state: when each kind last ran, and the fingerprint of what was sent
 function LoadState($path) { $s = @{}; if (Test-Path $path) { foreach ($l in (Get-Content $path)) { $p = $l.Split('|'); if ($p.Count -ge 4) { $s[$p[0]] = @($p[1], $p[2], $p[3]) } } }; $s }
@@ -185,6 +193,7 @@ function SyncDespatch($c, $tag, $key, $statePath) {
 
 function SyncUnit($name, $dsn, $keyfile) {
   $tag = '[' + $name + '] '; $key0 = $keyfile.Replace('.dat', ''); $statePath = Join-Path $here ('state-' + $key0 + '.txt'); $dsPath = Join-Path $here ('state-despatch-' + $key0 + '.txt')
+  if (-not (Test-Path (Join-Path $here $keyfile))) { Log ($tag + 'skipped: this PC has no sync key for ' + $name + ' (normal when that unit runs on another PC)'); return 0 }
   $failed = 0
   try {
     $key = ((Get-Content (Join-Path $here $keyfile)) | Out-String).Trim() | ConvertTo-SecureString
@@ -230,20 +239,20 @@ function SyncUnit($name, $dsn, $keyfile) {
           foreach ($st in $sets) { $t = $st[1]; for ($a = 0; $a -lt $t.rows.Count; $a += 4000) { $b = [Math]::Min($a + 4000, $t.rows.Count); $bodies += (Body 'production' $name ('"' + $st[0] + '":' + (TableJson $t $a $b) + ',"product":' + (TableJson $pr 0 $pr.rows.Count))) } }
         }
         elseif ($kind -eq 'purchase') {
-          $t = ''
-          foreach ($n in 'dc', 'grn', 'grnno', 'grndc', 'suppliercm') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; if ($t -ne '') { $t += ',' }; $t += '"' + $n + '":' + (TableJson $x 0 $x.rows.Count) }
-          $bodies += (Body 'purchase' $name $t)
+          $list = @()
+          foreach ($n in 'dc', 'grn', 'grnno', 'grndc', 'suppliercm') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; $list += , @($n, $x) }
+          $bodies += (StagedBodies 'purchase' $name $list)
         }
         elseif ($kind -eq 'opsmaster') {
-          $t = ''
-          foreach ($n in 'customer', 'pomaster', 'tpomaster', 'tcustprod', 'product', 'subcontractor', 'supplier', 'machine', 'trawmaterial', 'rawmaterial', 'tproduct') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; if ($t -ne '') { $t += ',' }; $t += '"' + $n + '":' + (TableJson $x 0 $x.rows.Count) }
-          $bodies += (Body 'opsmaster' $name $t)
+          $list = @()
+          foreach ($n in 'customer', 'pomaster', 'tpomaster', 'tcustprod', 'product', 'subcontractor', 'supplier', 'machine', 'trawmaterial', 'rawmaterial', 'tproduct') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; $list += , @($n, $x) }
+          $bodies += (StagedBodies 'opsmaster' $name $list)
         }
         else {
-          $t = ''
-          foreach ($n in 'instruments', 'calibstock', 'receiptcalib', 'inhousecalib', 'historycard', 'subcontractor', 'supplier') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; if ($t -ne '') { $t += ',' }; $t += '"' + $n + '":' + (TableJson $x 0 $x.rows.Count) }
-          $g = ReadTable $c 'SELECT * FROM grn WHERE RATE>0' 'grn' $null $null; $t += ',"grn":' + (TableJson $g 0 $g.rows.Count)
-          $bodies += (Body 'calibration' $name $t)
+          $list = @()
+          foreach ($n in 'instruments', 'calibstock', 'receiptcalib', 'inhousecalib', 'historycard', 'subcontractor', 'supplier') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; $list += , @($n, $x) }
+          $g = ReadTable $c 'SELECT * FROM grn WHERE RATE>0' 'grn' $null $null; $list += , @('grn', $g)
+          $bodies += (StagedBodies 'calibration' $name $list)
         }
         [void](SendKind $tag $key $kind $name $bodies $s $statePath)
       } catch { $failed++; Log ($tag + $kind + ' FAILED: ' + $_.Exception.Message); SetStatus ($name + ' ' + $kind) ('FAILED ' + (Get-Date).ToString('HH:mm') + ' - ' + (Short $_.Exception.Message 120)) }
