@@ -165,7 +165,7 @@
 @media(max-width:700px){.th-m .hero{flex-direction:column;align-items:flex-start}}` };
 
   /* ---------- N · part journey ---------- */
-  const STAGES = [["PLAN", "#10B981", ["capacity", "sales", "crm", "rmp", "inv"]], ["DEVELOP", "#A855F7", ["apqp", "cad", "balloon", "pd", "ppap", "layout"]], ["MAKE", "#EA580C", ["mmd", "dcg", "mnt"]], ["CHECK", "#6366F1", ["calib", "msa", "spc", "d8", "aud"]], ["IMPROVE", "#7C3AED", ["mom", "tsk", "qms", "off", "dwm"]], ["PEOPLE", "#0EA5E9", ["hrms"]]];
+  const STAGES = [["PLAN", "#10B981", ["capacity", "sales", "crm", "rmp", "inv"]], ["DEVELOP", "#A855F7", ["apqp", "cad", "balloon", "pd", "ppap", "layout"]], ["MAKE", "#EA580C", ["mmd", "dcg", "mnt"]], ["CHECK", "#6366F1", ["calib", "msa", "spc", "d8", "aud"]], ["IMPROVE", "#7C3AED", ["mom", "connect", "tsk", "qms", "off", "dwm"]], ["PEOPLE", "#0EA5E9", ["hrms"]]];
   T.n = { html(c) { const h = H(c);
     const known = STAGES.flatMap((s) => s[2]), rest = c.mine.filter((r) => !known.includes(r.product_code));
     const st = STAGES.map(([n, col, ks]) => [n, col, c.mine.filter((r) => ks.includes(r.product_code)).sort((a, b) => ks.indexOf(a.product_code) - ks.indexOf(b.product_code))]).concat(rest.length ? [["OTHER", "#64748B", rest]] : []).filter((s) => s[2].length);
@@ -179,7 +179,7 @@
 @media(max-width:900px){.th-n .flow{flex-direction:column}.th-n .st{width:100%}.th-n .cc{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}` };
 
   /* ---------- O · plant floor map ---------- */
-  const ZONES = [["OFFICE · PLANNING", "#10B981", ["capacity", "sales", "crm", "rmp", "inv", "apqp", "ppap", "cad", "layout"]], ["QUALITY LAB", "#6366F1", ["balloon", "pd", "calib", "msa", "spc", "d8"]], ["SHOP FLOOR", "#EA580C", ["mmd", "dcg", "mnt"]], ["MEETING ROOM", "#7C3AED", ["mom", "tsk", "qms", "dwm"]], ["HR OFFICE", "#0EA5E9", ["hrms"]]];
+  const ZONES = [["OFFICE · PLANNING", "#10B981", ["capacity", "sales", "crm", "rmp", "inv", "apqp", "ppap", "cad", "layout"]], ["QUALITY LAB", "#6366F1", ["balloon", "pd", "calib", "msa", "spc", "d8"]], ["SHOP FLOOR", "#EA580C", ["mmd", "dcg", "mnt"]], ["MEETING ROOM", "#7C3AED", ["mom", "connect", "tsk", "qms", "dwm"]], ["HR OFFICE", "#0EA5E9", ["hrms"]]];
   T.o = { html(c) { const h = H(c);
     const known = ZONES.flatMap((z) => z[2]), rest = c.mine.filter((r) => !known.includes(r.product_code));
     const zs = ZONES.map(([n, col, ks]) => [n, col, c.mine.filter((r) => ks.includes(r.product_code))]).concat(rest.length ? [["OTHER", "#64748B", rest]] : []).filter((z) => z[2].length);

@@ -1,0 +1,4 @@
+# KMR Connect helper settings (normally nothing to change)
+site = https://www.kmr-groups.com
+port = 47892
+debugPort = 47893

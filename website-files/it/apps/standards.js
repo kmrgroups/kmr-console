@@ -324,6 +324,16 @@ mom:[
 ['F4','Recommended actions','Responsibility and target completion date (FMEA 4th ed.)','FMEA review meeting actions have responsibility and target date.'],
 ['VF','Step 6','Optimization (AIAG-VDA FMEA)','FMEA and Control Plan review meetings record optimisation actions with responsible person and target date.'],
 ['VDA','P2','Project management','Project review meetings are minuted with decisions, owners and dates.']],
+connect:[
+['ISO','7.1.3','Infrastructure','Paired laptops and PCs can be supported from a browser or phone, so the people who run the plant and the office have working computers without travel; each device shows whether it is online.'],
+['ISO','7.5.3','Control of documented information - access','Only signed-in users with the KMR Connect role can open a remote session; each device has its own private channel and pairing code (valid 2 hours, 5 tries), and the administrator can switch a device off at any time.'],
+['IATF','7.5.3.2.1','Record retention','Every remote session (who, which device, start and end) and every meeting, recording and spoken line is stored with a number and date, with JSON export and daily backup.'],
+['ISO','7.4','Communication','Meetings run in the KMR video room, Microsoft Teams or Google Meet with the meeting link kept in one list; people speak in their own language and their words are typed out in that language.'],
+['ISO','9.3','Management review','Review meetings can be recorded and sent to Minutes Of Meetings as minutes with decisions and actions with owner and date.'],
+['IATF','9.3.1.1','Management review - general','The recording, the spoken lines and the minutes of a review meeting are kept together under one meeting number.'],
+['ISO','10.2','Nonconformity and corrective action','Problems discussed online are sent to Minutes Of Meetings, where each action has an owner, target date and status.'],
+['APQP','Phase 1','Plan and define - team organisation','CFT team meetings with suppliers and customers can be held online and minuted without anyone travelling.'],
+['VDA','P2','Project management','Project and customer review meetings are held online and the minutes are traceable to the recording.']],
 cad:[
 ['ISO','7.5.3.1 / 7.5.3.2','Control of documented information — identification, storage, protection from loss','File menu works like AutoCAD: New, Open (DXF (Drawing Exchange Format), DWG (AutoCAD drawing), KMR CAD file), Save writes back to the drawing\'s own file, Save As always creates a new file with the folder, name and type chosen, Close and Recent documents. The file name shows on the screen, unsaved changes are flagged and New, Open and Close ask "Save changes?" (Yes / No / Cancel) so work is not lost; every save is checked after writing, a failed save says why, and Drawing Utilities › Save history lists each save with its result.'],
 ['ISO','7.5.3 / 7.5.2','Control of documented information — storage and retrieval','Any drawing can be saved to the company computer or network drive in DXF, PDF, SVG, PNG or KMR file form through the computer\'s own Save window, so the controlled copy and its backups sit where the company keeps its records.'],
