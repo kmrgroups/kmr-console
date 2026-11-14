@@ -90,7 +90,7 @@
           ${ctx.role === "admin" || ctx.role === "editor" ? `<label class="btn ghost" style="height:42px;cursor:pointer">Upload Excel workbook<input type="file" id="opsXlsxImp" accept=".xlsx" hidden></label>` : ""}
           <small style="color:var(--muted);align-self:center">One sheet per list. Fill it in Excel and upload it back — existing codes are updated, new ones added, nothing is deleted.</small>
         </div>
-        ${edit ? `<div class="card" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:16px;border-style:dashed;--c:transparent"><b>Bring in ERP purchase masters (tools, consumables, raw material, suppliers)</b><small style="color:var(--muted)">Choose the file Unit-2_ERP_Masters.json.gz. A record whose code or name is already here is skipped, so nothing is duplicated and nothing you typed is changed; blank fields of an existing record are filled. Safe to repeat.</small><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="file" id="opsErpFile" accept=".json,.gz"><button class="btn" id="opsErpGo" style="height:38px;margin:0">Import</button><span id="opsErpMsg" style="color:var(--muted)"></span></div></div>` : ""}
+        ${edit ? `<div class="card" style="flex-direction:column;align-items:stretch;gap:8px;margin-bottom:16px;border-style:dashed;--c:transparent"><b>Bring in ERP purchase masters (tools, consumables, raw material, suppliers)</b><small style="color:var(--muted)">Choose Unit-2_ERP_Masters.json.gz (you can choose several files together). A record whose code or name is already here is skipped, so nothing is duplicated and nothing you typed is changed; blank fields of an existing record are filled. Safe to repeat.</small><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="file" id="opsErpFile" accept=".json,.gz" multiple><button class="btn" id="opsErpGo" style="height:38px;margin:0">Import</button><span id="opsErpMsg" style="color:var(--muted)"></span></div></div>` : ""}
         <div class="cards">${KINDS.map((K) => {
           const all = (counts && counts[K.kind]) || 0, smp = (counts && counts["_sample_" + K.kind]) || 0, own = (counts && counts["_own_" + K.kind]) || 0;
           const b = (act, label, on, red) => `<button class="btn ghost" data-card="${act}" data-k="${K.kind}" style="height:32px;padding:0 10px;font-size:12.5px${red ? ";color:#B00E28" : ""}" ${on ? "" : "disabled"}>${label}</button>`;
@@ -131,17 +131,21 @@
       if (window.KMRStd) KMRStd.draw(ctx.main.querySelector("#opsStd"), "ops");
       const eg = ctx.main.querySelector("#opsErpGo");
       if (eg) eg.onclick = async () => {
-        const f = ctx.main.querySelector("#opsErpFile").files[0], msg = ctx.main.querySelector("#opsErpMsg"); if (!f) { msg.textContent = "Choose the ERP file first."; return; }
+        const fl = [...ctx.main.querySelector("#opsErpFile").files], msg = ctx.main.querySelector("#opsErpMsg"); if (!fl.length) { msg.textContent = "Choose the ERP file(s) first."; return; }
         eg.disabled = true;
         try {
-          msg.textContent = "Reading…"; let txt;
-          if (/\.gz$/i.test(f.name)) { if (!window.DecompressionStream) throw new Error("Please use a current Chrome or Edge to open .gz files."); txt = await new Response(f.stream().pipeThrough(new DecompressionStream("gzip"))).text(); } else txt = await f.text();
-          const R = JSON.parse(txt).rows || [], tot = { added: 0, skipped: 0, filled: 0 };
-          for (let i = 0; i < R.length; i += 200) {
-            const { data, error } = await ctx.sb.rpc("kmr_ops_bulk", { p_slug: ctx.slug, p_rows: R.slice(i, i + 200) }); if (error) throw new Error(error.message);
-            tot.added += data.added; tot.skipped += data.skipped; tot.filled += data.filled; msg.textContent = "Importing… " + Math.min(i + 200, R.length) + " of " + R.length;
+          const tot = { added: 0, skipped: 0, filled: 0 }; let hist = 0;
+          for (const f of fl) {
+            msg.textContent = "Reading " + f.name + "…"; let txt;
+            if (/\.gz$/i.test(f.name)) { if (!window.DecompressionStream) throw new Error("Please use a current Chrome or Edge to open .gz files."); txt = await new Response(f.stream().pipeThrough(new DecompressionStream("gzip"))).text(); } else txt = await f.text();
+            const R = JSON.parse(txt).rows || []; if (!R.length) continue;
+            if (Array.isArray(R[0])) { for (let i = 0; i < R.length; i += 1000) { const { data, error } = await ctx.sb.rpc("kmr_mmd_hist_import", { p_slug: ctx.slug, p_rows: R.slice(i, i + 1000) }); if (error) throw new Error(error.message); hist += data; msg.textContent = f.name + ": " + Math.min(i + 1000, R.length) + " of " + R.length; } continue; }
+            for (let i = 0; i < R.length; i += 200) {
+              const { data, error } = await ctx.sb.rpc("kmr_ops_bulk", { p_slug: ctx.slug, p_rows: R.slice(i, i + 200) }); if (error) throw new Error(error.message);
+              tot.added += data.added; tot.skipped += data.skipped; tot.filled += data.filled; msg.textContent = f.name + ": " + Math.min(i + 200, R.length) + " of " + R.length;
+            }
           }
-          this.overview(ctx, "<b>ERP masters imported:</b> " + tot.added + " added, " + tot.skipped + " already here (skipped), " + tot.filled + " existing records had blank fields filled.");
+          this.overview(ctx, "<b>ERP files imported:</b> " + tot.added + " added, " + tot.skipped + " already here (skipped), " + tot.filled + " existing records had blank fields filled." + (hist ? " Production history: " + hist + " records added." : ""));
         } catch (e) { msg.textContent = e.message || String(e); eg.disabled = false; }
       };
       const xExp = ctx.main.querySelector("#opsXlsxExp"), xImp = ctx.main.querySelector("#opsXlsxImp");
