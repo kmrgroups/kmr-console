@@ -1,0 +1,239 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
+<title>Sales Invoicing · KMR Apps</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0891b2;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;color:#130a3a;font-weight:800;font-size:14px;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{text-decoration:none;display:inline-block;border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;flex:none}.tab.on{background:var(--card);color:var(--b1);box-shadow:0 -2px 0 var(--b1) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%;min-width:0}
+.btn{border:0;border-radius:9px;padding:8px 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer;text-decoration:none;display:inline-block}.btn.o{background:none;color:var(--b1);border:1px solid var(--b1)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row>.grow{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b1))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}
+.mut{color:var(--mut)}.hide{display:none}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
+a{color:var(--b1)}
+.bar{display:flex;gap:2px;min-width:120px}.bar i{flex:1;height:8px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}.bar i b{position:absolute;inset:0 auto 0 0;background:var(--g)}
+.ph{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.ph>h3{margin:0;padding:10px 12px;background:var(--bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}.ph>h3 .grow{flex:1}
+.ph table{min-width:820px}.ph input,.ph select{padding:4px 6px;font-size:13px}
+tr.done td:nth-child(3) b{color:var(--mut);text-decoration:line-through}tr.na{opacity:.55}
+.src{font-size:12px;margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.src.missing a,.src.na{color:var(--mut)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tile{border:1px solid var(--line);border-radius:12px;padding:10px;border-top:3px solid var(--c,var(--b1))}.tile b{font-size:20px}.tile small{display:block;color:var(--mut)}
+.links{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.links a{border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12px;text-decoration:none;color:var(--ink)}.links a:hover{border-color:var(--b1)}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:9;padding:10px}.modal.on{display:flex}.in{background:var(--card);border-radius:14px;width:min(720px,100%);max-height:92vh;overflow:auto;padding:16px}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.frm label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--mut);margin:8px 0}
+.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
+.rep h2{margin:0 0 4px}.rep table{min-width:0}
+@media print{body{background:#fff;color:#000;padding:0}header,.tabs,.noprint,.kmr-foot,.kmr-demo,.back{display:none!important}.panel{border:0;padding:0}main{padding:0}.ph{break-inside:avoid}}
+.num{text-align:right;font-variant-numeric:tabular-nums}.ph table{min-width:0}.late{color:var(--r);font-weight:700}.tabs .tab.on{}
+.sup{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.sup>h3{margin:0;padding:10px 12px;background:var(--bg);font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sup>h3 .grow{flex:1}
+.rmp-sc{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:6px 0}.rmp-sc::-webkit-scrollbar{height:14px;width:14px}.rmp-sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px;border:3px solid #eef1f6}.rmp-sc thead th{position:sticky;top:0;z-index:3;background:#EEF2F8}.rmp-sc table{margin:0}.bars{display:flex;flex-direction:column;gap:3px}.bars i{display:block;height:7px;border-radius:4px;min-width:2px}.sum{display:flex;gap:18px;flex-wrap:wrap;padding:2px 14px 12px}.sum span{color:var(--mut)}.sum b{color:var(--ink)}
+.cp{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8);white-space:nowrap}.cp.cg{--c:#16a34a}.cp.ca{--c:#d97706}.cp.cr{--c:#dc2626}.cp.cb{--c:#174b80}.cp.cm{--c:#64748b}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 14px}.kp div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,#174b80)}.kp b{display:block;font-size:22px}.kp span{color:var(--mut);font-size:12px}
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:8px 0}.dg label{display:block;font-size:12px;color:var(--mut);margin-bottom:2px}
+.lt{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}.lt th,.lt td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}.lt th{background:var(--bg);position:sticky;top:0;z-index:2;white-space:nowrap}.lt td input,.lt td select{padding:5px 6px;min-width:70px}.lt td.n,.lt th.n{text-align:right}.lt td.w input{min-width:160px}
+.sc{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--card)}.sc::-webkit-scrollbar{height:14px;width:14px}.sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:var(--card)}.box h3{margin:0 0 6px;font-size:15px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}.seg label.on{border-color:var(--b1);background:#174b8014}.seg input{width:auto}
+.late{color:var(--r);font-weight:700}.num{text-align:right;font-variant-numeric:tabular-nums}.grow{flex:1}.note{font-size:12px;color:var(--mut);margin:6px 0}
+.docv{background:#fff;color:#000;border:1px solid #444;padding:14px 16px;margin:10px 0;font:12px/1.4 Arial,Helvetica,sans-serif;position:relative;overflow:hidden}.docv h2{margin:0;text-align:center;font-size:17px;letter-spacing:.5px}.docv .sub{text-align:center;font-size:11px;margin-bottom:6px}
+.docv table{border-collapse:collapse;width:100%;margin:8px 0}.docv th,.docv td{border:1px solid #444;padding:4px 6px;text-align:left;vertical-align:top}.docv th{background:#e7e6e6}.docv td.n,.docv th.n{text-align:right}
+.docv .two{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #444;margin-top:6px}.docv .two>div{padding:6px 8px}.docv .two>div+div{border-left:1px solid #444}.docv .cl{font-weight:700;text-align:right;font-size:11px}
+.docv .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #444;margin-top:10px}.docv .sg div{height:62px;padding:4px 8px;font-size:11px;display:flex;align-items:flex-end}.docv .sg div+div{border-left:1px solid #444}
+.docv .wm{position:absolute;inset:0;display:grid;place-items:center;font-size:70px;font-weight:800;color:#dc262622;transform:rotate(-20deg);pointer-events:none}
+.pgb{page-break-after:always}
+@media print{.docv{border:1px solid #000;margin:0}.docv.pgb:last-child{page-break-after:auto}.sc{max-height:none;overflow:visible;border:0}.lt{min-width:0}}
+@media(max-width:640px){.docv .two,.docv .sg{grid-template-columns:1fr}.docv .two>div+div,.docv .sg div+div{border-left:0;border-top:1px solid #444}}
+
+.tt td{border:0!important;padding:2px 6px}.tt{width:100%;margin:0;min-width:0}.tot{margin-left:auto;width:min(340px,100%)}.tot div{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line)}.tot .big{font-weight:800;font-size:16px;border-bottom:0}
+.docv .tot div{border-bottom:1px dotted #888}
+.docv .big2{font-size:12px;font-weight:700;margin:4px 0}
+</style></head><body>
+<header><span class="clogo" id="clogo" hidden></span><div><h1>Sales Invoicing</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Dashboard</a><a class="tab" data-t="inv" href="#go=inv">Invoices</a><a class="tab" data-t="gov" href="#go=gov">E-invoice &amp; e-way bill</a><a class="tab" data-t="tally" href="#go=tally">Tally export</a><a class="tab" data-t="set" href="#go=set">Settings</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="inv" class="hide"></section><section id="gov" class="hide"></section><section id="tally" class="hide"></section><section id="set" class="hide"></section></div></main>
+<script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-mobile.js"></script>
+<script>
+const {$,esc,fmt,say,call}=QP;
+const S={d:null,m:null,e:null,view:null,go:null,months:6,sel:{}};
+const td=()=>new Date(Date.now()+19800000).toISOString().slice(0,10);
+const inr=(v)=>'₹'+Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const n2=(v)=>Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const n3=(v)=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:3});
+const dmy=(s)=>s?String(s).slice(0,10).split('-').reverse().join('/'):'';
+const yes=(m)=>KMRDlg.yes(m),ask=(m,d)=>KMRDlg.ask(m,d);
+const canEdit=()=>QP.canEdit,isAdmin=()=>QP.ctx&&QP.ctx.role==='admin';
+const ST={draft:['Draft','cm'],issued:['Issued','cb'],cancelled:['Cancelled','cr']};
+const chip=(k)=>{const v=ST[k]||[k,'cm'];return `<span class="cp ${v[1]}">${esc(v[0])}</span>`};
+const TYPES={INV:'Tax invoice',CRN:'Credit note',DBN:'Debit note'};
+const SUP={B2B:'B2B (to a registered buyer)',EXPWP:'Export with GST',EXPWOP:'Export without GST',SEZWP:'SEZ with GST',SEZWOP:'SEZ without GST'};
+const UNIT={Nos:'NOS',Kg:'KGS',Kgs:'KGS',Set:'SET',Sets:'SET',Mtr:'MTR',Ltr:'LTR',Pcs:'PCS',Box:'BOX',Pair:'PRS',Ton:'TON'};
+const hashGo=()=>{const m=location.hash.match(/go=([a-z]+)/);return m?m[1]:'std'};
+const rep=(title,doc,no)=>{if(window.KMRReport)window.KMRReport.set({title,doc:doc||'',format:'KMR/INV/F-'+no,rev:'01',date:'2026-11-14'})};
+const sett=()=>(S.d&&S.d.settings)||{};
+const dl=(name,text,type)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type||'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)};
+const fyStart=()=>{const d=td(),y=+d.slice(0,4),m=+d.slice(5,7);return (m<4?y-1:y)+'-04-01'};
+const xml=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* amount in words, Indian style */
+function words(n){n=Math.round(Number(n||0));if(!n)return 'Zero';const a=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'],b=['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  const two=(x)=>x<20?a[x]:b[Math.floor(x/10)]+(x%10?' '+a[x%10]:'');const three=(x)=>(x>=100?a[Math.floor(x/100)]+' Hundred'+(x%100?' ':''):'')+(x%100?two(x%100):'');
+  const p=[[1e7,'Crore'],[1e5,'Lakh'],[1e3,'Thousand']];let o=[];for(const [v,t] of p){if(n>=v){o.push(three(Math.floor(n/v))+' '+t);n%=v}}if(n)o.push(three(n));return o.join(' ')}
+const inWords=(v)=>'Rupees '+words(v)+' only';
+
+/* the same working as the database: lines -> CGST+SGST inside the state, IGST outside */
+function calc(e){const st=sett().state_code||'';const bst=((e.buyer_gstin||'').trim().slice(0,2))||e.buyer_state||st;
+  const intra=(e.supply_type||'B2B')==='B2B'&&bst===st&&st!=='';let T=0,C=0,Sg=0,I=0;
+  const ls=(e.lines||[]).map(l=>{const q=Number(l.qty)||0,r=Number(l.rate)||0,d=Number(l.discount)||0;let g=l.gst_rate===''||l.gst_rate==null?18:Number(l.gst_rate);if(['EXPWOP','SEZWOP'].includes(e.supply_type))g=0;
+    const tx=Math.round((q*r-d)*100)/100;let c=0,s=0,i=0;if(intra){c=Math.round(tx*g/200*100)/100;s=c}else i=Math.round(tx*g/100*100)/100;T+=tx;C+=c;Sg+=s;I+=i;return {tx,c,s,i,g}});
+  const tp=Number(e.tcs_pct)||0,tcs=Math.round((T+C+Sg+I)*tp)/100,raw=T+C+Sg+I+tcs,tot=Math.round(raw);
+  return {ls,taxable:T,cgst:C,sgst:Sg,igst:I,tcs,ro:tot-raw,total:tot,intra}}
+
+async function load(){S.d=await call('kmr_inv_load',{p_months:S.months});if(!S.m&&!S.mBusy){S.mBusy=true;call('kmr_inv_masters',{}).then(r=>{S.m=r}).catch(()=>{S.m={customers:[],parts:[],rates:[]}}).finally(()=>{S.mBusy=false})}}
+async function route(){const go=hashGo();if(go!==S.go){S.view=null;S.e=null;S.go=go}
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
+  ['std','dash','inv','gov','tally','set'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  if(go==='std'){KMRStd.draw($('#std'),'inv');return}
+  try{await load();paint()}catch(e){say(e.message)}}
+function paint(){({dash:drawDash,inv:drawInv,gov:drawGov,tally:drawTally,set:drawSet}[hashGo()]||(()=>{}))()}
+const reload=async()=>{await load();paint()};
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
+window.addEventListener('hashchange',route);
+
+const invs=()=>(S.d&&S.d.invoices)||[];
+const issued=()=>invs().filter(i=>i.status==='issued');
+const byId=(id)=>invs().find(i=>i.id===id);
+
+/* ---------- Dashboard ---------- */
+function drawDash(){const fy=fyStart(),I=issued().filter(i=>i.inv_date>=fy);const sum=(k,a)=>(a||I).reduce((s,i)=>s+Number(i[k]||0),0);
+  const sg=(i)=>Number(i.cgst||0)+Number(i.sgst||0)+Number(i.igst||0);
+  const needE=issued().filter(i=>sett().einv_on!==false&&i.supply_type==='B2B'&&!i.irn&&i.doc_type==='INV'),needT=issued().filter(i=>!i.tally_at);
+  const mon={};I.forEach(i=>{const k=i.inv_date.slice(0,7);mon[k]=(mon[k]||0)+Number(i.total||0)});const ks=Object.keys(mon).sort(),mx=Math.max(1,...ks.map(k=>mon[k]));
+  $('#dash').innerHTML=`<div class="kp"><div><b>${I.length}</b><span>Invoices this financial year</span></div><div style="--c:#16a34a"><b>${inr(sum('taxable'))}</b><span>Taxable value</span></div><div style="--c:#7c3aed"><b>${inr(I.reduce((s,i)=>s+sg(i),0))}</b><span>GST charged</span></div><div style="--c:#0891b2"><b>${inr(sum('total'))}</b><span>Invoice value</span></div>
+    <div style="--c:#d97706"><b>${invs().filter(i=>i.status==='draft').length}</b><span>Drafts to issue</span></div><div style="--c:#dc2626"><b>${needE.length}</b><span>Waiting for IRN (e-invoice)</span></div><div style="--c:#64748b"><b>${needT.length}</b><span>Not yet sent to Tally</span></div></div>
+    <div class="box"><h3>Month-wise invoice value</h3>${ks.length?ks.map(k=>`<div style="display:flex;gap:8px;align-items:center;margin:3px 0"><span style="width:70px">${k}</span><i style="display:block;height:12px;border-radius:4px;background:linear-gradient(90deg,#0891b2,#7c3aed);width:${Math.max(2,mon[k]/mx*100)}%"></i><span>${inr(mon[k])}</span></div>`).join(''):'<p class="mut">No issued invoices in this financial year yet.</p>'}</div>
+    ${(S.d.older||0)?`<p class="mut">Older invoices (${S.d.older}) are saved. <button class="btn o sm" data-a="more">Show last 36 months</button></p>`:''}`}
+
+/* ---------- Invoices ---------- */
+function newInv(){const s=sett();return {id:null,inv_date:td(),doc_type:'INV',supply_type:'B2B',reverse_charge:false,buyer_code:'',buyer_name:'',buyer_gstin:'',buyer_addr:'',buyer_loc:'',buyer_pin:'',buyer_state:'',po_no:'',po_date:'',dc_no:'',dc_date:'',vehicle_no:'',mode:'Road',transporter:'',transporter_id:'',distance_km:'',delivery_terms:'',pay_days:30,remarks:'',tcs_pct:0,lines:[blank()]}}
+const blank=()=>({item_code:'',description:'',hsn:'',uom:'Nos',qty:'',rate:'',discount:0,gst_rate:18,packing:''});
+function drawInv(){if(S.e)return drawEdit();if(S.view)return drawView();
+  const q=(S.q||'').toLowerCase();let L=invs().filter(i=>!q||[i.inv_no,i.buyer_name,i.po_no,i.dc_no].join(' ').toLowerCase().includes(q));
+  $('#inv').innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="new">+ New invoice</button>':''}<input id="q" class="grow" placeholder="Search number, customer, PO or challan" value="${esc(S.q||'')}" style="max-width:360px"><button class="btn o" data-a="csv">Download register (Excel)</button></div>
+  <div class="sc"><table class="lt"><thead><tr><th>Invoice no.</th><th>Date</th><th>Type</th><th>Customer</th><th>PO no.</th><th>Challan no.</th><th class="n">Taxable</th><th class="n">GST</th><th class="n">Total</th><th>Status</th><th>IRN</th><th>Tally</th></tr></thead><tbody>${L.map(i=>`<tr data-a="open" data-id="${i.id}" style="cursor:pointer"><td><b>${esc(i.inv_no||'(draft)')}</b></td><td>${dmy(i.inv_date)}</td><td>${esc(i.doc_type)}</td><td>${esc(i.buyer_name)}</td><td>${esc(i.po_no||'')}</td><td>${esc(i.dc_no||'')}</td><td class="n">${n2(i.taxable)}</td><td class="n">${n2(+i.cgst+ +i.sgst+ +i.igst)}</td><td class="n"><b>${n2(i.total)}</b></td><td>${chip(i.status)}</td><td>${i.irn?'✔':''}</td><td>${i.tally_at?'✔':''}</td></tr>`).join('')||'<tr><td colspan="12" class="mut">No invoices yet.</td></tr>'}</tbody></table></div>`;
+  const qi=$('#q');if(qi)qi.oninput=()=>{S.q=qi.value;const p=qi.selectionStart;drawInv();const n=$('#q');n.focus();n.setSelectionRange(p,p)}}
+function drawEdit(){const e=S.e,m=S.m||{customers:[],parts:[]};
+  const f=(k,l,t,x)=>`<div><label>${l}</label><input data-f="${k}" type="${t||'text'}" value="${esc(e[k]==null?'':e[k])}" ${x||''}></div>`;
+  $('#inv').innerHTML=`<datalist id="dlc">${m.customers.map(c=>`<option value="${esc(c.name)}">${esc(c.code)}</option>`).join('')}</datalist><datalist id="dlp">${m.parts.map(p=>`<option value="${esc(p.code)}">${esc(p.name)}</option>`).join('')}</datalist>
+  <div class="row noprint"><button class="btn o" data-a="back">← Back to list</button><b style="font-size:16px">${e.id?'Change draft invoice':'New invoice'}</b></div>
+  <div class="box"><h3>Customer</h3><div class="frm"><div><label>Customer (from Operations Master)</label><input data-f="buyer_name" list="dlc" value="${esc(e.buyer_name)}" autocomplete="off"></div>${f('buyer_gstin','Customer GSTIN')}<div><label>Supply type</label><select data-f="supply_type">${Object.entries(SUP).map(([k,v])=>`<option value="${k}" ${e.supply_type===k?'selected':''}>${v}</option>`).join('')}</select></div><div><label>Document</label><select data-f="doc_type">${Object.entries(TYPES).map(([k,v])=>`<option value="${k}" ${e.doc_type===k?'selected':''}>${v}</option>`).join('')}</select></div>${f('buyer_addr','Address')}${f('buyer_loc','Place')}${f('buyer_pin','PIN code')}${f('buyer_state','State code (if no GSTIN)')}</div></div>
+  <div class="box"><h3>Invoice and despatch</h3><div class="frm">${f('inv_date','Invoice date','date')}${f('po_no','Customer PO no.')}${f('po_date','PO date','date')}${f('dc_no','Delivery challan no.')}${f('dc_date','Challan date','date')}${f('pay_days','Payment terms (days)','number')}${f('delivery_terms','Delivery terms')}${f('vehicle_no','Vehicle no.')}${f('transporter','Transporter')}${f('transporter_id','Transporter GSTIN')}${f('distance_km','Distance (km)','number')}${f('tcs_pct','TCS %','number','step="0.01"')}</div></div>
+  <div class="box"><h3>Items</h3><div class="sc"><table class="lt" id="lines"></table></div><button class="btn o sm" data-a="addl">+ Add item</button></div>
+  <div class="box"><div><label class="mut">Remarks</label><textarea data-f="remarks" rows="2">${esc(e.remarks||'')}</textarea></div><div id="tot" style="margin-top:10px"></div></div>
+  <div class="row noprint"><button class="btn" data-a="save">Save draft</button><button class="btn" data-a="saveissue" style="background:#16a34a">Save and issue (give number)</button>${e.id?'<button class="btn o" data-a="del" style="color:#dc2626;border-color:#dc2626">Delete draft</button>':''}</div>`;
+  drawLines()}
+function drawLines(){const e=S.e,c=calc(e);
+  $('#lines').innerHTML=`<thead><tr><th>#</th><th>Item code</th><th>Description</th><th>HSN</th><th>UoM</th><th class="n">Qty</th><th class="n">Rate</th><th class="n">Discount</th><th class="n">GST %</th><th class="n">Taxable</th><th></th></tr></thead><tbody>${e.lines.map((l,i)=>`<tr><td>${i+1}</td><td><input data-l="${i}" data-k="item_code" list="dlp" value="${esc(l.item_code)}"></td><td class="w"><input data-l="${i}" data-k="description" value="${esc(l.description)}"></td><td><input data-l="${i}" data-k="hsn" value="${esc(l.hsn)}" style="min-width:80px"></td><td><input data-l="${i}" data-k="uom" value="${esc(l.uom)}" style="min-width:60px"></td><td class="n"><input data-l="${i}" data-k="qty" type="number" step="any" value="${l.qty}"></td><td class="n"><input data-l="${i}" data-k="rate" type="number" step="any" value="${l.rate}"></td><td class="n"><input data-l="${i}" data-k="discount" type="number" step="any" value="${l.discount}"></td><td class="n"><input data-l="${i}" data-k="gst_rate" type="number" step="any" value="${l.gst_rate}" style="min-width:60px"></td><td class="n" id="tx${i}">${n2(c.ls[i].tx)}</td><td><button class="btn o sm" data-a="dell" data-i="${i}">✕</button></td></tr>`).join('')}</tbody>`;totals()}
+function totals(){const e=S.e,c=calc(e);e.lines.forEach((l,i)=>{const t=$('#tx'+i);if(t)t.textContent=n2(c.ls[i].tx)});
+  $('#tot').innerHTML=`<div class="tot"><div><span>Taxable value</span><b>${n2(c.taxable)}</b></div>${c.intra?`<div><span>CGST</span><b>${n2(c.cgst)}</b></div><div><span>SGST</span><b>${n2(c.sgst)}</b></div>`:`<div><span>IGST</span><b>${n2(c.igst)}</b></div>`}${c.tcs?`<div><span>TCS</span><b>${n2(c.tcs)}</b></div>`:''}<div><span>Round off</span><b>${n2(c.ro)}</b></div><div class="big"><span>Invoice total</span><b>${inr(c.total)}</b></div></div><p class="note" style="text-align:right">${esc(inWords(c.total))} · ${c.intra?'Inside the state: CGST + SGST':'Outside the state: IGST'}</p>`}
+function rateFor(party,code){const r=((S.m||{}).rates||[]).filter(x=>x.party&&party&&x.party.toLowerCase()===party.toLowerCase()&&x.item&&(x.item===code||(x.item||'').toLowerCase()===(code||'').toLowerCase()));return r.length?r[0].rate:''}
+document.addEventListener('input',e=>{const t=e.target;if(!S.e)return;
+  if(t.dataset.f){S.e[t.dataset.f]=t.value;
+    if(t.dataset.f==='buyer_name'){const c=((S.m||{}).customers||[]).find(x=>x.name===t.value);if(c){S.e.buyer_code=c.code;S.e.buyer_gstin=c.gstin||S.e.buyer_gstin;S.e.buyer_addr=c.addr||'';S.e.buyer_pin=c.pin||S.e.buyer_pin;S.e.buyer_state=c.state||S.e.buyer_state;drawEdit();return}}
+    if(['buyer_gstin','supply_type','tcs_pct'].includes(t.dataset.f))totals();return}
+  if(t.dataset.l!=null){const l=S.e.lines[+t.dataset.l];l[t.dataset.k]=t.value;
+    if(t.dataset.k==='item_code'){const p=((S.m||{}).parts||[]).find(x=>x.code===t.value);if(p){l.description=p.name;l.hsn=p.hsn||l.hsn;l.uom=p.uom||l.uom;const r=rateFor(S.e.buyer_name,p.code);if(r!=='')l.rate=r;drawLines();return}}
+    totals()}});
+document.addEventListener('change',e=>{if(S.e&&e.target.dataset.f==='supply_type'){drawEdit()}});
+async function saveDraft(){const e=S.e;const p={...e,lines:e.lines.filter(l=>l.description&&Number(l.qty)>0)};const id=await call('kmr_inv_save',{p});e.id=id;return id}
+function drawView(){const i=byId(S.view);if(!i){S.view=null;return drawInv()}const s=sett();
+  $('#inv').innerHTML=`<div class="row noprint"><button class="btn o" data-a="back">← Back to list</button>${i.status==='draft'&&canEdit()?'<button class="btn o" data-a="edit">Change</button><button class="btn" data-a="issue" style="background:#16a34a">Issue (give number)</button>':''}${i.status==='issued'?'<button class="btn" data-a="print">Print / PDF (3 copies)</button>':''}${i.status==='issued'&&canEdit()?'<button class="btn o" data-a="cancel" style="color:#dc2626;border-color:#dc2626">Cancel invoice</button>':''}${i.status==='cancelled'?`<span class="mut">Cancelled: ${esc(i.cancel_reason||'')}</span>`:''}</div>${docInv(i,'')}`;
+  rep((TYPES[i.doc_type]||'Tax invoice')+' '+(i.inv_no||''),i.inv_no||'',1)}
+function docInv(i,copy){const s=sett(),intra=Number(i.igst||0)===0&&(Number(i.cgst||0)>0||Number(i.sgst||0)>0);
+  const rows=(i.lines||[]).map((l,k)=>`<tr><td>${k+1}</td><td>${esc(l.description)}${l.item_code?`<br><small>${esc(l.item_code)}</small>`:''}</td><td>${esc(l.hsn||'')}</td><td class="n">${n3(l.qty)} ${esc(l.uom)}</td><td class="n">${n2(l.rate)}</td><td class="n">${n2(l.discount)}</td><td class="n">${n2(l.taxable)}</td><td class="n">${n3(l.gst_rate)}</td><td class="n">${n2(+l.cgst+ +l.sgst+ +l.igst)}</td></tr>`).join('');
+  return `<div class="docv pgb">${i.status==='cancelled'?'<div class="wm">CANCELLED</div>':''}<div class="cl">${esc(copy)}</div><h2>${esc((TYPES[i.doc_type]||'Tax invoice').toUpperCase())}</h2><div class="sub">${i.reverse_charge?'Tax is payable on reverse charge':'Tax is not payable on reverse charge'}</div>
+  <div class="two"><div><b>${esc(s.legal_name||QP.ctx.company)}</b><br>${esc([s.addr1,s.addr2,s.loc,s.pin].filter(Boolean).join(', '))}<br>GSTIN: <b>${esc(s.gstin||'')}</b> · State code: ${esc(s.state_code||'')}<br>${esc([s.phone,s.email].filter(Boolean).join(' · '))}</div><div>Invoice no.: <b>${esc(i.inv_no||'(draft)')}</b><br>Date: ${dmy(i.inv_date)}<br>PO no. / date: ${esc(i.po_no||'-')} ${dmy(i.po_date)}<br>Challan no. / date: ${esc(i.dc_no||'-')} ${dmy(i.dc_date)}<br>Vehicle: ${esc(i.vehicle_no||'-')} (${esc(i.mode||'Road')})</div></div>
+  <div class="two"><div><b>Billed to</b><br><b>${esc(i.buyer_name)}</b><br>${esc([i.buyer_addr,i.buyer_loc,i.buyer_pin].filter(Boolean).join(', '))}<br>GSTIN: ${esc(i.buyer_gstin||'')} · State code: ${esc(i.buyer_state||'')}</div><div><b>Terms</b><br>Delivery: ${esc(i.delivery_terms||'-')}<br>Payment: ${i.pay_days?esc(i.pay_days)+' days':'-'}<br>${i.irn?`IRN: ${esc(i.irn)}<br>Ack no. / date: ${esc(i.ack_no||'')} ${dmy(i.ack_date)}<br>`:''}${i.ewb_no?`E-way bill: ${esc(i.ewb_no)}`:''}</div></div>
+  <table><thead><tr><th>Sl</th><th>Description</th><th>HSN</th><th class="n">Quantity</th><th class="n">Rate</th><th class="n">Discount</th><th class="n">Taxable</th><th class="n">GST %</th><th class="n">GST</th></tr></thead><tbody>${rows}</tbody></table>
+  <div class="tot"><div><span>Taxable value</span><b>${n2(i.taxable)}</b></div>${intra?`<div><span>CGST</span><b>${n2(i.cgst)}</b></div><div><span>SGST</span><b>${n2(i.sgst)}</b></div>`:`<div><span>IGST</span><b>${n2(i.igst)}</b></div>`}${+i.tcs?`<div><span>TCS (${n3(i.tcs_pct)}%)</span><b>${n2(i.tcs)}</b></div>`:''}<div><span>Round off</span><b>${n2(i.round_off)}</b></div><div class="big"><span>Total</span><b>${inr(i.total)}</b></div></div>
+  <div class="big2">${esc(inWords(i.total))}</div>${i.remarks?`<div>Remarks: ${esc(i.remarks)}</div>`:''}
+  <div class="two"><div><b>Bank details</b><br>${esc(s.bank_name||'')}<br>A/c no.: ${esc(s.bank_acc||'')}<br>IFSC: ${esc(s.bank_ifsc||'')}</div><div><b>Terms</b><br>${esc(s.terms||'Goods once sold will not be taken back. Interest at 18% p.a. on delayed payment. Subject to local jurisdiction.')}</div></div>
+  <div class="sg"><div>Prepared by</div><div>Checked by</div><div>For ${esc(s.legal_name||QP.ctx.company)} — Authorised signatory</div></div></div>`}
+function printInv(i){const c=['Original for Recipient','Duplicate for Transporter','Triplicate for Supplier'];$('#inv').innerHTML=`<div class="row noprint"><button class="btn o" data-a="vback">← Back</button><button class="btn" onclick="window.print()">Print / Save as PDF</button></div>`+c.map(x=>docInv(i,x)).join('');rep((TYPES[i.doc_type]||'Tax invoice')+' '+i.inv_no,i.inv_no,1)}
+function csv(){const H=['Invoice no','Date','Type','Customer','GSTIN','PO no','Challan no','Taxable','CGST','SGST','IGST','TCS','Round off','Total','Status','IRN','E-way bill'];
+  const q=(v)=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';dl('Invoice_register.csv','\ufeff'+[H.map(q).join(',')].concat(invs().map(i=>[i.inv_no,i.inv_date,i.doc_type,i.buyer_name,i.buyer_gstin,i.po_no,i.dc_no,i.taxable,i.cgst,i.sgst,i.igst,i.tcs,i.round_off,i.total,i.status,i.irn,i.ewb_no].map(q).join(','))).join('\n'),'text/csv')}
+
+/* ---------- E-invoice and e-way bill ---------- */
+const NSTATE=(i)=>(i.buyer_gstin||'').slice(0,2)||i.buyer_state||sett().state_code;
+function einvJson(i){const s=sett(),nm=(x)=>x?Number(x):0;const r2=(x)=>Math.round(Number(x||0)*100)/100;
+  return {Version:'1.1',TranDtls:{TaxSch:'GST',SupTyp:i.supply_type,RegRev:i.reverse_charge?'Y':'N',IgstOnIntra:'N'},DocDtls:{Typ:i.doc_type,No:i.inv_no,Dt:dmy(i.inv_date)},
+   SellerDtls:{Gstin:s.gstin,LglNm:s.legal_name,TrdNm:s.trade_name||s.legal_name,Addr1:s.addr1,Addr2:s.addr2||undefined,Loc:s.loc,Pin:nm(s.pin),Stcd:s.state_code,Ph:s.phone||undefined,Em:s.email||undefined},
+   BuyerDtls:{Gstin:i.buyer_gstin,LglNm:i.buyer_name,Pos:NSTATE(i),Addr1:i.buyer_addr||i.buyer_loc,Loc:i.buyer_loc||'',Pin:nm(i.buyer_pin),Stcd:NSTATE(i)},
+   ItemList:(i.lines||[]).map((l,k)=>({SlNo:String(k+1),PrdDesc:l.description,IsServc:'N',HsnCd:l.hsn||'',Qty:Number(l.qty),Unit:UNIT[l.uom]||'OTH',UnitPrice:Number(l.rate),TotAmt:r2(l.qty*l.rate),Discount:r2(l.discount),AssAmt:r2(l.taxable),GstRt:Number(l.gst_rate),IgstAmt:r2(l.igst),CgstAmt:r2(l.cgst),SgstAmt:r2(l.sgst),TotItemVal:r2(+l.taxable+ +l.cgst+ +l.sgst+ +l.igst)})),
+   ValDtls:{AssVal:r2(i.taxable),CgstVal:r2(i.cgst),SgstVal:r2(i.sgst),IgstVal:r2(i.igst),Discount:0,OthChrg:r2(i.tcs),RndOffAmt:r2(i.round_off),TotInvVal:r2(i.total)}}}
+function ewbJson(i){const s=sett(),r2=(x)=>Math.round(Number(x||0)*100)/100,np=(x)=>Number(x)||0;
+  return {userGstin:s.gstin,supplyType:'O',subSupplyType:1,docType:i.doc_type==='INV'?'INV':'OTH',docNo:i.inv_no,docDate:dmy(i.inv_date),fromGstin:s.gstin,fromTrdName:s.legal_name,fromAddr1:s.addr1,fromAddr2:s.addr2||'',fromPlace:s.loc,fromPincode:np(s.pin),fromStateCode:np(s.state_code),actFromStateCode:np(s.state_code),
+   toGstin:i.buyer_gstin,toTrdName:i.buyer_name,toAddr1:i.buyer_addr||'',toAddr2:'',toPlace:i.buyer_loc||'',toPincode:np(i.buyer_pin),toStateCode:np(NSTATE(i)),actToStateCode:np(NSTATE(i)),transactionType:1,
+   totalValue:r2(i.taxable),cgstValue:r2(i.cgst),sgstValue:r2(i.sgst),igstValue:r2(i.igst),cessValue:0,totNonAdvolVal:0,otherValue:r2(i.tcs),totInvValue:r2(i.total),transMode:1,transDistance:np(i.distance_km),transporterName:i.transporter||'',transporterId:i.transporter_id||'',vehicleNo:(i.vehicle_no||'').replace(/\s|-/g,'').toUpperCase(),vehicleType:'R',
+   itemList:(i.lines||[]).map(l=>({productName:l.description,productDesc:l.description,hsnCode:np(l.hsn),quantity:Number(l.qty),qtyUnit:UNIT[l.uom]||'OTH',taxableAmount:r2(l.taxable),cgstRate:+l.cgst?Number(l.gst_rate)/2:0,sgstRate:+l.sgst?Number(l.gst_rate)/2:0,igstRate:+l.igst?Number(l.gst_rate):0,cessRate:0}))}}
+const picked=(g)=>Object.keys(S.sel[g]||{}).filter(k=>S.sel[g][k]);
+function selTable(g,list,extra){return `<div class="sc"><table class="lt"><thead><tr><th><input type="checkbox" data-all="${g}" style="width:auto"></th><th>Invoice no.</th><th>Date</th><th>Customer</th><th class="n">Total</th>${extra.h}</tr></thead><tbody>${list.map(i=>`<tr><td><input type="checkbox" data-sel="${g}" data-id="${i.id}" style="width:auto" ${(S.sel[g]||{})[i.id]?'checked':''}></td><td><b>${esc(i.inv_no)}</b></td><td>${dmy(i.inv_date)}</td><td>${esc(i.buyer_name)}</td><td class="n">${n2(i.total)}</td>${extra.r(i)}</tr>`).join('')||`<tr><td colspan="9" class="mut">Nothing here.</td></tr>`}</tbody></table></div>`}
+function drawGov(){const L=issued().filter(i=>i.doc_type!=='CRN'||true);const E=L.filter(i=>i.supply_type!=='EXPWOP');
+  $('#gov').innerHTML=`<div class="box"><h3>1. E-invoice (IRN)</h3><p class="note">Tick the issued invoices, download the file, upload it on the e-invoice portal (Bulk upload), then write the IRN and acknowledgement number against each invoice below.</p>${selTable('e',E,{h:'<th>IRN</th><th>Ack no.</th><th>Ack date</th>',r:i=>`<td>${canEdit()?`<input data-g="${i.id}" data-k="irn" value="${esc(i.irn||'')}" style="min-width:230px">`:esc(i.irn||'')}</td><td>${canEdit()?`<input data-g="${i.id}" data-k="ack_no" value="${esc(i.ack_no||'')}">`:esc(i.ack_no||'')}</td><td>${canEdit()?`<input data-g="${i.id}" data-k="ack_date" type="date" value="${esc(i.ack_date||'')}">`:dmy(i.ack_date)}</td>`})}<div class="row"><button class="btn" data-a="einv">Download e-invoice file (JSON)</button><button class="btn o" data-a="govsave" data-w="irn">Save IRN details</button></div></div>
+  <div class="box"><h3>2. E-way bill</h3><p class="note">Fill vehicle, distance and transporter on the invoice. Tick the invoices, download the file, upload it on the e-way bill portal (Bulk generation), then write the e-way bill number below.</p>${selTable('w',L,{h:'<th>Vehicle</th><th>Distance</th><th>E-way bill no.</th><th>E-way bill date</th>',r:i=>`<td>${esc(i.vehicle_no||'')}</td><td class="n">${esc(i.distance_km||'')}</td><td>${canEdit()?`<input data-g="${i.id}" data-k="ewb_no" value="${esc(i.ewb_no||'')}">`:esc(i.ewb_no||'')}</td><td>${canEdit()?`<input data-g="${i.id}" data-k="ewb_date" type="date" value="${esc(i.ewb_date||'')}">`:dmy(i.ewb_date)}</td>`})}<div class="row"><button class="btn" data-a="ewb">Download e-way bill file (JSON)</button><button class="btn o" data-a="govsave" data-w="ewb">Save e-way bill numbers</button></div></div>`}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.g){(S.gv=S.gv||{});(S.gv[t.dataset.g]=S.gv[t.dataset.g]||{})[t.dataset.k]=t.value}});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.sel){(S.sel[t.dataset.sel]=S.sel[t.dataset.sel]||{})[t.dataset.id]=t.checked}
+  if(t.dataset.all){const g=t.dataset.all;S.sel[g]=S.sel[g]||{};document.querySelectorAll(`[data-sel="${g}"]`).forEach(c=>{c.checked=t.checked;S.sel[g][c.dataset.id]=t.checked})}});
+
+/* ---------- Tally ---------- */
+function tallyXml(list){const s=sett(),ent=(n,amt,pos)=>`<ALLLEDGERENTRIES.LIST><LEDGERNAME>${xml(n)}</LEDGERNAME><ISDEEMEDPOSITIVE>${pos?'Yes':'No'}</ISDEEMEDPOSITIVE><AMOUNT>${(pos?-1:1)*Math.abs(amt)}</AMOUNT></ALLLEDGERENTRIES.LIST>`;
+  const msgs=list.map(i=>{const cr=i.doc_type==='CRN',vt=cr?'Credit Note':'Sales',d=i.inv_date.replace(/-/g,'');
+   const L=[ent(i.buyer_name,i.total,!cr),ent(s.tally_sales||'Sales',i.taxable,cr)];
+   if(+i.cgst)L.push(ent(s.tally_cgst||'Output CGST',i.cgst,cr));if(+i.sgst)L.push(ent(s.tally_sgst||'Output SGST',i.sgst,cr));if(+i.igst)L.push(ent(s.tally_igst||'Output IGST',i.igst,cr));
+   if(+i.tcs)L.push(ent(s.tally_tcs||'TCS Receivable',i.tcs,cr));if(+i.round_off)L.push(ent(s.tally_round||'Round Off',i.round_off,+i.round_off<0?!cr:cr));
+   return `<TALLYMESSAGE xmlns:UDF="TallyUDF"><VOUCHER VCHTYPE="${vt}" ACTION="Create" OBJVIEW="Accounting Voucher View"><DATE>${d}</DATE><VOUCHERTYPENAME>${vt}</VOUCHERTYPENAME><VOUCHERNUMBER>${xml(i.inv_no)}</VOUCHERNUMBER><REFERENCE>${xml(i.po_no||'')}</REFERENCE><PARTYLEDGERNAME>${xml(i.buyer_name)}</PARTYLEDGERNAME><NARRATION>${xml((i.dc_no?'Challan '+i.dc_no+'. ':'')+(i.remarks||''))}</NARRATION><PERSISTEDVIEW>Accounting Voucher View</PERSISTEDVIEW><ISINVOICE>No</ISINVOICE>${L.join('')}</VOUCHER></TALLYMESSAGE>`}).join('');
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<ENVELOPE><HEADER><TALLYREQUEST>Import Data</TALLYREQUEST></HEADER><BODY><IMPORTDATA><REQUESTDESC><REPORTNAME>Vouchers</REPORTNAME><STATICVARIABLES>${s.tally_company?`<SVCURRENTCOMPANY>${xml(s.tally_company)}</SVCURRENTCOMPANY>`:''}</STATICVARIABLES></REQUESTDESC><REQUESTDATA>${msgs}</REQUESTDATA></IMPORTDATA></BODY></ENVELOPE>`}
+function drawTally(){const L=issued().concat(invs().filter(i=>i.status==='cancelled'&&false));
+  $('#tally').innerHTML=`<div class="box"><h3>Sales vouchers for Tally</h3><p class="note">Tick the issued invoices and download the XML file. In Tally: Gateway of Tally → Import Data → Vouchers → choose the file. The customer ledger, Sales, Output CGST / SGST / IGST, TCS and Round Off ledgers must exist in Tally with the names given in Settings.</p>${selTable('t',L,{h:'<th>Sent to Tally</th>',r:i=>`<td>${i.tally_at?'✔ '+dmy(i.tally_at):'<span class="mut">not yet</span>'}</td>`})}<div class="row"><button class="btn o" data-a="tsel">Tick all not yet sent</button><button class="btn" data-a="tally">Download Tally file (XML)</button></div></div>`}
+
+/* ---------- Settings ---------- */
+function drawSet(){const s=sett(),ro=isAdmin()?'':'disabled',f=(k,l,t)=>`<div><label>${l}</label><input data-s="${k}" type="${t||'text'}" value="${esc(s[k]==null?'':s[k])}" ${ro}></div>`;
+  $('#set').innerHTML=`<div class="box"><h3>Seller details (printed on every invoice)</h3><div class="frm">${f('legal_name','Legal name')}${f('trade_name','Trade name')}${f('gstin','GSTIN')}${f('state_code','State code (e.g. 33)')}${f('addr1','Address line 1')}${f('addr2','Address line 2')}${f('loc','Place')}${f('pin','PIN code')}${f('phone','Phone')}${f('email','E-mail')}</div></div>
+  <div class="box"><h3>Bank and terms</h3><div class="frm">${f('bank_name','Bank and branch')}${f('bank_acc','Account no.')}${f('bank_ifsc','IFSC')}<div style="grid-column:1/-1"><label>Terms printed on the invoice</label><textarea data-s="terms" rows="2" ${ro}>${esc(s.terms||'')}</textarea></div></div></div>
+  <div class="box"><h3>Numbering</h3><div class="frm">${f('prefix','Number prefix (e.g. EPI/INV)')}${f('start_no','First number of a new financial year','number')}</div><p class="note">Invoices are numbered like <b>${esc(s.prefix||'INV')}/26-27/0001</b>, restarting every April.</p></div>
+  <div class="box"><h3>Tally ledger names</h3><div class="frm">${f('tally_company','Tally company name')}${f('tally_sales','Sales ledger')}${f('tally_cgst','Output CGST ledger')}${f('tally_sgst','Output SGST ledger')}${f('tally_igst','Output IGST ledger')}${f('tally_tcs','TCS ledger')}${f('tally_round','Round off ledger')}</div></div>
+  ${isAdmin()?'<div class="row"><button class="btn" data-a="sset">Save settings</button></div>':'<p class="mut">Only an administrator can change the settings.</p>'}`}
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.s){S.sv=S.sv||{};S.sv[t.dataset.s]=t.value}});
+
+/* ---------- actions ---------- */
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+ try{
+  if(a==='new'){S.e=newInv();drawInv()}
+  else if(a==='open'){S.view=b.dataset.id;drawInv()}
+  else if(a==='back'){S.e=null;S.view=null;S.pr=null;drawInv()}
+  else if(a==='vback'){S.pr=null;drawInv()}
+  else if(a==='edit'){const i=byId(S.view);S.e=JSON.parse(JSON.stringify(i));S.e.lines=(S.e.lines||[]).map(l=>({...l}));S.view=null;['po_date','dc_date'].forEach(k=>{if(!S.e[k])S.e[k]=''});drawInv()}
+  else if(a==='addl'){S.e.lines.push(blank());drawLines()}
+  else if(a==='dell'){S.e.lines.splice(+b.dataset.i,1);if(!S.e.lines.length)S.e.lines.push(blank());drawLines()}
+  else if(a==='save'){const id=await saveDraft();say('Draft saved.','ok');S.e=null;await load();S.view=id;drawInv()}
+  else if(a==='saveissue'){const id=await saveDraft();const no=await call('kmr_inv_issue',{p_id:id});say('Issued as '+no,'ok');S.e=null;await load();S.view=id;drawInv()}
+  else if(a==='issue'){if(!await yes('Issue this invoice? It gets its number now and cannot be changed after that.'))return;const no=await call('kmr_inv_issue',{p_id:S.view});say('Issued as '+no,'ok');await load();drawInv()}
+  else if(a==='del'){if(!await yes('Delete this draft?'))return;await call('kmr_inv_delete',{p_id:S.e.id});S.e=null;await load();drawInv()}
+  else if(a==='cancel'){const r=await ask('Reason for cancelling this invoice');if(!r)return;await call('kmr_inv_cancel',{p_id:S.view,p_reason:r});say('Invoice cancelled. Cancel the IRN on the e-invoice portal within 24 hours if one was made.','ok');await load();drawInv()}
+  else if(a==='print'){S.pr=1;printInv(byId(S.view))}
+  else if(a==='csv')csv();
+  else if(a==='more'){S.months=36;await load();paint()}
+  else if(a==='einv'){const L=picked('e').map(byId).filter(Boolean);if(!L.length)return say('Tick at least one invoice.');dl('E-invoice_'+td()+'.json',JSON.stringify(L.map(einvJson),null,1))}
+  else if(a==='ewb'){const L=picked('w').map(byId).filter(Boolean);if(!L.length)return say('Tick at least one invoice.');const bad=L.filter(i=>!i.vehicle_no&&!i.transporter_id);if(bad.length&&!await yes(bad.length+' invoice(s) have no vehicle number or transporter ID. Download anyway?'))return;dl('EWB_'+td()+'.json',JSON.stringify({version:'1.0.0621',billLists:L.map(ewbJson)},null,1))}
+  else if(a==='govsave'){const g=S.gv||{},ids=Object.keys(g);if(!ids.length)return say('Nothing changed.');for(const id of ids)await call('kmr_inv_gov_save',{p_id:id,p:g[id]});S.gv={};say('Saved.','ok');await load();paint()}
+  else if(a==='tsel'){S.sel.t={};issued().filter(i=>!i.tally_at).forEach(i=>S.sel.t[i.id]=true);drawTally()}
+  else if(a==='tally'){const L=picked('t').map(byId).filter(Boolean);if(!L.length)return say('Tick at least one invoice.');dl('Tally_sales_'+td()+'.xml',tallyXml(L),'application/xml');if(canEdit()&&await yes('Mark these '+L.length+' invoices as sent to Tally?')){await call('kmr_inv_tally_mark',{p_ids:L.map(i=>i.id)});await load();paint()}}
+  else if(a==='sset'){await call('kmr_inv_settings_save',{p:{...sett(),...(S.sv||{})}});S.sv={};say('Settings saved.','ok');await load();paint()}
+ }catch(err){say(err.message)}});
+
+(async()=>{try{await QP.init('inv','kmr_inv_context');if(!QP.ctx)return;await route()}catch(e){say(e.message)}})();
+</script><script src="/it/apps/back.js"></script><script src="/it/apps/kmr-present-link.js"></script></body></html>

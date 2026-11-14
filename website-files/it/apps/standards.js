@@ -59,6 +59,18 @@ sales:[
 ['ISO','9.1.3','Analysis and evaluation - sales loss by reason','Loss by reason, plant and customer with a cumulative % shows which few causes make most of the loss.'],
 ['IATF','10.2.4','Error-proofing','Each action in the conclusion screen ends with a permanent fix and a check in the next review; the permanent action is where error-proofing is decided.'],
 ['ISO','10.3','Continual improvement','The same loss figures are compared month after month; an action is closed only when the loss from its reason falls.']],
+inv:[
+['GST','Section 31 CGST Act 2017','Tax invoice','A tax invoice is issued for every supply of goods, numbered in a series for the financial year, with date, supplier and recipient details, HSN, quantity, taxable value, tax rate and amount, place of supply, and signature.'],
+['GST','Rule 46 CGST Rules 2017','Particulars of tax invoice','The invoice carries name, address and GSTIN of supplier, serial number, date, recipient name, address and GSTIN, HSN, description, quantity, unit, value, discount, taxable value, CGST / SGST / IGST rate and amount, total, and whether tax is payable on reverse charge.'],
+['GST','Rule 48 CGST Rules 2017','Manner of issuing invoice - e-invoice','For suppliers above the notified turnover the invoice is reported on the e-invoice portal and the Invoice Reference Number (IRN) and acknowledgement number are kept on the invoice; the e-invoice file (JSON) is made from the issued invoices.'],
+['GST','Rule 138 CGST Rules 2017','E-way bill','The e-way bill file is made from the invoice with vehicle, transporter and distance, and the e-way bill number is recorded against the invoice.'],
+['GST','Section 34 CGST Act 2017','Credit and debit notes','Credit and debit notes are made as separate documents with their own numbers against the same customer.'],
+['ISO','7.5.3.2','Control of documented information - retention and control','Invoices are numbered by financial year (INV/26-27/0001), cannot be changed once issued, and are cancelled with a reason rather than deleted.'],
+['ISO','8.2.1','Customer communication','The invoice repeats the customer purchase order number, challan number, delivery and payment terms agreed with the customer.'],
+['ISO','8.2.3','Review of requirements for products and services','Customer, part and rate come from the Operations Master (rate contracts) so that the price invoiced is the price agreed.'],
+['ISO','9.1.3','Analysis and evaluation','Invoice value, GST and month-wise sales are shown on the Dashboard from the issued invoices.'],
+['IATF','9.1.1.1','Monitoring and measurement of manufacturing processes','Despatch value invoiced is traceable back to the delivery challan and customer PO, so shipped quantity and billed quantity can be compared.']
+],
 dcg:[
 ['ISO','7.1.5.1','Monitoring and measuring resources - general','A gauge sent out for calibration goes on a returnable delivery challan, shows as Out for calibration in Calibration Hub, and is not available for use until it is received back on a GRN.'],
 ['ISO','7.1.5.2','Measurement traceability','The GRN of a calibrated gauge records the calibration date, certificate number, laboratory and result, and writes the calibration record and the next due date in Calibration Hub.'],
