@@ -64,7 +64,7 @@
   }
 
   /* ---------- the other apps: addresses of the exact screens ---------- */
-  const PATH = { pd: "/it/pd.html", balloon: "/it/balloon.html", calib: "/it/calibration.html", capacity: "/it/capacity.html", sales: "/it/sales.html", rmp: "/it/rmp.html", dcg: "/it/dcg.html", inv: "/it/inv.html", mmd: "/it/mmd.html", mnt: "/it/mnt.html", mom: "/it/mom.html", hrms: "/it/hrm.html", tsk: "/it/tasks.html", msa: "/it/msa.html", spc: "/it/spc.html", crm: "/it/crm.html", d8: "/it/d8.html", qms: "/it/qms.html", aud: "/it/aud.html", off: "/it/office.html", cad: "/it/cad.html", apqp: "/it/apqp.html", ppap: "/it/ppap.html", dwm: "/it/dwm.html" };
+  const PATH = { pd: "/it/pd.html", balloon: "/it/balloon.html", calib: "/it/calibration.html", capacity: "/it/capacity.html", sales: "/it/sales.html", rmp: "/it/rmp.html", dcg: "/it/dcg.html", inv: "/it/inv.html", mmd: "/it/mmd.html", mnt: "/it/mnt.html", mom: "/it/mom.html", hrms: "/it/hrm.html", tsk: "/it/tasks.html", msa: "/it/msa.html", spc: "/it/spc.html", crm: "/it/crm.html", d8: "/it/d8.html", qms: "/it/qms.html", aud: "/it/aud.html", off: "/it/office.html", cad: "/it/cad.html", apqp: "/it/apqp.html", ppap: "/it/ppap.html", dwm: "/it/dwm.html", connect: "/it/connect.html" };
   function appHref(code, o) {
     o = o || {};
     if (code === "ops") return DEMO ? "/it/apps.html#" + (o.hash || "ops") : "/it/app/" + encodeURIComponent(slug) + "#" + (o.hash || "ops");

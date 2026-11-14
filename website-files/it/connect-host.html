@@ -1,0 +1,63 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>KMR Connect · this computer</title><script src="/it/company-config.js"></script>
+<style>body{margin:0;font:14px system-ui,sans-serif;background:#0c1a3a;color:#fff;display:grid;place-items:center;min-height:100vh;text-align:center}main{max-width:420px;padding:20px}h1{font-size:18px;margin:0 0 6px}.s{padding:6px 14px;border-radius:99px;background:#334155;display:inline-block;margin:10px 0}.s.ok{background:#16a34a}.s.bad{background:#dc2626}button{font:inherit;font-weight:700;border:0;border-radius:10px;padding:12px 20px;background:#0891b2;color:#fff;cursor:pointer}small{opacity:.7;display:block;margin-top:14px}</style></head><body>
+<main><h1>KMR Connect</h1><div id="n">This computer</div><div class="s" id="s">Starting…</div><div><button id="go" hidden>Start sharing this screen</button></div>
+<small>Keep this window open (it can be minimised). The helper in the taskbar starts it by itself.</small></main>
+<script src="/it/apps/connect-rtc.js"></script>
+<script type="module">
+/* Runs on the laptop / PC that is being worked on. It shows the screen to the signed-in viewer (video goes straight between the two computers)
+   and passes mouse, keyboard, file and program requests to the KMR Connect helper on this computer (localhost only). */
+const R = window.CNRTC, P = new URLSearchParams(location.hash.slice(1)), secret = P.get("k"), name = P.get("n") || "This computer", AG = "http://127.0.0.1:" + (P.get("a") || "47892") + "/";
+const $ = (i) => document.getElementById(i), say = (t, k) => { $("s").textContent = t; $("s").className = "s " + (k || ""); };
+$("n").textContent = name;
+if (!secret) { say("Open this page from the KMR Connect helper.", "bad"); throw new Error("no key"); }
+let sb = null, DEMO = P.get("demo") === "1";
+if (!DEMO) {
+  const cc = (window.COMPANY_CONFIG || {}); let key = cc.supabaseAnonKey, url = cc.supabaseUrl || "https://dehlcusptkzfhqvpfyjh.supabase.co";
+  if (!key) { const j = await (await fetch("/it/console/api/public-config")).json(); key = j.key; if (j.url) url = j.url; }
+  const { createClient } = await import("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm"); sb = createClient(url, key);
+}
+async function ag(o) { const r = await fetch(AG, { method: "POST", headers: { "Content-Type": "text/plain" }, body: JSON.stringify(Object.assign({ key: secret }, o)) }); const j = await r.json(); if (j.error) throw new Error(j.error); return j; }
+let screen = null, info = { w: 1920, h: 1080, left: 0, top: 0 }, link = null, viewer = null, sig = null;
+async function getScreen() {
+  if (screen && screen.active) return screen;
+  screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 20, max: 30 } }, audio: false });
+  screen.getVideoTracks()[0].onended = () => { screen = null; say("Sharing was stopped on this computer.", "bad"); $("go").hidden = false; };
+  return screen;
+}
+async function start() { try { await getScreen(); $("go").hidden = true; say("Ready — waiting for a viewer", "ok"); } catch (e) { $("go").hidden = false; say("Press the button to start sharing.", "bad"); } }
+window.kmrStart = start; $("go").onclick = start;
+const VK = { Backspace: 8, Tab: 9, Enter: 13, NumpadEnter: 13, ShiftLeft: 160, ShiftRight: 161, ControlLeft: 162, ControlRight: 163, AltLeft: 164, AltRight: 165, Pause: 19, CapsLock: 20, Escape: 27, Space: 32, PageUp: 33, PageDown: 34, End: 35, Home: 36, ArrowLeft: 37, ArrowUp: 38, ArrowRight: 39, ArrowDown: 40, PrintScreen: 44, Insert: 45, Delete: 46, MetaLeft: 91, MetaRight: 92, ContextMenu: 93, NumLock: 144, ScrollLock: 145, Semicolon: 186, Equal: 187, Comma: 188, Minus: 189, Period: 190, Slash: 191, Backquote: 192, BracketLeft: 219, Backslash: 220, BracketRight: 221, Quote: 222, NumpadMultiply: 106, NumpadAdd: 107, NumpadSubtract: 109, NumpadDecimal: 110, NumpadDivide: 111 };
+for (let i = 0; i < 26; i++) VK["Key" + String.fromCharCode(65 + i)] = 65 + i; for (let i = 0; i < 10; i++) { VK["Digit" + i] = 48 + i; VK["Numpad" + i] = 96 + i; } for (let i = 1; i <= 12; i++) VK["F" + i] = 111 + i;
+const EXT = new Set([33, 34, 35, 36, 37, 38, 39, 40, 45, 46, 91, 92, 93, 163, 165, 111, 144]), MODS = new Set(["ControlLeft", "ControlRight", "AltLeft", "AltRight", "MetaLeft", "MetaRight"]), held = new Set(), sent = new Set(), who = {};
+let pend = null, busy = false;
+async function pump() { if (busy || !pend) return; busy = true; const m = pend; pend = null; try { await ag(m); } catch (e) { /* the helper may be restarting */ } busy = false; if (pend) pump(); }
+const px = (m) => ({ x: Math.round(info.left + m.x * (info.w - 1)), y: Math.round(info.top + m.y * (info.h - 1)) });
+function onData(raw) {
+  let m; try { m = JSON.parse(raw); } catch (e) { return; }
+  if (m.t === "m") { if (m.a === "move") { pend = Object.assign({ op: "mouse", a: "move" }, px(m)); pump(); } else if (m.a === "wheel") ag({ op: "mouse", a: "wheel", dy: m.dy }).catch(() => { }); else ag(Object.assign({ op: "mouse", a: m.a, b: m.b || 0 }, px(m))).catch(() => { }); }
+  else if (m.t === "k") {
+    const vk = VK[m.code], ext = EXT.has(vk) || m.code === "NumpadEnter";
+    if (m.a === "up") { held.delete(m.code); if (sent.delete(m.code)) ag({ op: "key", vk, down: false, ext }).catch(() => { }); return; }
+    if (m.a !== "down") return; if (MODS.has(m.code) || m.code.startsWith("Shift")) held.add(m.code);
+    const plain = m.key && m.key.length === 1 && !["ControlLeft", "ControlRight", "AltLeft", "AltRight", "MetaLeft", "MetaRight"].some((c) => held.has(c));
+    if (plain) { ag({ op: "char", ch: m.key }).catch(() => { }); } else if (vk) { sent.add(m.code); ag({ op: "key", vk, down: true, ext }).catch(() => { }); }
+  }
+  else if (m.t === "text") ag({ op: "text", s: m.s }).catch(() => { });
+  else if (m.op) ag(m).then((r) => link && link.send(JSON.stringify(Object.assign({ id: m.id }, r)))).catch((e) => link && link.send(JSON.stringify({ id: m.id, error: e.message })));
+}
+function end(why) { if (link) { link.close(); link = null; } held.clear(); sent.clear(); if (viewer) { viewer = null; ag({ op: "session", on: false }).catch(() => { }); } say(why || "Ready — waiting for a viewer", "ok"); }
+async function onSig(m) {
+  if (m.t === "viewer") { who[m.from] = m.who; if (link && viewer && viewer !== m.from) { sig.send({ to: m.from, t: "busy" }); return; } sig.send({ to: m.from, t: "host", name }); return; }
+  if (m.t === "offer") {
+    if (viewer && viewer !== m.from) { sig.send({ to: m.from, t: "busy" }); return; }
+    if (link) { link.close(); link = null; }
+    try { await getScreen(); } catch (e) { say("Screen sharing is not started on this computer.", "bad"); $("go").hidden = false; return; }
+    try { info = await ag({ op: "info" }); } catch (e) { say("The KMR Connect helper on this computer does not answer.", "bad"); }
+    viewer = m.from; ag({ op: "session", on: true, who: who[m.from] || "" }).catch(() => { });
+    link = R.Link(sig, m.from, { dir: "sendonly", tracks: { video: screen.getVideoTracks()[0] }, onData, onState: (s) => { if (s === "connected") say("Connected — " + (who[m.from] || "a viewer") + " is working on this computer", "bad"); if (s === "failed" || s === "closed" || s === "disconnected") setTimeout(() => { if (link && ["failed", "closed", "disconnected"].includes(link.pc.connectionState)) end("The viewer left. Ready — waiting for a viewer"); }, 4000); }, onClose: () => end() });
+    link.signal(m).catch((e) => say(e.message, "bad"));
+  } else if (link && m.from === viewer) link.signal(m).catch(() => { });
+}
+sig = R.Sig("cnr-" + secret, sb, onSig, (s) => { if (s === "ready") start(); else if (s === "error") say("No contact with the platform. Retrying…", "bad"); });
+</script></body></html>
