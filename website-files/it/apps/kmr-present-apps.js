@@ -362,6 +362,20 @@
         { title: "Missed and concession record", std: S("ISO 10.2", "ISO 9.3.3", "VDA P7"), html: logs.length ? tb(["Date", "Employee", "Activity", "Status", "Reason", "Approver", "Revised due", "Action ref."], logs.slice(0, 12).map(function (z) { return "<tr><td>" + (z.d < 10 ? "0" : "") + z.d + "-" + m.slice(5) + "-" + m.slice(0, 4) + "</td><td>" + esc(z.r.emp.name) + "</td><td>" + esc(z.a.activity || "") + "</td><td>" + (z.c === "X" ? "Missed" : "Concession") + "</td><td>" + esc(z.L.reason || "—") + "</td><td>" + esc(z.L.approver || "—") + "</td><td>" + esc(z.L.due || "—") + "</td><td>" + esc(z.L.ref || "—") + "</td></tr>"; })) : '<div class="note">No missed reviews or concessions this month.</div>' }] };
   } };
   /* ---------- Delivery Challan & GRN ---------- */
+  KMRPA.connect = { name: "KMR Connect", code: "connect", ctxFn: "kmr_cn_context", std: "connect", load: async function (call) {
+    var d = await call("kmr_cn_load"), S = std, td = d.today || todayIso(), mo = td.slice(0, 7), M = (d.meetings || []).filter(function (m) { return m.status !== "void"; });
+    var done = M.filter(function (m) { return m.status === "ended"; }), mm = M.filter(function (m) { return String(m.scheduled_at || "").slice(0, 7) === mo; });
+    var rec = done.filter(function (m) { return +m.recordings > 0; }).length, typed = done.filter(function (m) { return +m.lines > 0; }).length, onl = (d.devices || []).filter(function (x) { return x.online; }).length;
+    var ss = (d.sessions || []).filter(function (s) { return String(s.started_at).slice(0, 7) === mo; }), by = {}, tp = {};
+    ss.forEach(function (s) { by[s.device_name || "-"] = (by[s.device_name || "-"] || 0) + 1; }); M.forEach(function (m) { tp[m.provider] = (tp[m.provider] || 0) + 1; });
+    return { period: "Live position · " + td, kpis: [
+      { id: "dev", name: "Devices online", value: onl, std: S("ISO 7.1.3"), why: "Paired laptops and PCs that answered in the last 90 seconds." },
+      { id: "ses", name: "Remote sessions this month", value: ss.length, std: S("ISO 7.1.3", "ISO 7.5.3"), why: "Sessions in the audit list: who worked on which device and when." },
+      { id: "met", name: "Meetings this month", value: mm.length, std: S("ISO 7.4", "ISO 9.3"), why: "Meetings planned or held in the month, in the KMR room, Teams or Google Meet." },
+      { id: "rec", name: "Held meetings with a recording", value: done.length ? Math.round(rec / done.length * 100) : null, unit: "%", target: 80, amber: 50, dir: "high", std: S("IATF 9.3.1.1", "IATF 7.5.3.2.1"), why: "Share of ended meetings that have a saved recording." },
+      { id: "min", name: "Held meetings with typed minutes", value: done.length ? Math.round(typed / done.length * 100) : null, unit: "%", target: 90, amber: 60, dir: "high", std: S("ISO 9.3.2", "ISO 10.2"), why: "Share of ended meetings whose spoken words were typed and are ready to send to Minutes Of Meetings." }],
+      charts: [barOf("Remote sessions by device (this month)", by, "Sessions", "ses"), barOf("Meetings by place", { "KMR video room": tp.kmr || 0, "Microsoft Teams": tp.teams || 0, "Google Meet": tp.meet || 0 }, "Meetings", "met")] };
+  } };
   KMRPA.dcg = { name: "Delivery Challan & GRN", code: "dcg", ctxFn: "kmr_dcg_context", std: "dcg", load: async function (call) {
     var d = await call("kmr_dcg_load"), S = std, td = new Date(Date.now() + 19800000).toISOString().slice(0, 10), mo = td.slice(0, 7), y = +td.slice(0, 4), fs = (+td.slice(5, 7) < 4 ? y - 1 : y) + "-04-01";
     var pend = function (l) { return Math.max(0, +l.qty - +(l.returned_qty || 0)); };
