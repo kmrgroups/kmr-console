@@ -30,7 +30,9 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
 .kmr-pop .acts{display:flex;justify-content:space-between;margin:8px 2px 4px;font-size:12px}.kmr-pop .acts a{color:#7C3AED;font-weight:700;cursor:pointer;text-decoration:none}
 .kmr-pop .lst{max-height:240px;overflow:auto;border:1px solid #EEF1F6;border-radius:8px;padding:2px}
 .kmr-pop label{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:6px;cursor:pointer;line-height:1.25}.kmr-pop label:hover{background:#F5F0FF}
-.kmr-pop label input{accent-color:#7C3AED;flex:none;margin:0}.kmr-pop label span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#16233A!important;font-size:13px!important;position:static!important;display:block!important}.kmr-pop label em{font-style:normal;color:#8A96A8!important;font-size:11.5px!important;position:static!important;display:block!important}
+.kmr-pop label input{accent-color:#7C3AED;flex:none;margin:0;width:16px!important;height:16px!important;min-width:16px!important;padding:0!important;border:0!important;box-shadow:none!important}.kmr-pop label{width:auto!important;margin:0!important;font-size:13px!important;color:#16233A!important}.kmr-pop label span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#16233A!important;font-size:13px!important;position:static!important;display:block!important}.kmr-pop label em{font-style:normal;color:#8A96A8!important;font-size:11.5px!important;position:static!important;display:block!important}
+.kmr-tt .kd{display:flex;align-items:center;gap:4px;font-size:12px}.kmr-tt .kd input[type=date]{height:30px;border:1px solid #D3DBE6;border-radius:8px;padding:0 6px;font:500 12.5px 'Segoe UI',Arial,sans-serif;width:auto;min-width:0;color:#16233A;background:#fff}.kmr-tt .kb{border:0;border-radius:8px;padding:6px 12px;font:700 12px 'Segoe UI',Arial,sans-serif;cursor:pointer;color:#fff;background:#7C3AED}.kmr-tt .kb.x{background:#16A34A}.kmr-tt .kb.p{background:#DC2626}.kmr-tt .kb.o{background:#fff;color:#7C3AED;border:1px solid #7C3AED}
+@media print{body.kmr-pr *{visibility:hidden!important}body.kmr-pr .kmr-pt,body.kmr-pr .kmr-pt *{visibility:visible!important}body.kmr-pr .kmr-pt{position:absolute;left:0;top:0;width:100%;overflow:visible!important;max-height:none!important}body.kmr-pr .kmr-pt table{min-width:0!important}body.kmr-pr .kmr-pt .kmr-tt,body.kmr-pr .kmr-pt .kmr-noprint{display:none!important}}
 .kmr-pop .none{padding:10px;color:#8A96A8;text-align:center}
 @media print{.kmr-tt,th.kmr-th .kmr-ctl{display:none!important}}`;
   document.head.append(css);
@@ -53,6 +55,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
   const dateOf = (s) => {
     let m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); if (m) return Date.UTC(+m[1], +m[2] - 1, +m[3]);
     m = String(s).match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})/); if (m) return Date.UTC(+m[3], +m[2] - 1, +m[1]);
+    m = String(s).match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\.?\s+(\d{4})/); if (m) { const i = "jan feb mar apr may jun jul aug sep oct nov dec".split(" ").indexOf(m[2].toLowerCase()); if (i >= 0) return Date.UTC(+m[3], i, +m[1]); }
     return null;
   };
   const OPS = [["", "— Choose a condition —"], ["eq", "Equals"], ["ne", "Does not equal"], ["gt", "Greater than"], ["ge", "Greater than or equal to"], ["lt", "Less than"], ["le", "Less than or equal to"], ["between", "Between"], ["begins", "Begins with"], ["ends", "Ends with"], ["contains", "Contains"], ["notcontains", "Does not contain"], ["blank", "Is blank"], ["notblank", "Is not blank"]];
@@ -107,6 +110,54 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     return location.pathname + "|" + location.hash.split("?")[0] + "|" + h + "|" + [...hr.cells].map((c) => txt(c)).join("|") + "|" + same;
   };
 
+
+  function dateCol(t, hr) {
+    const rows = bodyRows(t, hr).slice(0, 8), hs = [...hr.cells].map(txt);
+    let best = -1;
+    hs.forEach((h, i) => { if (best >= 0) return; if (/date|due|valid|expir|issued|received|from|to$/i.test(h) && rows.some((r) => dateOf(cellVal(r.cells[i])) != null)) best = i; });
+    if (best < 0) hs.forEach((h, i) => { if (best < 0 && rows.length && rows.filter((r) => dateOf(cellVal(r.cells[i])) != null).length >= Math.ceil(rows.length / 2) && !/^\d+$/.test(h)) best = i; });
+    return best;
+  }
+  const monthNum = (s) => { const m = String(s).match(/^(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s+(\d{4})$/); if (!m) return null; const i = "jan feb mar apr may jun jul aug sep oct nov dec".split(" ").indexOf(m[2].toLowerCase()); return i < 0 ? null : Date.UTC(+m[3], i, +m[1]); };
+  const dateOf0 = dateOf;
+  function exportRows(t) {
+    const k = t._kmr, hr = k.hr, skip = new Set();
+    [...hr.cells].forEach((th, i) => { const h = txt(th); if (/^(actions?|action|select|#)?$/i.test(h) || /^actions?$/i.test(h)) skip.add(i); });
+    const head = [...hr.cells].map((th, i) => skip.has(i) ? null : txt(th.querySelector(".kmr-lab") || th)).map((x, i) => skip.has(i) ? null : x);
+    const rows = bodyRows(t, hr).filter((r) => !r.classList.contains("kmr-hid") && ![...r.cells].some((c) => c.colSpan > 1 && c.colSpan >= hr.cells.length));
+    const data = rows.map((r) => [...r.cells].map((c, i) => skip.has(i) ? null : cellVal(c)));
+    return { skip, head: head.filter((x, i) => !skip.has(i)), data: data.map((r) => r.filter((x, i) => !skip.has(i))) };
+  }
+  const tname = (t) => { const prev = (t.closest(".kmr-tw") || t).previousElementSibling; const sec = t.closest("section"); let n = (document.querySelector(".tab.on") || {}).textContent || ""; n = n.replace(/\d+$/, "").trim(); return (n || document.title.split("·")[0].trim() || "Table").slice(0, 40); };
+  async function exportXl(t) {
+    const { head, data } = exportRows(t), name = tname(t), day = new Date(Date.now() + 19800000).toISOString().slice(0, 10);
+    try {
+      if (!window.ExcelJS) await new Promise((ok, no) => { const s = document.createElement("script"); s.src = "https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"; s.onload = ok; s.onerror = no; document.head.append(s); });
+      const wb = new ExcelJS.Workbook(), ws = wb.addWorksheet(name.slice(0, 30), { views: [{ state: "frozen", ySplit: 3 }], pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0, paperSize: 9, margins: { left: .4, right: .4, top: .6, bottom: .6, header: .3, footer: .3 } } });
+      const co = (document.getElementById("co") || {}).textContent || "";
+      ws.mergeCells(1, 1, 1, Math.max(1, head.length)); ws.getCell(1, 1).value = (co ? co + " — " : "") + name; ws.getCell(1, 1).font = { bold: true, size: 14 };
+      ws.mergeCells(2, 1, 2, Math.max(1, head.length)); ws.getCell(2, 1).value = "Date: " + day + " · Rows: " + data.length; ws.getCell(2, 1).font = { color: { argb: "FF64748B" } };
+      const hrw = ws.addRow(head); hrw.eachCell((c) => { c.font = { bold: true, color: { argb: "FFFFFFFF" } }; c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF174B80" } }; c.alignment = { vertical: "middle", wrapText: true }; });
+      data.forEach((r) => ws.addRow(r.map((v) => { const n = num(v); return (n != null && /^[-+₹,.\d\s]+$/.test(String(v)) && !/^0\d/.test(String(v).trim())) ? n : v; })));
+      head.forEach((h, i) => { const w = Math.max(String(h).length, ...data.slice(0, 200).map((r) => String(r[i] == null ? "" : r[i]).length)); ws.getColumn(i + 1).width = Math.min(48, Math.max(9, w + 2)); });
+      ws.autoFilter = { from: { row: 3, column: 1 }, to: { row: 3, column: Math.max(1, head.length) } };
+      ws.headerFooter = { oddFooter: "&LKMR Apps&CPage &P of &N&R" + day };
+      const buf = await wb.xlsx.writeBuffer(), a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })); a.download = name.replace(/[^\w]+/g, "_") + "_" + day + ".xlsx"; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    } catch (e) {
+      const q = (v) => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"', a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["\ufeff" + [head].concat(data).map((r) => r.map(q).join(",")).join("\n")], { type: "text/csv" })); a.download = name.replace(/[^\w]+/g, "_") + "_" + day + ".csv"; document.body.append(a); a.click(); setTimeout(() => a.remove(), 500);
+    }
+  }
+  function exportPdf(t) {
+    const name = tname(t), wrap = t.closest(".kmr-tw") || t.parentNode;
+    try { if (window.KMRReport) { const i = KMRReport.info() || {}; KMRReport.set({ title: (i.title ? i.title + " – " : "") + name, doc: i.doc || "", format: i.format, rev: i.rev, date: i.date }); } } catch (e) { }
+    const tgt = document.createElement("div"); tgt.className = "kmr-pt";
+    const hold = document.createComment("kmr"); wrap.parentNode.insertBefore(hold, wrap); tgt.append(wrap); hold.parentNode.insertBefore(tgt, hold);
+    [...t.querySelectorAll("th,td")].forEach((c) => { if (/^actions?$/i.test(txt(t._kmr.hr.cells[c.cellIndex] || "")) ) c.classList.add("kmr-noprint"); });
+    document.body.classList.add("kmr-pr");
+    const done = () => { document.body.classList.remove("kmr-pr"); tgt.parentNode.insertBefore(wrap, tgt); tgt.remove(); hold.remove(); window.removeEventListener("afterprint", done); };
+    window.addEventListener("afterprint", done); setTimeout(() => window.print(), 50);
+  }
   function enhance(t, hr) {
     const base = location.pathname + location.hash + "|" + [...hr.cells].map(txt).join("|");
     t.dataset.kmrk0 = base;
@@ -135,18 +186,23 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     // toolbar
     if (!t.previousElementSibling || !t.previousElementSibling.classList.contains("kmr-tt")) {
       const bar = document.createElement("div"); bar.className = "kmr-tt";
-      bar.innerHTML = '<input type="search" placeholder="Search this table…" aria-label="Search this table"><span class="kmr-cnt"></span><button type="button" hidden>Clear filters</button>';
+      const dc = dateCol(t, hr);
+      bar.innerHTML = '<input type="search" placeholder="Search this table…" aria-label="Search this table"><span class="kmr-cnt"></span><button type="button" hidden>Clear filters</button>' + (dc >= 0 ? '<span class="kd">From <input type="date" class="df"> To <input type="date" class="dt"> <button type="button" class="kb go">Search</button></span>' : '') + '<button type="button" class="kb x kxl">Excel</button><button type="button" class="kb p kpd">PDF</button>';
       t.parentNode.insertBefore(bar, t);
       const inp = bar.querySelector("input"); inp.value = st.q || "";
       inp.oninput = () => { st.q = inp.value; apply(t); };
-      bar.querySelector("button").onclick = () => { st.f = {}; st.o = {}; st.q = ""; inp.value = ""; apply(t); };
+      bar.querySelector("button").onclick = () => { st.f = {}; st.o = {}; st.q = ""; st.dr = null; inp.value = ""; const a = bar.querySelector(".df"), b = bar.querySelector(".dt"); if (a) { a.value = ""; b.value = ""; } apply(t); };
+      t._kmr.dc = dc;
+      if (dc >= 0) { const a = bar.querySelector(".df"), b = bar.querySelector(".dt"); if (st.dr) { a.value = st.dr.a || ""; b.value = st.dr.b || ""; } bar.querySelector(".go").onclick = () => { st.dr = (a.value || b.value) ? { a: a.value, b: b.value } : null; apply(t); }; }
+      bar.querySelector(".kxl").onclick = () => exportXl(t);
+      bar.querySelector(".kpd").onclick = () => exportPdf(t);
     }
     // when the app re-draws the rows, keep the filters
     const tb = t.tBodies[0] || t;
     const mo = new MutationObserver(() => { if (t._kmr.busy) return; clearTimeout(t._kmr.tm); t._kmr.tm = setTimeout(() => apply(t, true), 60); });
     mo.observe(t, { childList: true, subtree: true, characterData: true }); t._kmr.mo = mo;
     live.add(t);
-    if (st.sort || st.q || Object.keys(st.f).length || Object.keys(st.o).length) apply(t, true); else counts(t);
+    if (st.sort || st.q || Object.keys(st.f).length || Object.keys(st.o).length || st.dr) apply(t, true); else counts(t);
   }
 
   function setSort(t, c, dir) { t._kmr.st.sort = dir ? { c, dir } : null; apply(t); }
@@ -164,6 +220,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
         let show = true;
         for (const c of cols) { if (!st.f[c].has(cellVal(r.cells[+c]))) { show = false; break; } }
         if (show) for (const c of Object.keys(st.o)) { if (!matchOp(st.o[c], cellVal(r.cells[+c]))) { show = false; break; } }
+        if (show && st.dr && k.dc >= 0) { const d = dateOf(cellVal(r.cells[k.dc])); if (d == null) show = false; else { if (st.dr.a && d < dateOf(st.dr.a)) show = false; if (st.dr.b && d > dateOf(st.dr.b)) show = false; } }
         if (show && q) show = txt(r).toLowerCase().includes(q) || [...r.cells].some((c) => cellVal(c).toLowerCase().includes(q));
         r.classList.toggle("kmr-hid", !show);
       });
@@ -191,7 +248,7 @@ th.kmr-th .kmr-ar{font-size:11px;color:#7C3AED;font-weight:800;min-width:9px}
     const rows = bodyRows(t, k.hr).filter((r) => ![...r.cells].some((c) => c.colSpan > 1 && c.colSpan >= k.hr.cells.length));
     const vis = rows.filter((r) => !r.classList.contains("kmr-hid")).length, act = vis !== rows.length;
     bar.querySelector(".kmr-cnt").textContent = act ? `Showing ${vis} of ${rows.length}` : `${rows.length} rows`;
-    bar.querySelector("button").hidden = !(act || (k.st.q || "") || Object.keys(k.st.f).length || Object.keys(k.st.o).length);
+    bar.querySelector("button").hidden = !(act || k.st.dr || (k.st.q || "") || Object.keys(k.st.f).length || Object.keys(k.st.o).length);
   }
 
   function closePop() { if (pop) { pop.remove(); pop = null; } }
