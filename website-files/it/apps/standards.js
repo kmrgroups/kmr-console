@@ -12,7 +12,8 @@ var CAT={
  APQP:['AIAG APQP (2nd ed.)','Advanced product quality planning'],
  PPAP:['AIAG PPAP (4th ed.)','Production part approval'],
  MSA:['AIAG MSA (4th ed.)','Measurement systems analysis'],
- SPC:['AIAG SPC (2nd ed.)','Statistical process control']
+ SPC:['AIAG SPC (2nd ed.)','Statistical process control'],
+ GST:['CGST Act and Rules 2017','Delivery challan and job work (India)']
 };
 var A={
 layout:[
@@ -58,6 +59,28 @@ sales:[
 ['ISO','9.1.3','Analysis and evaluation - sales loss by reason','Loss by reason, plant and customer with a cumulative % shows which few causes make most of the loss.'],
 ['IATF','10.2.4','Error-proofing','Each action in the conclusion screen ends with a permanent fix and a check in the next review; the permanent action is where error-proofing is decided.'],
 ['ISO','10.3','Continual improvement','The same loss figures are compared month after month; an action is closed only when the loss from its reason falls.']],
+dcg:[
+['ISO','7.1.5.1','Monitoring and measuring resources - general','A gauge sent out for calibration goes on a returnable delivery challan, shows as Out for calibration in Calibration Hub, and is not available for use until it is received back on a GRN.'],
+['ISO','7.1.5.2','Measurement traceability','The GRN of a calibrated gauge records the calibration date, certificate number, laboratory and result, and writes the calibration record and the next due date in Calibration Hub.'],
+['IATF','7.1.5.2.1','Calibration/verification records','Date out, challan number, date received back, certificate, as-found condition and result are kept for every gauge; an out-of-tolerance as-found opens the out-of-tolerance case in Calibration Hub.'],
+['IATF','7.1.5.3.2','External laboratory','The laboratory the gauge is sent to is recorded on the challan and on the GRN, with the certificate number of its calibration.'],
+['ISO','7.5.3.2','Control of documented information - retention and control','Delivery challans and GRNs are numbered by financial year (DC/26-27/0001), cannot be edited once issued, and are cancelled with a reason rather than deleted.'],
+['ISO','8.4.2','Type and extent of control of external providers','Material received against a purchase order is checked: received, accepted and rejected quantities with the reason for rejection are recorded on the GRN.'],
+['IATF','8.4.2.4','Supplier monitoring','Receipts against each purchase order give the quantity accepted and rejected per supplier for delivery and quality performance.'],
+['ISO','8.4.3','Information for external providers','The challan carries the description, quantity, purpose, vehicle, expected return date and the party to which the material goes.'],
+['ISO','8.5.2','Identification and traceability','Every item sent out or received carries its challan, GRN and PO number so that its movement can be traced both ways.'],
+['ISO','8.5.4','Preservation','The returnable challan register shows what is out of the plant, with whom, since when and when it is due back; items not back by the date are flagged overdue.'],
+['ISO','8.5.5','Post-delivery activities','Rework, repair and job work sent to a party come back against the same challan, with the quantity still pending shown until it is received.'],
+['ISO','8.6','Release of products and services','A GRN is made after receipt and acceptance; accepted quantity goes to stock (raw material stock in Raw Material Planning) and rejected quantity is kept separate with the reason.'],
+['ISO','8.7','Control of nonconforming outputs','Rejected quantity on a GRN is recorded with its reason so that it is returned to the supplier or dispositioned; scrap leaves the plant on a non-returnable challan.'],
+['IATF','8.7.1.1','Customer authorization for concession','Material sent out for rework or repair is on a returnable challan; its return and acceptance are recorded on a GRN.'],
+['VDA','P5','Supplier management','Incoming goods are received against the purchase order; the receipts, rejections and delays per supplier are available for supplier evaluation.'],
+['VDA','P6','Process analysis / production - process management','Movement of parts, gauges and material in and out of the plant is controlled by documents with a defined owner, number and status.'],
+['ISO','9.1.3','Analysis and evaluation','The dashboard shows challans issued, returns pending and overdue, GRNs made and open purchase orders for management review.'],
+['ISO','10.2','Nonconformity and corrective action','An overdue return and a rejected receipt are visible as exceptions and are followed up until the material is received or the challan is cancelled with a reason.'],
+['GST','Rule 55 CGST Rules 2017','Transportation of goods without issue of invoice (delivery challan)','Delivery challan has the serial number in a series for the financial year, date, consignor and consignee name, address and GSTIN, description, HSN, quantity and value, place of supply, and is prepared in triplicate (original for consignee, duplicate for transporter, triplicate for consignor).'],
+['GST','Section 143 CGST Act','Job work','Goods sent for job work go on a returnable challan; the register shows what has not come back so that it can be received within the period the Act allows.']
+],
 dwm:[
 ['ISO','5.1.1','Leadership and commitment - general','Each employee\u2019s reviews are planned for every day of the month from their frequency and ticked off (completed, missed or concession) when the review and its record are complete.'],
 ['ISO','5.3','Organizational roles, responsibilities and authorities','Every review has an owner (Responsibility), a frequency (daily, weekly days or specific dates) and a duration, and every employee has a DWM sheet of their own.'],

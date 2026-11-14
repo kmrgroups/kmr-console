@@ -1,0 +1,375 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
+<title>Delivery Challan &amp; GRN · KMR Apps</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0891b2;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;color:#130a3a;font-weight:800;font-size:14px;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{text-decoration:none;display:inline-block;border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;flex:none}.tab.on{background:var(--card);color:var(--b1);box-shadow:0 -2px 0 var(--b1) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%;min-width:0}
+.btn{border:0;border-radius:9px;padding:8px 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer;text-decoration:none;display:inline-block}.btn.o{background:none;color:var(--b1);border:1px solid var(--b1)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row>.grow{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b1))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}
+.mut{color:var(--mut)}.hide{display:none}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
+a{color:var(--b1)}
+.bar{display:flex;gap:2px;min-width:120px}.bar i{flex:1;height:8px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}.bar i b{position:absolute;inset:0 auto 0 0;background:var(--g)}
+.ph{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.ph>h3{margin:0;padding:10px 12px;background:var(--bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}.ph>h3 .grow{flex:1}
+.ph table{min-width:820px}.ph input,.ph select{padding:4px 6px;font-size:13px}
+tr.done td:nth-child(3) b{color:var(--mut);text-decoration:line-through}tr.na{opacity:.55}
+.src{font-size:12px;margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.src.missing a,.src.na{color:var(--mut)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tile{border:1px solid var(--line);border-radius:12px;padding:10px;border-top:3px solid var(--c,var(--b1))}.tile b{font-size:20px}.tile small{display:block;color:var(--mut)}
+.links{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.links a{border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12px;text-decoration:none;color:var(--ink)}.links a:hover{border-color:var(--b1)}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:9;padding:10px}.modal.on{display:flex}.in{background:var(--card);border-radius:14px;width:min(720px,100%);max-height:92vh;overflow:auto;padding:16px}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.frm label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--mut);margin:8px 0}
+.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
+.rep h2{margin:0 0 4px}.rep table{min-width:0}
+@media print{body{background:#fff;color:#000;padding:0}header,.tabs,.noprint,.kmr-foot,.kmr-demo,.back{display:none!important}.panel{border:0;padding:0}main{padding:0}.ph{break-inside:avoid}}
+.num{text-align:right;font-variant-numeric:tabular-nums}.ph table{min-width:0}.late{color:var(--r);font-weight:700}.tabs .tab.on{}
+.sup{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.sup>h3{margin:0;padding:10px 12px;background:var(--bg);font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sup>h3 .grow{flex:1}
+.rmp-sc{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:6px 0}.rmp-sc::-webkit-scrollbar{height:14px;width:14px}.rmp-sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px;border:3px solid #eef1f6}.rmp-sc thead th{position:sticky;top:0;z-index:3;background:#EEF2F8}.rmp-sc table{margin:0}.bars{display:flex;flex-direction:column;gap:3px}.bars i{display:block;height:7px;border-radius:4px;min-width:2px}.sum{display:flex;gap:18px;flex-wrap:wrap;padding:2px 14px 12px}.sum span{color:var(--mut)}.sum b{color:var(--ink)}
+.cp{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8);white-space:nowrap}.cp.cg{--c:#16a34a}.cp.ca{--c:#d97706}.cp.cr{--c:#dc2626}.cp.cb{--c:#174b80}.cp.cm{--c:#64748b}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 14px}.kp div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,#174b80)}.kp b{display:block;font-size:22px}.kp span{color:var(--mut);font-size:12px}
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:8px 0}.dg label{display:block;font-size:12px;color:var(--mut);margin-bottom:2px}
+.lt{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}.lt th,.lt td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}.lt th{background:var(--bg);position:sticky;top:0;z-index:2;white-space:nowrap}.lt td input,.lt td select{padding:5px 6px;min-width:70px}.lt td.n,.lt th.n{text-align:right}.lt td.w input{min-width:160px}
+.sc{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--card)}.sc::-webkit-scrollbar{height:14px;width:14px}.sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:var(--card)}.box h3{margin:0 0 6px;font-size:15px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}.seg label.on{border-color:var(--b1);background:#174b8014}.seg input{width:auto}
+.late{color:var(--r);font-weight:700}.num{text-align:right;font-variant-numeric:tabular-nums}.grow{flex:1}.note{font-size:12px;color:var(--mut);margin:6px 0}
+.docv{background:#fff;color:#000;border:1px solid #444;padding:14px 16px;margin:10px 0;font:12px/1.4 Arial,Helvetica,sans-serif;position:relative;overflow:hidden}.docv h2{margin:0;text-align:center;font-size:17px;letter-spacing:.5px}.docv .sub{text-align:center;font-size:11px;margin-bottom:6px}
+.docv table{border-collapse:collapse;width:100%;margin:8px 0}.docv th,.docv td{border:1px solid #444;padding:4px 6px;text-align:left;vertical-align:top}.docv th{background:#e7e6e6}.docv td.n,.docv th.n{text-align:right}
+.docv .two{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #444;margin-top:6px}.docv .two>div{padding:6px 8px}.docv .two>div+div{border-left:1px solid #444}.docv .cl{font-weight:700;text-align:right;font-size:11px}
+.docv .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #444;margin-top:10px}.docv .sg div{height:62px;padding:4px 8px;font-size:11px;display:flex;align-items:flex-end}.docv .sg div+div{border-left:1px solid #444}
+.docv .wm{position:absolute;inset:0;display:grid;place-items:center;font-size:70px;font-weight:800;color:#dc262622;transform:rotate(-20deg);pointer-events:none}
+.pgb{page-break-after:always}
+@media print{.docv{border:1px solid #000;margin:0}.docv.pgb:last-child{page-break-after:auto}.sc{max-height:none;overflow:visible;border:0}.lt{min-width:0}}
+@media(max-width:640px){.docv .two,.docv .sg{grid-template-columns:1fr}.docv .two>div+div,.docv .sg div+div{border-left:0;border-top:1px solid #444}}
+</style></head><body>
+<header><span class="clogo" id="clogo" hidden></span><div><h1>Delivery Challan &amp; GRN</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Dashboard</a><a class="tab" data-t="dc" href="#go=dc">Delivery challans</a><a class="tab" data-t="grn" href="#go=grn">GRN</a><a class="tab" data-t="po" href="#go=po">Purchase orders</a><a class="tab" data-t="pend" href="#go=pend">Pending returns</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="dc" class="hide"></section><section id="grn" class="hide"></section><section id="po" class="hide"></section><section id="pend" class="hide"></section></div></main>
+<script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-mobile.js"></script>
+<script>
+const {$,esc,fmt,say,call}=QP;
+const S={d:null,view:null,edit:null,grn:null,po:null,busy:false,go:null,pg:null};
+const canEdit=()=>QP.canEdit;
+const td=()=>new Date(Date.now()+19800000).toISOString().slice(0,10);          // today in India
+const n3=(v)=>Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:3});
+const inr=(v)=>'₹'+Number(v||0).toLocaleString('en-IN',{maximumFractionDigits:2});
+const yes=(m)=>KMRDlg.yes(m),ask=(m,d)=>KMRDlg.ask(m,d);
+const PUR={calibration:'Calibration',job_work:'Job work',repair:'Repair',rework:'Rework',sample:'Sample',scrap:'Scrap',material:'Material',other:'Other'};
+const PUR_R=['calibration','job_work','repair','rework','sample','other'],PUR_N=['scrap','material','sample','other'];
+const DST={draft:['Draft','cm'],issued:['Issued','cb'],part_returned:['Part returned','ca'],closed:['Closed','cg'],cancelled:['Cancelled','cr']};
+const PST={open:['Open','cb'],part_received:['Part received','ca'],closed:['Closed','cg'],cancelled:['Cancelled','cr']};
+const chip=(m,k)=>{const v=m[k]||[k,'cm'];return `<span class="cp ${v[1]}">${esc(v[0])}</span>`};
+const kindChip=(k)=>k==='returnable'?'<span class="cp cb">Returnable</span>':'<span class="cp cm">Non-returnable</span>';
+const hashGo=()=>{const m=location.hash.match(/go=([a-z]+)/);return m?m[1]:'std'};
+const pend=(l)=>Math.max(0,Number(l.qty||0)-Number(l.returned_qty||0));
+const isOpenDc=(d)=>d.kind==='returnable'&&(d.status==='issued'||d.status==='part_returned');
+const overdue=(d)=>isOpenDc(d)&&d.expected_return&&d.expected_return<td();
+const daysBetween=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+const rep=(title,doc,no)=>{if(window.KMRReport)window.KMRReport.set({title,doc:doc||'',format:'KMR/DCG/F-'+no,rev:'01',date:'2026-11-14'})};
+const fyStart=()=>{const d=td(),y=+d.slice(0,4),m=+d.slice(5,7);return (m<4?y-1:y)+'-04-01'};
+const dcOf=(id)=>S.d.dcs.find(x=>x.id===id),poOf=(id)=>S.d.pos.find(x=>x.id===id),grnOf=(id)=>S.d.grns.find(x=>x.id===id);
+const parties=()=>[...new Set([...S.d.dcs.map(d=>d.party_name),...S.d.pos.map(p=>p.supplier_name)].filter(Boolean))].sort();
+const instOf=(id)=>(S.d.instruments||[]).find(i=>i.id===id);
+const partyOpts=()=>`<datalist id="parties">${parties().map(p=>`<option value="${esc(p)}">`).join('')}</datalist>`;
+const num=(v)=>v===''||v==null?0:Number(v);
+
+async function load(){S.d=await call('kmr_dcg_load',{})}
+async function route(){
+  const go=hashGo();
+  if(go!==S.go){S.view=null;S.edit=null;S.grn=null;S.po=null;S.go=go}
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
+  ['std','dash','dc','grn','po','pend'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  if(go==='std'){KMRStd.draw($('#std'),'dcg');return}
+  try{await load();S.stale=false;paint()}catch(e){say(e.message)}
+}
+function paint(){
+  const go=hashGo();
+  ({dash:drawDash,dc:drawDc,grn:drawGrn,po:drawPo,pend:drawPend}[go]||(()=>{}))();
+  const tabs={dc:document.querySelector('[data-t=dc]'),pend:document.querySelector('[data-t=pend]')};
+  const od=S.d.dcs.filter(overdue).length;
+  if(tabs.pend)tabs.pend.innerHTML='Pending returns'+(od?` <span class="cp cr">${od}</span>`:'');
+}
+const reload=async(keep)=>{await load();if(!keep){S.view=null;S.edit=null;S.grn=null;S.po=null}paint()};
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
+window.addEventListener('hashchange',route);
+const goTo=(t)=>{history.replaceState(null,'',location.pathname+location.search+'#go='+t);route()};
+
+/* ----- typed values go straight into the document being edited (S.edit, S.grn or S.po) ----- */
+function onType(e){
+  const t=e.target,o=t.dataset.o&&S[t.dataset.o];if(!o)return;
+  if(t.dataset.l!==undefined)o.lines[+t.dataset.l][t.dataset.f]=t.value;
+  else if(t.dataset.h){o[t.dataset.h]=t.value;
+    if(e.type==='change'&&t.dataset.h==='party_name'&&t.dataset.o==='edit'&&!o.party_addr){const p=S.d.dcs.find(x=>x.party_name===t.value&&x.party_addr);if(p){o.party_addr=p.party_addr||'';o.party_gstin=p.party_gstin||'';editDc()}}}
+}
+document.addEventListener('input',onType);document.addEventListener('change',onType);
+const busy=async(fn)=>{if(S.busy)return;S.busy=true;try{await fn()}catch(e){say(e.message)}finally{S.busy=false}};
+const fld=(o,h,label,type,extra)=>`<div><label>${label}</label><input data-o="${o}" data-h="${h}" type="${type||'text'}" value="${esc((S[o]||{})[h]||'')}" ${extra||''}></div>`;
+
+/* ===================== DELIVERY CHALLANS ===================== */
+function drawDc(){
+  const box=$('#dc');
+  if(S.edit)return editDc();
+  if(S.view&&S.view.k==='dc')return docDc(S.view.id);
+  const rows=S.d.dcs.map(d=>{
+    const ed=canEdit(),od=overdue(d);
+    return `<tr><td><b>${esc(d.dc_no||'(draft)')}</b></td><td>${fmt(d.dc_date)}</td><td>${kindChip(d.kind)}</td><td>${PUR[d.purpose]||''}</td><td>${esc(d.party_name)}</td><td class="num">${d.lines.length}</td>
+    <td>${d.kind==='returnable'?`<span class="${od?'late':''}">${fmt(d.expected_return)}${od?' · overdue':''}</span>`:'—'}</td><td>${chip(DST,d.status)}</td>
+    <td style="white-space:nowrap"><button class="btn o sm" data-a="dc-view" data-id="${d.id}">View / print</button>
+    ${ed&&d.status==='draft'?` <button class="btn o sm" data-a="dc-edit" data-id="${d.id}">Edit</button> <button class="btn sm" data-a="dc-issue" data-id="${d.id}">Issue</button> <button class="btn o sm" data-a="dc-del" data-id="${d.id}">Delete</button>`:''}
+    ${ed&&isOpenDc(d)?` <button class="btn sm" data-a="dc-recv" data-id="${d.id}">Receive (GRN)</button>`:''}
+    ${ed&&(d.status==='issued'||d.status==='part_returned'||d.status==='closed')&&!d.lines.some(l=>Number(l.returned_qty)>0)?` <button class="btn o sm" data-a="dc-cancel" data-id="${d.id}">Cancel</button>`:''}</td></tr>`}).join('');
+  box.innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="dc-new">+ New delivery challan</button>':''}<span class="grow"></span><button class="btn o" data-a="dc-print">Print register</button></div>
+  <p class="note">Returnable: gauges sent for calibration, job work, repair, rework, samples. Non-returnable: scrap, material and other goods that do not come back. The number (DC/yy-yy/0001) is given when the challan is issued.</p>
+  <div class="sc"><table class="lt" id="dct"><thead><tr><th>DC no.</th><th>Date</th><th>Type</th><th>Purpose</th><th>Sent to</th><th class="n">Items</th><th>Return by</th><th>Status</th><th class="noprint">Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="9" class="mut">No challans yet.</td></tr>'}</tbody></table></div>`;
+}
+const newDc=()=>({id:null,kind:'returnable',purpose:'calibration',dc_date:td(),party_name:'',party_addr:'',party_gstin:'',vehicle_no:'',mode:'',expected_return:'',po_id:'',remarks:'',lines:[]});
+const blankLine=()=>({instrument_id:'',item_code:'',description:'',hsn:'',uom:'Nos',qty:'1',value:'',remarks:''});
+function editDc(){
+  const e=S.edit,hc=QP.ctx.has_calib,pur=e.kind==='returnable'?PUR_R:PUR_N;
+  if(!pur.includes(e.purpose))e.purpose=pur[0];
+  const out=new Set(e.lines.map(l=>l.instrument_id).filter(Boolean));
+  const avail=(S.d.instruments||[]).filter(i=>!out.has(i.id)&&i.status!=='Out for calibration');
+  const soon=avail.filter(i=>i.status==='In use'&&i.next_due&&i.next_due<=new Date(Date.now()+19800000+30*864e5).toISOString().slice(0,10));
+  const gauge=hc&&(e.purpose==='calibration'||e.purpose==='repair'||e.purpose==='rework')?`<div class="box noprint"><h3>Gauges from Calibration Hub</h3><div class="row"><select id="gsel" style="max-width:340px"><option value="">Choose a gauge…</option>${avail.map(i=>`<option value="${i.id}">${esc(i.tag)} — ${esc(i.name)}${i.next_due?' (due '+fmt(i.next_due)+')':''}</option>`).join('')}</select><button class="btn o sm" data-a="dc-addg">Add gauge</button>${e.purpose==='calibration'&&soon.length?`<button class="btn o sm" data-a="dc-adddue">Add all ${soon.length} due in 30 days or overdue</button>`:''}</div><p class="note">A gauge on an issued calibration challan shows as <b>Out for calibration</b> in Calibration Hub until it is received back on a GRN.</p></div>`:'';
+  const lines=e.lines.map((l,i)=>{const g=l.instrument_id?instOf(l.instrument_id):null;return `<tr><td>${i+1}</td><td>${g?`<span class="cp cb">${esc(g.tag)}</span>`:''}</td>
+   <td><input data-o="edit" data-l="${i}" data-f="item_code" value="${esc(l.item_code)}"></td><td class="w"><input data-o="edit" data-l="${i}" data-f="description" value="${esc(l.description)}"></td>
+   <td><input data-o="edit" data-l="${i}" data-f="hsn" value="${esc(l.hsn)}" style="min-width:80px"></td><td><input data-o="edit" data-l="${i}" data-f="uom" value="${esc(l.uom)}" style="min-width:60px"></td>
+   <td><input data-o="edit" data-l="${i}" data-f="qty" type="number" step="any" inputmode="decimal" value="${esc(l.qty)}"></td><td><input data-o="edit" data-l="${i}" data-f="value" type="number" step="any" inputmode="decimal" value="${esc(l.value)}"></td>
+   <td><button class="btn o sm" data-a="dc-rm" data-i="${i}" title="Remove">✕</button></td></tr>`}).join('');
+  $('#dc').innerHTML=`${partyOpts()}<h3 style="margin:0 0 6px">${e.id?'Edit draft challan':'New delivery challan'}</h3>
+  <div class="seg noprint"><label class="${e.kind==='returnable'?'on':''}"><input type="radio" name="dk" value="returnable" ${e.kind==='returnable'?'checked':''} data-a="dc-kind"> Returnable (will come back)</label><label class="${e.kind==='non_returnable'?'on':''}"><input type="radio" name="dk" value="non_returnable" ${e.kind==='non_returnable'?'checked':''} data-a="dc-kind"> Non-returnable</label></div>
+  <div class="dg"><div><label>Purpose</label><select data-o="edit" data-h="purpose" data-a="dc-purpose">${pur.map(p=>`<option value="${p}" ${p===e.purpose?'selected':''}>${PUR[p]}</option>`).join('')}</select></div>
+   ${fld('edit','dc_date','Date','date')}
+   <div><label>Sent to (party name)</label><input data-o="edit" data-h="party_name" list="parties" value="${esc(e.party_name)}"></div>
+   ${fld('edit','party_gstin','Party GSTIN')}
+   <div style="grid-column:span 2"><label>Party address</label><input data-o="edit" data-h="party_addr" value="${esc(e.party_addr)}"></div>
+   ${fld('edit','vehicle_no','Vehicle / courier no.')}
+   <div><label>Mode</label><select data-o="edit" data-h="mode">${['','By hand','Own vehicle','Transporter','Courier'].map(m=>`<option ${m===e.mode?'selected':''}>${m}</option>`).join('')}</select></div>
+   ${e.kind==='returnable'?fld('edit','expected_return','Expected return date','date'):''}
+   <div><label>Against PO (optional)</label><select data-o="edit" data-h="po_id"><option value="">—</option>${S.d.pos.filter(p=>p.status!=='cancelled').map(p=>`<option value="${p.id}" ${p.id===e.po_id?'selected':''}>${esc(p.po_no)} — ${esc(p.supplier_name)}</option>`).join('')}</select></div>
+   <div style="grid-column:span 2"><label>Remarks</label><input data-o="edit" data-h="remarks" value="${esc(e.remarks)}"></div></div>
+  ${gauge}
+  <div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th><th>Gauge</th><th>Item code</th><th>Description</th><th>HSN</th><th>Unit</th><th class="n">Qty</th><th class="n">Value ₹</th><th></th></tr></thead><tbody>${lines||'<tr><td colspan="9" class="mut">No items yet — add a gauge above or add an item.</td></tr>'}</tbody></table></div>
+  <div class="row noprint"><button class="btn o sm" data-a="dc-addl">+ Add item</button><span class="grow"></span><button class="btn o" data-a="dc-close">Close</button><button class="btn o" data-a="dc-save">Save draft</button><button class="btn" data-a="dc-saveissue">Save &amp; issue</button></div>`;
+}
+const dcPayload=()=>{const e=S.edit;return {id:e.id||null,dc_date:e.dc_date,kind:e.kind,purpose:e.purpose,party_name:e.party_name,party_addr:e.party_addr,party_gstin:e.party_gstin,vehicle_no:e.vehicle_no,mode:e.mode,expected_return:e.expected_return,po_id:e.po_id||null,remarks:e.remarks,
+  lines:e.lines.filter(l=>l.description.trim()||l.instrument_id).map(l=>({instrument_id:l.instrument_id||null,item_code:l.item_code,description:l.description,uom:l.uom,qty:l.qty,hsn:l.hsn,value:l.value,remarks:l.remarks}))}};
+async function saveDc(issue){
+  const id=await call('kmr_dcg_dc_save',{p:dcPayload()});
+  if(issue){
+    const r=await call('kmr_dcg_dc_issue',{p_id:id});
+    S.edit=null;await load();S.view={k:'dc',id};paint();
+    say(`Challan ${r.dc_no} issued.`+(r.gauges?` ${r.gauges} gauge(s) now show as Out for calibration in Calibration Hub.`:''),true);
+  }else{S.edit=null;await load();S.view=null;paint();say('Draft saved.',true)}
+}
+function docDc(id){
+  const d=dcOf(id);if(!d){S.view=null;return drawDc()}
+  const copy=S.view.copy||'all',co=QP.ctx.company;
+  const labels=copy==='all'?['Original for consignee','Duplicate for transporter','Triplicate for consignor']:[{o:'Original for consignee',d:'Duplicate for transporter',t:'Triplicate for consignor'}[copy]];
+  const tv=d.lines.reduce((s,l)=>s+num(l.value),0);
+  const one=(lab)=>`<div class="docv pgb">${d.status==='cancelled'?'<div class="wm">CANCELLED</div>':d.status==='draft'?'<div class="wm">DRAFT</div>':''}
+   <div class="cl">${esc(lab)}</div><h2>DELIVERY CHALLAN</h2><div class="sub">${d.kind==='returnable'?'RETURNABLE — goods sent for '+esc((PUR[d.purpose]||'').toLowerCase())+', to be returned':'NON-RETURNABLE — goods sent for '+esc((PUR[d.purpose]||'').toLowerCase())}. Not a sale.</div>
+   <div class="two"><div><b>Consignor</b><br>${esc(co)}</div><div><b>Challan no.:</b> ${esc(d.dc_no||'(not issued)')}<br><b>Date:</b> ${fmt(d.dc_date)}<br>${d.kind==='returnable'?`<b>Return by:</b> ${fmt(d.expected_return)}<br>`:''}${d.po_id&&poOf(d.po_id)?`<b>Against PO:</b> ${esc(poOf(d.po_id).po_no)}<br>`:''}<b>Vehicle / mode:</b> ${esc([d.vehicle_no,d.mode].filter(Boolean).join(' · ')||'—')}</div></div>
+   <div class="two"><div><b>Consignee</b><br>${esc(d.party_name)}<br>${esc(d.party_addr||'')}</div><div><b>GSTIN:</b> ${esc(d.party_gstin||'—')}<br><b>Place of supply:</b> as per consignee address</div></div>
+   <table><thead><tr><th>S.No</th><th>Item code</th><th>Description</th><th>HSN</th><th>Unit</th><th class="n">Qty</th><th class="n">Value ₹</th></tr></thead><tbody>${d.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.item_code||'')}</td><td>${esc(l.description)}${l.instrument_id&&instOf(l.instrument_id)?'':''}</td><td>${esc(l.hsn||'')}</td><td>${esc(l.uom)}</td><td class="n">${n3(l.qty)}</td><td class="n">${l.value!=null?Number(l.value).toLocaleString('en-IN',{maximumFractionDigits:2}):''}</td></tr>`).join('')}<tr><td colspan="6" class="n"><b>Total value</b></td><td class="n"><b>${tv?tv.toLocaleString('en-IN',{maximumFractionDigits:2}):''}</b></td></tr></tbody></table>
+   ${d.remarks?`<div><b>Remarks:</b> ${esc(d.remarks)}</div>`:''}
+   ${d.kind==='returnable'?'<div style="margin-top:4px">Please return the goods with your delivery note / calibration certificate quoting the challan number above.</div>':''}
+   <div class="sg"><div>Prepared by${d.issued_by?': '+esc(d.issued_by):''}</div><div>Authorised signatory</div><div>Receiver’s signature and stamp</div></div></div>`;
+  $('#dc').innerHTML=`<div class="row noprint"><button class="btn o" data-a="back">← All challans</button><span class="grow"></span><label class="mut">Copies</label><select id="cps" style="width:auto"><option value="all" ${copy==='all'?'selected':''}>All three copies</option><option value="o" ${copy==='o'?'selected':''}>Original</option><option value="d" ${copy==='d'?'selected':''}>Duplicate</option><option value="t" ${copy==='t'?'selected':''}>Triplicate</option></select><button class="btn" data-a="print">Print / save PDF</button></div>${labels.map(one).join('')}`;
+  rep('Delivery Challan',d.dc_no||'Draft','01');
+}
+
+/* ===================== PURCHASE ORDERS ===================== */
+const newPo=()=>({id:null,po_no:'',po_date:td(),supplier_name:'',supplier_gstin:'',supplier_addr:'',remarks:'',lines:[{item_code:'',description:'',uom:'Nos',qty:'',rate:'',received_qty:0}]});
+function drawPo(){
+  if(S.po)return editPo();
+  const rows=S.d.pos.map(p=>{const q=p.lines.reduce((s,l)=>s+Number(l.qty),0),r=p.lines.reduce((s,l)=>s+Number(l.received_qty),0),v=p.lines.reduce((s,l)=>s+Number(l.qty)*Number(l.rate||0),0),ed=canEdit(),op=p.status==='open'||p.status==='part_received';
+    return `<tr><td><b>${esc(p.po_no)}</b></td><td>${fmt(p.po_date)}</td><td>${esc(p.supplier_name)}</td><td class="num">${p.lines.length}</td><td class="num">${n3(q)}</td><td class="num">${n3(r)}</td><td class="num">${v?inr(v):'—'}</td><td>${chip(PST,p.status)}</td>
+    <td style="white-space:nowrap">${ed&&op?`<button class="btn sm" data-a="po-recv" data-id="${p.id}">Receive (GRN)</button> `:''}${ed&&p.status!=='cancelled'?`<button class="btn o sm" data-a="po-edit" data-id="${p.id}">Open / edit</button> `:''}${ed&&op?`<button class="btn o sm" data-a="po-close" data-id="${p.id}">Close</button> `:''}${ed&&!p.lines.some(l=>Number(l.received_qty)>0)&&p.status!=='cancelled'?`<button class="btn o sm" data-a="po-cancel" data-id="${p.id}">Cancel</button> `:''}${ed&&!S.d.grns.some(g=>g.po_id===p.id&&g.status==='posted')?`<button class="btn o sm" data-a="po-del" data-id="${p.id}">Delete</button>`:''}</td></tr>`}).join('');
+  $('#po').innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="po-new">+ New purchase order</button>':''}${canEdit()&&QP.ctx.has_rmp&&S.d.rmp_open>0?`<button class="btn o" data-a="po-rmp">Bring in ${S.d.rmp_open} order(s) from Raw Material Planning</button>`:''}</div>
+  <p class="note">Enter the purchase orders here (or bring in the orders placed in Raw Material Planning). Each GRN is made against a PO, and a receipt against an RMP order updates the raw material stock.</p>
+  <div class="sc"><table class="lt"><thead><tr><th>PO no.</th><th>Date</th><th>Supplier</th><th class="n">Items</th><th class="n">Ordered</th><th class="n">Received</th><th class="n">Value</th><th>Status</th><th class="noprint">Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="9" class="mut">No purchase orders yet.</td></tr>'}</tbody></table></div>`;
+}
+function editPo(){
+  const e=S.po,lines=e.lines.map((l,i)=>`<tr><td>${i+1}</td><td><input data-o="po" data-l="${i}" data-f="item_code" value="${esc(l.item_code)}"></td><td class="w"><input data-o="po" data-l="${i}" data-f="description" value="${esc(l.description)}"></td>
+   <td><input data-o="po" data-l="${i}" data-f="uom" value="${esc(l.uom)}" style="min-width:60px"></td><td><input data-o="po" data-l="${i}" data-f="qty" type="number" step="any" inputmode="decimal" value="${esc(l.qty)}"></td><td><input data-o="po" data-l="${i}" data-f="rate" type="number" step="any" inputmode="decimal" value="${esc(l.rate)}"></td>
+   <td class="num">${n3(l.received_qty)}</td><td>${Number(l.received_qty)>0?'':`<button class="btn o sm" data-a="po-rm" data-i="${i}">✕</button>`}</td></tr>`).join('');
+  $('#po').innerHTML=`${partyOpts()}<h3 style="margin:0 0 6px">${e.id?'Purchase order '+esc(e.po_no):'New purchase order'}</h3>
+  <div class="dg">${fld('po','po_no','PO number')}${fld('po','po_date','PO date','date')}<div><label>Supplier</label><input data-o="po" data-h="supplier_name" list="parties" value="${esc(e.supplier_name)}"></div>${fld('po','supplier_gstin','Supplier GSTIN')}<div style="grid-column:span 2"><label>Supplier address</label><input data-o="po" data-h="supplier_addr" value="${esc(e.supplier_addr)}"></div><div style="grid-column:span 2"><label>Remarks</label><input data-o="po" data-h="remarks" value="${esc(e.remarks)}"></div></div>
+  <div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th><th>Item code</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate ₹</th><th class="n">Received</th><th></th></tr></thead><tbody>${lines}</tbody></table></div>
+  <div class="row noprint"><button class="btn o sm" data-a="po-addl">+ Add item</button><span class="grow"></span><button class="btn o" data-a="po-closeed">Close</button><button class="btn" data-a="po-save">Save PO</button></div>`;
+}
+
+/* ===================== GRN ===================== */
+const newGrn=(t)=>({gtype:t||'dc_return',grn_date:td(),dc_id:'',po_id:'',party_name:'',party_doc_no:'',party_doc_date:'',vehicle_no:'',remarks:'',lines:[]});
+function grnLinesFromDc(id){
+  const d=dcOf(id);if(!d)return[];
+  return d.lines.filter(l=>pend(l)>0).map(l=>{const g=l.instrument_id?instOf(l.instrument_id):null;
+    return {dc_line_id:l.id,instrument_id:l.instrument_id||'',tag:g?g.tag:'',description:l.description,uom:l.uom,ordered:l.qty,done:l.returned_qty,pending:pend(l),received_qty:String(pend(l)),rejected_qty:'0',reject_reason:'',
+      cal:!!(g&&d.purpose==='calibration'&&QP.ctx.has_calib),cal_date:'',cert_no:'',lab:d.party_name,cal_result:'Pass',as_found_ok:'true',next_due:'',cost:''}});
+}
+function grnLinesFromPo(id){
+  const p=poOf(id);if(!p)return[];
+  return p.lines.filter(l=>Number(l.qty)-Number(l.received_qty)>0.0001).map(l=>({po_line_id:l.id,item_code:l.item_code,description:l.description,uom:l.uom,ordered:l.qty,done:l.received_qty,pending:Number(l.qty)-Number(l.received_qty),received_qty:'',rejected_qty:'0',reject_reason:''}));
+}
+function startGrn(t,id){
+  const g=newGrn(t);
+  if(t==='dc_return'&&id){g.dc_id=id;g.lines=grnLinesFromDc(id)}
+  if(t==='po_receipt'&&id){g.po_id=id;g.lines=grnLinesFromPo(id)}
+  if(t==='other')g.lines=[{description:'',uom:'Nos',received_qty:'',rejected_qty:'0',reject_reason:''}];
+  S.grn=g;drawGrn();
+}
+function drawGrn(){
+  if(S.pg){const q=S.pg;S.pg=null;startGrn(q.t,q.id);return}
+  if(S.grn)return editGrn();
+  if(S.view&&S.view.k==='grn')return docGrn(S.view.id);
+  const rows=S.d.grns.map(g=>{const a=g.gtype==='dc_return'&&g.dc_id&&dcOf(g.dc_id)?dcOf(g.dc_id).dc_no:g.gtype==='po_receipt'&&g.po_id&&poOf(g.po_id)?poOf(g.po_id).po_no:'';
+    const rec=g.lines.reduce((s,l)=>s+Number(l.received_qty),0),rj=g.lines.reduce((s,l)=>s+Number(l.rejected_qty),0);
+    return `<tr><td><b>${esc(g.grn_no)}</b></td><td>${fmt(g.grn_date)}</td><td>${g.gtype==='dc_return'?'Return on DC':g.gtype==='po_receipt'?'Against PO':'Other'}</td><td>${esc(a)}</td><td>${esc(g.party_name||'')}</td><td class="num">${g.lines.length}</td><td class="num">${n3(rec)}</td><td class="num ${rj?'late':''}">${n3(rj)}</td><td>${g.status==='cancelled'?'<span class="cp cr">Cancelled</span>':'<span class="cp cg">Posted</span>'}</td>
+    <td><button class="btn o sm" data-a="grn-view" data-id="${g.id}">View / print</button></td></tr>`}).join('');
+  $('#grn').innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="grn-new" data-t="dc_return">+ GRN for returned material (against DC)</button><button class="btn" data-a="grn-new" data-t="po_receipt">+ GRN against purchase order</button><button class="btn o" data-a="grn-new" data-t="other">+ Other receipt</button>':''}<span class="grow"></span><button class="btn o" data-a="print-list">Print register</button></div>
+  <p class="note">A GRN is posted when you save it. It updates the challan or PO balance; a returned calibration gauge gets its calibration record in Calibration Hub; material against an RMP order goes into the raw material stock.</p>
+  <div class="sc"><table class="lt"><thead><tr><th>GRN no.</th><th>Date</th><th>Against</th><th>DC / PO no.</th><th>Party</th><th class="n">Items</th><th class="n">Received</th><th class="n">Rejected</th><th>Status</th><th class="noprint"></th></tr></thead><tbody>${rows||'<tr><td colspan="10" class="mut">No GRNs yet.</td></tr>'}</tbody></table></div>`;
+}
+function editGrn(){
+  const g=S.grn,hc=QP.ctx.has_calib;
+  const openDc=S.d.dcs.filter(isOpenDc),openPo=S.d.pos.filter(p=>p.status==='open'||p.status==='part_received');
+  const pick=g.gtype==='dc_return'?`<div><label>Delivery challan</label><select data-a="grn-pickdc"><option value="">Choose the challan…</option>${openDc.map(d=>`<option value="${d.id}" ${d.id===g.dc_id?'selected':''}>${esc(d.dc_no)} — ${esc(d.party_name)} (${PUR[d.purpose]}, ${d.lines.filter(l=>pend(l)>0).length} pending)</option>`).join('')}</select></div>`
+    :g.gtype==='po_receipt'?`<div><label>Purchase order</label><select data-a="grn-pickpo"><option value="">Choose the PO…</option>${openPo.map(p=>`<option value="${p.id}" ${p.id===g.po_id?'selected':''}>${esc(p.po_no)} — ${esc(p.supplier_name)}</option>`).join('')}</select></div>`
+    :`<div><label>Received from</label><input data-o="grn" data-h="party_name" list="parties" value="${esc(g.party_name)}"></div>`;
+  const cal=g.lines.some(l=>l.cal);
+  const head=g.gtype==='other'?'<th>Description</th><th>Unit</th>':'<th>Item</th><th class="n">'+(g.gtype==='dc_return'?'Sent':'Ordered')+'</th><th class="n">Already received</th><th class="n">Pending</th>';
+  const rows=g.lines.map((l,i)=>{const ro=g.gtype==='other';
+    const base=ro?`<td class="w"><input data-o="grn" data-l="${i}" data-f="description" value="${esc(l.description)}"></td><td><input data-o="grn" data-l="${i}" data-f="uom" value="${esc(l.uom)}" style="min-width:60px"></td>`
+      :`<td>${l.tag?`<span class="cp cb">${esc(l.tag)}</span> `:''}${esc(l.description)}</td><td class="num">${n3(l.ordered)}</td><td class="num">${n3(l.done)}</td><td class="num">${n3(l.pending)}</td>`;
+    const calc=cal?(l.cal?`<td><input data-o="grn" data-l="${i}" data-f="cal_date" type="date" value="${esc(l.cal_date)}"></td><td><input data-o="grn" data-l="${i}" data-f="cert_no" value="${esc(l.cert_no)}"></td><td><select data-o="grn" data-l="${i}" data-f="cal_result"><option ${l.cal_result==='Pass'?'selected':''}>Pass</option><option ${l.cal_result==='Fail'?'selected':''}>Fail</option></select></td><td><select data-o="grn" data-l="${i}" data-f="as_found_ok"><option value="true" ${l.as_found_ok==='true'?'selected':''}>Within tolerance</option><option value="false" ${l.as_found_ok==='false'?'selected':''}>Out of tolerance</option></select></td><td><input data-o="grn" data-l="${i}" data-f="next_due" type="date" value="${esc(l.next_due)}"></td><td><input data-o="grn" data-l="${i}" data-f="cost" type="number" step="any" inputmode="decimal" value="${esc(l.cost)}"></td>`:'<td colspan="6" class="mut">—</td>'):'';
+    return `<tr><td>${i+1}</td>${base}<td><input data-o="grn" data-l="${i}" data-f="received_qty" type="number" step="any" inputmode="decimal" value="${esc(l.received_qty)}"></td><td><input data-o="grn" data-l="${i}" data-f="rejected_qty" type="number" step="any" inputmode="decimal" value="${esc(l.rejected_qty)}"></td><td><input data-o="grn" data-l="${i}" data-f="reject_reason" value="${esc(l.reject_reason)}" placeholder="if any rejected"></td>${calc}${ro?`<td><button class="btn o sm" data-a="grn-rm" data-i="${i}">✕</button></td>`:''}</tr>`}).join('');
+  $('#grn').innerHTML=`${partyOpts()}<h3 style="margin:0 0 6px">${g.gtype==='dc_return'?'GRN — material returned on a delivery challan':g.gtype==='po_receipt'?'GRN — material received against a purchase order':'GRN — other receipt'}</h3>
+  <div class="dg">${pick}${fld('grn','grn_date','GRN date','date')}${g.gtype==='po_receipt'?fld('grn','party_doc_no','Supplier invoice / challan no.'):g.gtype==='dc_return'?fld('grn','party_doc_no','Party delivery note no.'):''}${g.gtype!=='other'?fld('grn','party_doc_date','Its date','date'):''}${fld('grn','vehicle_no','Vehicle no.')}<div style="grid-column:span 2"><label>Remarks</label><input data-o="grn" data-h="remarks" value="${esc(g.remarks)}"></div></div>
+  ${cal?`<p class="note"><b>Calibrated gauges:</b> enter the calibration date and certificate number from the certificate. A <b>Fail</b> puts the gauge in Quarantine; an <b>out-of-tolerance</b> as-found opens an out-of-tolerance case; the next due date is worked out from the gauge’s frequency if you leave it empty. All of this is written to Calibration Hub.</p>`:''}
+  <div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th>${head}<th class="n">Received now</th><th class="n">Rejected</th><th>Reason for rejection</th>${cal?'<th>Calibration date</th><th>Certificate no.</th><th>Result</th><th>As-found</th><th>Next due</th><th class="n">Cost ₹</th>':''}${g.gtype==='other'?'<th></th>':''}</tr></thead><tbody>${rows||'<tr><td colspan="12" class="mut">Choose the challan or PO above.</td></tr>'}</tbody></table></div>
+  <div class="row noprint">${g.gtype==='other'?'<button class="btn o sm" data-a="grn-addl">+ Add item</button>':''}<span class="grow"></span><button class="btn o" data-a="grn-closeed">Close</button><button class="btn" data-a="grn-save">Post GRN</button></div>`;
+}
+function grnPayload(){
+  const g=S.grn;
+  return {gtype:g.gtype,grn_date:g.grn_date,dc_id:g.dc_id||null,po_id:g.po_id||null,party_name:g.party_name,party_doc_no:g.party_doc_no,party_doc_date:g.party_doc_date,vehicle_no:g.vehicle_no,remarks:g.remarks,
+    lines:g.lines.filter(l=>num(l.received_qty)>0).map(l=>{const rq=num(l.received_qty),jq=num(l.rejected_qty);
+      if(jq>rq)throw new Error(`${l.description}: rejected quantity is more than received.`);
+      if(jq>0&&!String(l.reject_reason||'').trim())throw new Error(`${l.description}: enter the reason for the rejected quantity.`);
+      if(l.cal&&!l.cal_date)throw new Error(`Gauge ${l.tag}: enter the calibration date from the certificate.`);
+      return {dc_line_id:l.dc_line_id||null,po_line_id:l.po_line_id||null,description:l.description,item_code:l.item_code||'',uom:l.uom,received_qty:rq,rejected_qty:jq,accepted_qty:rq-jq,reject_reason:l.reject_reason,
+        cal_date:l.cal?l.cal_date:'',cert_no:l.cal?l.cert_no:'',lab:l.cal?l.lab:'',cal_result:l.cal?l.cal_result:'',as_found_ok:l.cal?l.as_found_ok:'',next_due:l.cal?l.next_due:'',cost:l.cal?l.cost:''}})};
+}
+async function saveGrn(){
+  const p=grnPayload();
+  if(!p.lines.length)throw new Error('Enter the received quantity for at least one item.');
+  const r=await call('kmr_dcg_grn_save',{p});
+  S.grn=null;S.stale=true;await load();S.view={k:'grn',id:r.id};S.stale=false;paint();
+  say(`${r.grn_no} posted.`+(r.calibrated?` ${r.calibrated} gauge(s) calibrated and updated in Calibration Hub.`:'')+(r.rmp_updated?' Raw material stock updated in Raw Material Planning.':''),true);
+}
+function docGrn(id){
+  const g=grnOf(id);if(!g){S.view=null;return drawGrn()}
+  const dc=g.dc_id?dcOf(g.dc_id):null,po=g.po_id?poOf(g.po_id):null,co=QP.ctx.company,cal=g.lines.some(l=>l.cal_date);
+  $('#grn').innerHTML=`<div class="row noprint"><button class="btn o" data-a="back">← All GRNs</button><span class="grow"></span>${canEdit()&&g.status==='posted'?'<button class="btn o" data-a="grn-cancel" data-id="'+g.id+'">Cancel this GRN</button>':''}<button class="btn" data-a="print">Print / save PDF</button></div>
+  <div class="docv">${g.status==='cancelled'?'<div class="wm">CANCELLED</div>':''}<h2>GOODS RECEIPT NOTE</h2><div class="sub">${esc(co)}</div>
+   <div class="two"><div><b>GRN no.:</b> ${esc(g.grn_no)}<br><b>Date:</b> ${fmt(g.grn_date)}<br><b>Received from:</b> ${esc(g.party_name||'—')}</div><div><b>Against:</b> ${dc?'Delivery challan '+esc(dc.dc_no)+' ('+esc(PUR[dc.purpose]||'')+')':po?'Purchase order '+esc(po.po_no):'Other receipt'}<br><b>Party document:</b> ${esc(g.party_doc_no||'—')}${g.party_doc_date?' dt '+fmt(g.party_doc_date):''}<br><b>Vehicle:</b> ${esc(g.vehicle_no||'—')}</div></div>
+   <table><thead><tr><th>S.No</th><th>Item</th><th>Unit</th><th class="n">Received</th><th class="n">Accepted</th><th class="n">Rejected</th><th>Reason / calibration</th></tr></thead><tbody>${g.lines.map((l,i)=>`<tr><td>${i+1}</td><td>${esc(l.item_code?l.item_code+' — ':'')}${esc(l.description)}</td><td>${esc(l.uom)}</td><td class="n">${n3(l.received_qty)}</td><td class="n">${n3(l.accepted_qty)}</td><td class="n">${n3(l.rejected_qty)}</td><td>${esc(l.reject_reason||'')}${l.cal_date?`Calibrated ${fmt(l.cal_date)}; certificate ${esc(l.cert_no||'—')}; ${esc(l.cal_result||'')}${l.as_found_ok===false?'; as-found OUT of tolerance':''}${l.next_due?'; next due '+fmt(l.next_due):''}`:''}</td></tr>`).join('')}</tbody></table>
+   ${g.remarks?`<div><b>Remarks:</b> ${esc(g.remarks)}</div>`:''}${g.status==='cancelled'?`<div class="late">Cancelled: ${esc(g.cancel_reason||'')}</div>`:''}
+   <div class="sg"><div>Received by (Stores)${g.created_by?': '+esc(g.created_by):''}</div><div>Inspected by (Quality)</div><div>Approved by</div></div></div>`;
+  rep('Goods Receipt Note',g.grn_no,'02');
+}
+
+/* ===================== PENDING RETURNS ===================== */
+function drawPend(){
+  const rows=[];
+  S.d.dcs.filter(isOpenDc).forEach(d=>d.lines.filter(l=>pend(l)>0).forEach(l=>rows.push({d,l})));
+  rows.sort((a,b)=>(a.d.expected_return||'9').localeCompare(b.d.expected_return||'9'));
+  const od=rows.filter(r=>overdue(r.d)).length;
+  $('#pend').innerHTML=`<div class="row noprint"><span class="cp ${od?'cr':'cg'}">${od} overdue</span><span class="cp cb">${rows.length} item(s) not yet back</span><span class="grow"></span><button class="btn o" data-a="print">Print / save PDF</button></div>
+  <div class="sc"><table class="lt"><thead><tr><th>DC no.</th><th>Sent on</th><th>Sent to</th><th>Purpose</th><th>Item</th><th class="n">Pending qty</th><th>Return by</th><th class="n">Days out</th><th class="noprint"></th></tr></thead><tbody>${rows.map(({d,l})=>{const o=overdue(d);return `<tr><td><b>${esc(d.dc_no)}</b></td><td>${fmt(d.dc_date)}</td><td>${esc(d.party_name)}</td><td>${PUR[d.purpose]}</td><td>${esc(l.description)}</td><td class="num">${n3(pend(l))} ${esc(l.uom)}</td><td class="${o?'late':''}">${fmt(d.expected_return)}${o?' · '+daysBetween(d.expected_return,td())+' days late':''}</td><td class="num">${daysBetween(d.dc_date,td())}</td><td class="noprint">${canEdit()?`<button class="btn sm" data-a="dc-recv" data-id="${d.id}">Receive</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="9" class="mut">Nothing is waiting to come back.</td></tr>'}</tbody></table></div>`;
+  rep('Pending returns',td(),'03');
+}
+
+/* ===================== DASHBOARD ===================== */
+function drawDash(){
+  const fs=fyStart(),mo=td().slice(0,7),live=S.d.dcs.filter(d=>d.status!=='draft'&&d.status!=='cancelled'),fy=live.filter(d=>d.dc_date>=fs);
+  const open=S.d.dcs.filter(isOpenDc),od=open.filter(overdue),grns=S.d.grns.filter(g=>g.status==='posted'),gm=grns.filter(g=>g.grn_date.slice(0,7)===mo);
+  const outG=(S.d.instruments||[]).filter(i=>i.status==='Out for calibration').length;
+  const openPo=S.d.pos.filter(p=>p.status==='open'||p.status==='part_received');
+  const rej=grns.filter(g=>g.grn_date>=fs).reduce((s,g)=>s+g.lines.reduce((a,l)=>a+Number(l.rejected_qty),0),0);
+  const k=(v,l,c)=>`<div style="--c:${c||'#174b80'}"><b>${v}</b><span>${l}</span></div>`;
+  const byParty={};open.forEach(d=>{const p=byParty[d.party_name]||(byParty[d.party_name]={n:0,items:0,od:0,old:null});p.n++;p.items+=d.lines.filter(l=>pend(l)>0).length;if(overdue(d))p.od++;if(d.expected_return&&(!p.old||d.expected_return<p.old))p.old=d.expected_return});
+  const bySup={};grns.filter(g=>g.gtype==='po_receipt'&&g.grn_date>=fs).forEach(g=>{const s=bySup[g.party_name||'—']||(bySup[g.party_name||'—']={n:0,r:0,a:0,j:0});s.n++;g.lines.forEach(l=>{s.r+=Number(l.received_qty);s.a+=Number(l.accepted_qty);s.j+=Number(l.rejected_qty)})});
+  const byPur={};fy.forEach(d=>{byPur[PUR[d.purpose]]=(byPur[PUR[d.purpose]]||0)+1});
+  $('#dash').innerHTML=`<div class="kp">${k(fy.length,'Challans issued this financial year')}${k(open.length,'Returnable challans out now','#d97706')}${k(od.length,'Overdue returns',od.length?'#dc2626':'#16a34a')}${QP.ctx.has_calib?k(outG,'Gauges out for calibration','#7c3aed'):''}${k(gm.length,'GRNs this month')}${k(openPo.length,'Open purchase orders')}${k(n3(rej),'Quantity rejected on GRN this year',rej?'#dc2626':'#16a34a')}</div>
+  <div class="box"><h3>Returnable material out, by party</h3><div class="sc"><table class="lt"><thead><tr><th>Party</th><th class="n">Challans open</th><th class="n">Items pending</th><th class="n">Overdue</th><th>Earliest return date</th></tr></thead><tbody>${Object.entries(byParty).sort((a,b)=>b[1].od-a[1].od).map(([p,v])=>`<tr><td>${esc(p)}</td><td class="num">${v.n}</td><td class="num">${v.items}</td><td class="num ${v.od?'late':''}">${v.od}</td><td>${fmt(v.old)}</td></tr>`).join('')||'<tr><td colspan="5" class="mut">Nothing is out.</td></tr>'}</tbody></table></div></div>
+  <div class="box"><h3>Receipts against purchase orders by supplier (this financial year)</h3><div class="sc"><table class="lt"><thead><tr><th>Supplier</th><th class="n">GRNs</th><th class="n">Received</th><th class="n">Accepted</th><th class="n">Rejected</th><th class="n">Rejection %</th></tr></thead><tbody>${Object.entries(bySup).map(([p,v])=>`<tr><td>${esc(p)}</td><td class="num">${v.n}</td><td class="num">${n3(v.r)}</td><td class="num">${n3(v.a)}</td><td class="num ${v.j?'late':''}">${n3(v.j)}</td><td class="num">${v.r?(v.j/v.r*100).toFixed(1)+'%':'—'}</td></tr>`).join('')||'<tr><td colspan="6" class="mut">No receipts yet.</td></tr>'}</tbody></table></div></div>
+  <div class="box"><h3>Challans issued this year by purpose</h3><div class="sc"><table class="lt"><thead><tr><th>Purpose</th><th class="n">Challans</th></tr></thead><tbody>${Object.entries(byPur).map(([p,n])=>`<tr><td>${esc(p)}</td><td class="num">${n}</td></tr>`).join('')||'<tr><td colspan="2" class="mut">No challans yet.</td></tr>'}</tbody></table></div></div>`;
+}
+
+/* ===================== clicks ===================== */
+document.addEventListener('click',(e)=>{
+  const b=e.target.closest('[data-a]');if(!b||b.tagName==='SELECT'||b.type==='radio')return;
+  const a=b.dataset.a,id=b.dataset.id,i=+b.dataset.i;
+  busy(async()=>{
+    switch(a){
+      case 'dc-new':S.edit=newDc();editDc();break;
+      case 'dc-edit':{const d=dcOf(id);S.edit={...d,expected_return:d.expected_return||'',po_id:d.po_id||'',lines:d.lines.map(l=>({instrument_id:l.instrument_id||'',item_code:l.item_code||'',description:l.description,hsn:l.hsn||'',uom:l.uom,qty:String(l.qty),value:l.value==null?'':String(l.value),remarks:l.remarks||''}))};editDc();break}
+      case 'dc-close':S.edit=null;drawDc();break;
+      case 'dc-addl':S.edit.lines.push(blankLine());editDc();break;
+      case 'dc-rm':S.edit.lines.splice(i,1);editDc();break;
+      case 'dc-addg':{const v=$('#gsel').value;if(!v)return;const g=instOf(v);S.edit.lines.push({...blankLine(),instrument_id:v,item_code:g.tag,description:g.name+' ('+g.tag+')'});editDc();break}
+      case 'dc-adddue':{const lim=new Date(Date.now()+19800000+30*864e5).toISOString().slice(0,10),have=new Set(S.edit.lines.map(l=>l.instrument_id));
+        (S.d.instruments||[]).filter(g=>g.status==='In use'&&g.next_due&&g.next_due<=lim&&!have.has(g.id)).forEach(g=>S.edit.lines.push({...blankLine(),instrument_id:g.id,item_code:g.tag,description:g.name+' ('+g.tag+')'}));
+        if(!S.edit.party_name){const lb=S.edit.lines.map(l=>instOf(l.instrument_id)&&instOf(l.instrument_id).lab).find(Boolean);if(lb)S.edit.party_name=lb}editDc();break}
+      case 'dc-save':await saveDc(false);break;
+      case 'dc-saveissue':if(await yes('Issue this challan? It gets its number now and cannot be edited afterwards.'))await saveDc(true);break;
+      case 'dc-issue':if(await yes('Issue this challan? It gets its number now and cannot be edited afterwards.')){const r=await call('kmr_dcg_dc_issue',{p_id:id});await load();S.view={k:'dc',id};paint();say(`Challan ${r.dc_no} issued.`+(r.gauges?` ${r.gauges} gauge(s) now show as Out for calibration in Calibration Hub.`:''),true)}break;
+      case 'dc-del':if(await yes('Delete this draft challan?')){await call('kmr_dcg_dc_delete',{p_id:id});await reload()}break;
+      case 'dc-cancel':{const r=await ask('Reason for cancelling this challan?','');if(!r)return;await call('kmr_dcg_dc_cancel',{p_id:id,p_reason:r});await reload();say('Challan cancelled. Any gauge on it is back in use.',true);break}
+      case 'dc-view':S.view={k:'dc',id,copy:'all'};drawDc();break;
+      case 'dc-recv':S.pg={t:'dc_return',id};goTo('grn');break;
+      case 'dc-print':rep('Delivery challan register','','04');window.print();break;
+      case 'po-new':S.po=newPo();editPo();break;
+      case 'po-edit':{const p=poOf(id);S.po={...p,po_date:p.po_date||'',supplier_gstin:p.supplier_gstin||'',supplier_addr:p.supplier_addr||'',remarks:p.remarks||'',lines:p.lines.map(l=>({id:l.id,item_code:l.item_code||'',description:l.description,uom:l.uom,qty:String(l.qty),rate:l.rate==null?'':String(l.rate),received_qty:l.received_qty}))};editPo();break}
+      case 'po-addl':S.po.lines.push({item_code:'',description:'',uom:'Nos',qty:'',rate:'',received_qty:0});editPo();break;
+      case 'po-rm':S.po.lines.splice(i,1);editPo();break;
+      case 'po-closeed':S.po=null;drawPo();break;
+      case 'po-save':{const e=S.po;await call('kmr_dcg_po_save',{p:{id:e.id||null,po_no:e.po_no,po_date:e.po_date,supplier_name:e.supplier_name,supplier_gstin:e.supplier_gstin,supplier_addr:e.supplier_addr,remarks:e.remarks,lines:e.lines.map(l=>({id:l.id||null,item_code:l.item_code,description:l.description,uom:l.uom,qty:l.qty,rate:l.rate}))}});await reload();say('Purchase order saved.',true);break}
+      case 'po-recv':S.pg={t:'po_receipt',id};goTo('grn');break;
+      case 'po-close':if(await yes('Close this PO? Nothing more can be received against it.')){await call('kmr_dcg_po_close',{p_id:id,p_status:'closed'});await reload()}break;
+      case 'po-cancel':if(await yes('Cancel this PO?')){await call('kmr_dcg_po_close',{p_id:id,p_status:'cancelled'});await reload()}break;
+      case 'po-del':if(await yes('Delete this PO?')){await call('kmr_dcg_po_delete',{p_id:id});await reload()}break;
+      case 'po-rmp':{const n=await call('kmr_dcg_po_from_rmp',{});await reload();say(n+' order(s) brought in from Raw Material Planning.',true);break}
+      case 'grn-new':startGrn(b.dataset.t);break;
+      case 'grn-closeed':S.grn=null;drawGrn();break;
+      case 'grn-addl':S.grn.lines.push({description:'',uom:'Nos',received_qty:'',rejected_qty:'0',reject_reason:''});editGrn();break;
+      case 'grn-rm':S.grn.lines.splice(i,1);editGrn();break;
+      case 'grn-save':await saveGrn();break;
+      case 'grn-view':S.view={k:'grn',id};drawGrn();break;
+      case 'grn-cancel':{const r=await ask('Reason for cancelling this GRN? The challan / PO balance and the raw material stock will be put back.','');if(!r)return;const x=await call('kmr_dcg_grn_cancel',{p_id:id,p_reason:r});await reload();say('GRN cancelled.'+(x&&x.cal_records_kept?' The calibration record it made is still in Calibration Hub; delete it there if it is wrong.':''),true);break}
+      case 'back':S.view=null;paint();break;
+      case 'print':window.print();break;
+      case 'print-list':rep('Goods receipt register','','04');window.print();break;
+    }
+  });
+});
+/* selects and radios that change the form */
+document.addEventListener('change',(e)=>{
+  const t=e.target,a=t.dataset.a;
+  if(t.id==='cps'&&S.view){S.view.copy=t.value==='o'?'o':t.value==='d'?'d':t.value==='t'?'t':'all';docDc(S.view.id);return}
+  if(a==='dc-kind'){S.edit.kind=t.value;if(t.value==='non_returnable')S.edit.expected_return='';editDc()}
+  if(a==='dc-purpose')editDc();
+  if(a==='grn-pickdc'){const d=dcOf(t.value);S.grn.dc_id=t.value;S.grn.lines=grnLinesFromDc(t.value);editGrn()}
+  if(a==='grn-pickpo'){S.grn.po_id=t.value;S.grn.lines=grnLinesFromPo(t.value);editGrn()}
+});
+
+(async()=>{try{await QP.init('dcg','kmr_dcg_context');if(!QP.ctx)return;await route()}catch(e){say(e.message)}})();
+</script><script src="/it/apps/back.js"></script><script src="/it/apps/kmr-present-link.js"></script></body></html>

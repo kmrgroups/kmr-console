@@ -1,7 +1,7 @@
 /* Adds the "Presentation" screen link to every KMR app (the screen itself is /it/present.html, one shared engine). */
 (function () {
   "use strict";
-  var MAP = { sales: "sales", calibration: "calibration", apqp: "apqp", ppap: "ppap", rmp: "rmp", mmd: "mmd", mnt: "mnt", msa: "msa", crm: "crm", d8: "d8", office: "off", aud: "aud", spc: "spc", tasks: "tsk", mom: "mom", cad: "cad", dwm: "dwm" };
+  var MAP = { sales: "sales", calibration: "calibration", apqp: "apqp", ppap: "ppap", rmp: "rmp", mmd: "mmd", mnt: "mnt", msa: "msa", crm: "crm", d8: "d8", office: "off", aud: "aud", spc: "spc", tasks: "tsk", mom: "mom", cad: "cad", dwm: "dwm", dcg: "dcg" };
   var m = location.pathname.match(/\/it\/([a-z0-9]+)\.html/), key = m && MAP[m[1]];
   if (!key || /[?&]demo=1(&|$)/.test(location.search) || /[?&]scope=all(&|$)/.test(location.search)) return;   // the all-plants Sales Flow has its own Presentation tab
   function add() {
