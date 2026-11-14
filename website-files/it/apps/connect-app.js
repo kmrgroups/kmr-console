@@ -159,7 +159,7 @@
     const m = mt(); S.parts++;
     try {
       if (DEMO) { const u = URL.createObjectURL(blob); S.det.recordings.push({ id: uid(), path: "demo", url: u, mime, bytes: blob.size, seconds: secs, created_at: new Date().toISOString(), created_by: email() }); drawRecs(); say("Recording part saved (sample mode keeps it only in this tab).", true); return; }
-      const path = `${QP.ctx.cid}/${m.id}/${Date.now()}-${S.parts}.webm`;
+      const path = `${QP.ctx.cid}/${m.id}/${Date.now()}-${S.parts}.${/mp4/.test(mime) ? "mp4" : "webm"}`;
       const up = await QP.sb.storage.from("kmr-recordings").upload(path, blob, { contentType: mime });
       if (up.error) throw new Error(up.error.message + (/exceed|size/i.test(up.error.message) ? " (free storage takes files up to 50 MB)" : ""));
       await call("kmr_cn_rec_add", { p: { meeting_id: m.id, path, mime, bytes: blob.size, seconds: secs } });
@@ -275,11 +275,12 @@
   /* ================= remote devices ================= */
   function drawDev() {
     const D = S.load.devices, SS = S.load.sessions, devSt = (d) => d.status === "disabled" ? '<span class="chip x">Switched off</span>' : d.status === "waiting" ? '<span class="chip a">Waiting to be paired</span>' : d.online ? '<span class="ok2"></span><b>Online</b>' : '<span class="ok2 off"></span>Offline · ' + esc(ago(d.last_seen));
-    $("#dev").innerHTML = `<div class="row"><h3 class="grow" style="margin:0">Remote devices</h3>${adm() ? '<button class="btn" id="da">+ Add a laptop or PC</button>' : ""}</div>
+    $("#dev").innerHTML = `<div class="row"><h3 class="grow" style="margin:0">Remote devices</h3><button class="btn o" id="qs">Quick session — no install</button>${adm() ? '<button class="btn" id="da">+ Add a laptop or PC</button>' : ""}</div>
+      <div class="note" style="margin:8px 0">Quick session works on any phone or computer with no install: you get a code and a link, the other person opens it, and you can see their screen or camera, talk, chat, point and send files. To <b>control</b> a computer (mouse, keyboard, programs) the small helper must be installed on it once — that is a browser safety rule.</div>
       <div class="guide">Install the small KMR Connect helper once on each laptop or PC. After that you can see and control it from here, from any browser or phone: screen, mouse, keyboard, files, folders, drives and programs. Every session is written in the list below.</div>
       ${D.length ? `<table><thead><tr><th>S.No</th><th>Device</th><th>System</th><th>Plant</th><th>Status</th><th>Computer</th><th></th></tr></thead><tbody>${D.map((d, i) => `<tr><td>${i + 1}</td><td><b>${esc(d.name)}</b></td><td>${esc(d.os_name || "")}</td><td>${esc(d.plant || "")}</td><td>${devSt(d)}</td><td>${esc((d.info && d.info.host) || "")} ${esc((d.info && d.info.user) || "")}</td><td>${ed() && d.status === "paired" ? `<button class="btn s" data-c="${d.id}" ${d.online ? "" : 'title="This device looks offline"'}>Connect</button> ` : ""}${adm() ? `<button class="btn o s" data-r="${d.id}">Pair again</button> <button class="btn o s" data-o="${d.id}">${d.status === "disabled" ? "Switch on" : "Switch off"}</button> <button class="btn r s" data-x="${d.id}">Remove</button>` : ""}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">No device yet.<br>Press “+ Add a laptop or PC”.</div>'}
       <h3 style="margin-top:18px">Remote session list</h3>${SS.length ? sessTable(SS) : '<div class="empty">No session yet.</div>'}`;
-    const a = $("#da"); if (a) a.onclick = addDevice;
+    const a = $("#da"); if (a) a.onclick = addDevice; $("#qs").onclick = () => { const A = "ABCDEFGHJKMNPQRSTUVWXYZ23456789", c = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => A[x % A.length]).join(""); window.open("/it/connect-join.html#c=" + c, "_blank"); };
     const dev = (id) => D.find((x) => x.id === id);
     $("#dev").querySelectorAll("[data-c]").forEach((b) => (b.onclick = () => connectDevice(dev(b.dataset.c))));
     $("#dev").querySelectorAll("[data-r]").forEach((b) => (b.onclick = async () => { if (!confirm("Pair this device again? The helper on the laptop must be set up again with the new code.")) return; try { showPair(dev(b.dataset.r).name, await call("kmr_cn_device_repair", { p_id: b.dataset.r })); } catch (e) { alert(e.message); } }));
