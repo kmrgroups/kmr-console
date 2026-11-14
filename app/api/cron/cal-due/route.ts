@@ -4,7 +4,7 @@ import { sendMail, type Brand } from "@/lib/mail";
 import { env } from "@/lib/env";
 
 // Calibration Hub: every morning (vercel.json) e-mails each company / plant that has the "mail alert" on the list of gauges that will
-// become overdue within its chosen number of days (default 12). A gauge is mailed once per due date. Needs CRON_SECRET, like the backup route,
+// become overdue within its chosen number of days (default 12). The list is mailed every morning for as long as a gauge is inside the window, until it is calibrated. Needs CRON_SECRET, like the backup route,
 // and RESEND_API_KEY + EMAIL_FROM for the mail itself (same as the HRM). Without the mail keys nothing is marked as sent, so the list goes out once they are set.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -13,7 +13,7 @@ type Row = { id: string; tag: string; name: string; gauge_class: string | null; 
 type Scan = { customer_id: string; slug: string; company: string; brand?: Brand; days_before: number; recipients: string[]; rows: Row[] };
 
 const dmy = (d: string) => d.split("-").reverse().join("-");
-const MAX_ROWS = 60;
+const MAX_ROWS = 200;
 
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
@@ -46,8 +46,8 @@ export async function GET(req: Request) {
         });
         if (r === "sent") { sent++; mails++; } else if (r === "skipped") skipped++; else failed++;
       }
-      // remember what was mailed only when at least one person really got it; otherwise the same list is tried again tomorrow
-      if (sent > 0) { await db.rpc("kmr_cal_due_mark", { p_ids: s.rows.map((r) => r.id) }); gauges += n; }
+      // the list goes out again tomorrow (daily mail) for every gauge still inside the window
+      if (sent > 0) gauges += n;
     }
     return NextResponse.json({ ok: true, companies: scans.length, mails, skipped, failed, gauges });
   } catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 500 }); }
