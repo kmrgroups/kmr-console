@@ -9,6 +9,7 @@ productionLookbackDays = 45
 everyMinutesInvoices = 15
 everyMinutesProduction = 30
 everyMinutesPurchase = 360
+everyMinutesOpsMaster = 720
 everyMinutesCalibration = 720
 # once in this many days everything is read again from the beginning (safe: nothing is duplicated)
 fullEveryDays = 30

@@ -6,13 +6,14 @@ import { buildInvoices } from "@/lib/erp-bridge/invoices";
 import { buildProduction } from "@/lib/erp-bridge/production";
 import { buildDcg } from "@/lib/erp-bridge/dcg";
 import { buildCalibration } from "@/lib/erp-bridge/calib";
+import { buildOpsMaster } from "@/lib/erp-bridge/opsmaster";
 import { buildMasters } from "@/lib/erp-bridge/masters";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /** The universal ERP bridge posts raw ERP tables here (gzip JSON). Header x-sync-key = the plant's sync key (Sales Flow › Daily despatch › New key).
- *  Body: { kind: "invoices" | "production" | "purchase" | "calibration", unit: "Unit-2", dryRun?: boolean, tables: { name: { c: [...], r: [[...]] } } }.
+ *  Body: { kind: "invoices" | "production" | "purchase" | "opsmaster" | "calibration", unit: "Unit-2", dryRun?: boolean, tables: { name: { c: [...], r: [[...]] } } }.
  *  Every import function skips what is already loaded, so sending the same data again never duplicates it. See migration 0123. */
 export async function POST(req: Request) {
   const key = req.headers.get("x-sync-key") || "";
@@ -58,6 +59,11 @@ export async function POST(req: Request) {
       const m = buildMasters(t); const b: Record<string, number> = {};
       for (const c of chunk(m, 200)) add(b, await run("kmr_ops_bulk", c, "masters", c.length));
       Object.assign(out, { pos: d.pos.length, dcs: d.dcs.length, grns: d.grns.length, masters: m.length, result: a, masters_result: b });
+    } else if (kind === "opsmaster") {
+      const m = buildOpsMaster(t, new Date().toISOString().slice(0, 10)); const a: Record<string, number> = {};
+      for (const c of chunk(m, 200)) add(a, await run("kmr_ops_bulk", c, "opsmaster", c.length));
+      const n: Record<string, number> = {}; for (const r of m) n[r.kind] = (n[r.kind] || 0) + 1;
+      Object.assign(out, { masters: m.length, by_kind: n, result: a });
     } else if (kind === "calibration") {
       const g = buildCalibration(t, unit); const a: Record<string, number> = {};
       for (const c of chunk(g, 100)) add(a, await run("kmr_cal_import_erp", c, "calibration", c.length));

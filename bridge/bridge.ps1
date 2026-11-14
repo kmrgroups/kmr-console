@@ -199,12 +199,12 @@ function SyncUnit($name, $dsn, $keyfile) {
       return 0
     }
     $s = LoadState $statePath
-    $kinds = @('despatch', 'invoices', 'production', 'purchase', 'calibration')
+    $kinds = @('despatch', 'invoices', 'production', 'purchase', 'opsmaster', 'calibration')
     foreach ($kind in $kinds) {
       try {
         $script:wasFull = $false
         if ($kind -eq 'despatch') { SyncDespatch $c $tag $key $dsPath; continue }
-        $mins = $(switch ($kind) { 'invoices' { Cfg 'everyMinutesInvoices' 15 } 'production' { Cfg 'everyMinutesProduction' 30 } 'purchase' { Cfg 'everyMinutesPurchase' 360 } default { Cfg 'everyMinutesCalibration' 720 } })
+        $mins = $(switch ($kind) { 'invoices' { Cfg 'everyMinutesInvoices' 15 } 'production' { Cfg 'everyMinutesProduction' 30 } 'purchase' { Cfg 'everyMinutesPurchase' 360 } 'opsmaster' { Cfg 'everyMinutesOpsMaster' 720 } default { Cfg 'everyMinutesCalibration' 720 } })
         if (-not (Due $s $kind $mins)) { continue }
         $fullNow = NeedFull $s $kind; $script:wasFull = $fullNow
         $bodies = @()
@@ -233,6 +233,11 @@ function SyncUnit($name, $dsn, $keyfile) {
           $t = ''
           foreach ($n in 'dc', 'grn', 'grnno', 'grndc', 'suppliercm') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; if ($t -ne '') { $t += ',' }; $t += '"' + $n + '":' + (TableJson $x 0 $x.rows.Count) }
           $bodies += (Body 'purchase' $name $t)
+        }
+        elseif ($kind -eq 'opsmaster') {
+          $t = ''
+          foreach ($n in 'customer', 'pomaster', 'tpomaster', 'tcustprod', 'product', 'subcontractor', 'supplier', 'machine', 'trawmaterial', 'rawmaterial', 'tproduct') { $x = ReadTable $c ('SELECT * FROM ' + $n) $n $null $null; if ($t -ne '') { $t += ',' }; $t += '"' + $n + '":' + (TableJson $x 0 $x.rows.Count) }
+          $bodies += (Body 'opsmaster' $name $t)
         }
         else {
           $t = ''
