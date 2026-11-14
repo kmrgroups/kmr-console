@@ -26,7 +26,7 @@ for m in M:
     res.append(dict(no=no,date=m['invdate'],po_no=m.get('pono','').strip(),po_date=m.get('podate',''),buyer_code=m['custcode'].strip(),buyer_name=(c.get('custname') or m['custcode']).strip(),gstin=gst if len(gst)==15 else '',
         addr=(c.get('address') or '').strip(),loc=(c.get('CITY') or '').strip(),pin=(c.get('billpin') or '').strip(),state=(c.get('Statecode') or gst[:2]).strip(),supply=sup,dc_no=m.get('dcno','').strip(),dc_date=m.get('dcdate',''),
         vehicle=m.get('transth','').strip(),mode=m.get('transmode','').strip(),terms=m.get('Deliverytrm','').strip(),pay_days=m.get('Paytrm','').strip(),remarks=m.get('Remarks','').strip(),
-        taxable=round(tx,2),cgst=cg,sgst=sg,igst=ig,tcs=tcs,round_off=round(tot-(tx+cg+sg+ig+tcs),2),total=tot,cancelled=(m.get('CANCELL','NO').strip().upper()=='YES'),lines=out_l))
+        taxable=round(tx,2),cgst=cg,sgst=sg,igst=ig,tcs=tcs,round_off=(lambda d: d if abs(d)<=1 else 0)(round(tot-(tx+cg+sg+ig+tcs),2)),total=tot,cancelled=(m.get('CANCELL','NO').strip().upper()=='YES'),lines=out_l))
 res.sort(key=lambda x:(x['date'],x['no']))
 js=json.dumps({'invoices':res},separators=(',',':'))
 open(out,'wb').write(gzip.compress(js.encode())) if out.endswith('.gz') else open(out,'w').write(js)
