@@ -7,7 +7,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * attempt is recorded as "skipped" in the email log (Console › System health), so nothing fails.
  * ALERT_EMAIL receives KMR's own notices (payment reports, new orders, errors); it defaults to the seller email.
  */
-export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string; brand?: Brand; customerId?: string; customerSlug?: string };
+export type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; button?: { label: string; url: string }; rows?: [string, string][]; kind: string; ref?: string; replyTo?: string; brand?: Brand; customerId?: string; customerSlug?: string;
+  /** Trusted, ready-made HTML shown after the paragraphs (built by our own code, never from user text; every value in it must already be escaped). Makes the mail wider. */
+  html?: string;
+  /** Unique report reference number and the report format's revision-control line, printed in the footer. */
+  refNo?: string; revision?: string };
 /** The customer the mail is sent for: its own name, logo and plant details replace the KMR sender block. */
 export type Brand = { name: string; plant?: string | null; incharge?: string; logo?: string; address?: string; email?: string; phone?: string };
 
@@ -39,14 +43,14 @@ export async function renderMail(m: Mail): Promise<string> {
   const btn = m.button ? `<p style="margin:26px 0"><a href="${esc(m.button.url)}" style="background:#c6a15b;color:#0b1c3a;text-decoration:none;font-weight:700;padding:12px 22px;display:inline-block">${esc(m.button.label)}</a></p>` : "";
   return `<!doctype html><html><body style="margin:0;background:#f4f1ea;font-family:Segoe UI,Arial,sans-serif;color:#101828">
 <table role="presentation" width="100%" style="background:#f4f1ea;padding:24px 12px"><tr><td align="center">
-<table role="presentation" width="100%" style="max-width:600px;background:#ffffff;border:1px solid #e6dfd1">
+<table role="presentation" width="100%" style="max-width:${m.html ? 720 : 600}px;background:#ffffff;border:1px solid #e6dfd1">
 <tr><td style="background:#0b1c3a;padding:18px 26px;color:#ffffff;font-size:18px;font-weight:700;font-family:Georgia,serif">${logo}${esc(s.name)}${plant}<div style="height:2px;background:#c6a15b;margin-top:12px;width:56px"></div></td></tr>
 <tr><td style="padding:26px">
 <h1 style="margin:0 0 14px;font-size:20px;color:#0b1c3a;font-family:Georgia,serif">${esc(m.heading)}</h1>
 ${m.paragraphs.map((p) => `<p style="margin:0 0 12px;font-size:15px;line-height:1.6">${esc(p)}</p>`).join("")}
-${rows}${btn}
+${m.html ?? ""}${rows}${btn}
 </td></tr>
-<tr><td style="padding:16px 26px;border-top:1px solid #e6dfd1;font-size:12px;color:#5e6778;line-height:1.6">${esc(s.name)}${b?.plant ? ` · ${esc(b.plant)}` : ""}${s.address ? ` · ${esc(s.address)}` : ""}${s.email || s.phone || b?.incharge ? "<br>" : ""}${b?.incharge ? `Plant in charge: ${esc(b.incharge)}${s.email || s.phone ? " · " : ""}` : ""}${esc(s.email)}${s.phone ? `${s.email ? " · " : ""}${esc(s.phone)}` : ""}${s.gstin ? ` · GSTIN ${esc(s.gstin)}` : ""}</td></tr>
+<tr><td style="padding:16px 26px;border-top:1px solid #e6dfd1;font-size:12px;color:#5e6778;line-height:1.6">${esc(s.name)}${b?.plant ? ` · ${esc(b.plant)}` : ""}${s.address ? ` · ${esc(s.address)}` : ""}${s.email || s.phone || b?.incharge ? "<br>" : ""}${b?.incharge ? `Plant in charge: ${esc(b.incharge)}${s.email || s.phone ? " · " : ""}` : ""}${esc(s.email)}${s.phone ? `${s.email ? " · " : ""}${esc(s.phone)}` : ""}${s.gstin ? ` · GSTIN ${esc(s.gstin)}` : ""}${m.refNo || m.revision ? `<br>${m.refNo ? `Report ref: <b>${esc(m.refNo)}</b>` : ""}${m.refNo && m.revision ? " · " : ""}${m.revision ? esc(m.revision) : ""}` : ""}</td></tr>
 </table></td></tr></table></body></html>`;
 }
 

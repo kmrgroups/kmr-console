@@ -168,7 +168,7 @@
         ${plants.length > 1 ? `<label style="display:block;padding:6px 10px"><small style="display:block;opacity:.7;margin-bottom:3px">Plant</small><select id="plantSel" style="width:100%;padding:6px;border-radius:8px">${plants.map((x) => `<option value="${esc(x.slug)}"${x.slug === SLUG ? " selected" : ""}>${esc(x.is_main ? "Main · " + x.name : x.plant_code + " · " + x.name.split(" – ").pop())}</option>`).join("")}${plants[0].is_all ? `<option value="__all"${view === "plants" ? " selected" : ""}>★ All plants · dashboard</option>` : ""}</select></label>` : ""}
         <h4>Your apps</h4>${mine.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}${r.ok ? "" : '<span class="lock">Paused</span>'}</a>`).join("") || `<small style="padding:0 10px;opacity:.6">No apps yet</small>`}
         ${ops || isAdmin ? `<h4>Masters</h4>` : ""}${ops ? `<a href="${viewHref("ops")}" data-ops="1"><i style="background:#0EA5E9"></i>Operations Master</a>` : ""}${isAdmin ? `<a href="${viewHref("data")}" data-datam="1"><i style="background:#0EA5E9"></i>Data Master</a><a href="${viewHref("grand")}" data-grand="1"><i style="background:#B45309"></i>Grand Master</a>` : ""}
-        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
+        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
         <h4>More KMR apps</h4>${others.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}<span class="lock">Try</span></a>`).join("")}
         ${SOON.map(([k, n]) => `<button data-soon="${k}" data-name="${esc(n)}"><i style="background:#64748b"></i>${esc(n)}<span class="lock">Soon</span></button>`).join("")}
         <button id="pw">Change password</button>
@@ -193,7 +193,7 @@
       mn.querySelectorAll("[data-name]").forEach((t) => { if (t.closest(".tb")) return; t.style.display = !q || (t.dataset.name + " " + t.textContent.toLowerCase()).includes(q) ? "" : "none"; });
       mn.querySelectorAll(".grp:not(.pane)").forEach((g) => { g.style.display = [...g.querySelectorAll("[data-name]")].some((t) => t.style.display !== "none") ? "" : "none"; }); }; }
     onLink("[data-open]", (b) => open(b.dataset.open));
-    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : usersView()));
+    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : usersView()));
     onLink("[data-datam]", () => dataView());
     onLink("[data-grand]", () => grandView());
     onLink("[data-ops]", () => opsView());
@@ -316,6 +316,68 @@
     };
   }
 
+
+  /* Daily management mail: one mail a day with every app's dashboard and KPIs, what is OK and what to do. Sent at about 8:30 am India time. */
+  const DG_SECTIONS = [["production", "mmd", "Production efficiency (month to date, last entry, machine-wise, day-wise)"], ["delivery", "sales", "Delivery to customers (despatch against plan)"], ["dcg", "dcg", "Delivery challans overdue, purchase orders and GRN"], ["calibration", "calib", "Calibration of gauges"],
+    ["maintenance", "mnt", "Maintenance (breakdowns, preventive maintenance)"], ["hrm", "hrms", "People and attendance"], ["actions", "tsk", "Actions (ActionTrack)"], ["meetings", "mom", "Meeting actions"], ["audit", "aud", "Internal audit findings"], ["invoicing", "inv", "Invoicing"]];
+  async function digestView(note) {
+    setView("digest");
+    const m = mainEl(), T0 = "Daily management mail", S0 = "One mail every morning with the dashboards and KPIs of all your apps: what is OK, where management has to concentrate and what each team has to do. It also carries the Calibration Hub due list, so the separate calibration mail is no longer sent.";
+    m.innerHTML = adminHead(T0, S0) + `<p class="msg">Loading…</p>`; bindBack();
+    const { data: g, error } = await sb.rpc("kmr_digest_get", { p_slug: SLUG });
+    if (error) { m.querySelector(".msg").textContent = /does not exist|Could not find/i.test(error.message) ? "This needs the latest KMR database update (0128). Please contact KMR support." : error.message; return; }
+    const tg = g.targets || {}, dv = { eff_target: 85, attendance_target: 92, despatch_target: 95, cal_days: 14 }, tv = (k) => (tg[k] !== undefined && tg[k] !== null ? tg[k] : dv[k]);
+    const sec = (key, code, label) => { const has = (g.apps || []).includes(code), on = g.sections[key] !== false; return `<label style="display:flex;gap:8px;align-items:flex-start;margin:5px 0;${has ? "" : "opacity:.5"}"><input type="checkbox" data-sec="${key}" ${has && on ? "checked" : ""} ${has ? "" : "disabled"} style="margin-top:3px"><span>${esc(label)}${has ? "" : " <small>(app not in your plan)</small>"}</span></label>`; };
+    const num = (id, label, val, hint) => `<label class="f">${label}<div class="in"><input type="number" id="${id}" min="0" max="365" step="1" value="${esc(val)}"></div><small style="color:var(--muted)">${hint}</small></label>`;
+    m.innerHTML = adminHead(T0, S0) + `
+      ${note ? `<div class="card" style="border-color:#1E7B4A;background:#E7F8EF;margin-bottom:14px;max-width:820px">${note}</div>` : ""}
+      <div class="card" style="max-width:820px">
+        <label style="display:flex;gap:10px;align-items:center;margin:0 0 14px"><b>Daily management mail</b>
+          <select id="dgOn" style="padding:6px 10px"><option value="true" ${g.enabled ? "selected" : ""}>On</option><option value="false" ${g.enabled ? "" : "selected"}>Off</option></select>
+          <select id="dgDays" style="padding:6px 10px"><option value="daily" ${g.send_days === "daily" ? "selected" : ""}>Every day</option><option value="mon_sat" ${g.send_days === "mon_sat" ? "selected" : ""}>Monday to Saturday</option></select></label>
+        <label class="f" style="display:block">Send to — e-mail addresses, separated by comma
+          <div class="in"><textarea id="dgTo" rows="2" style="width:100%" placeholder="name@company.com, other@company.com">${esc(g.recipients)}</textarea></div></label>
+        <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="checkbox" id="dgAdm" ${g.include_users ? "checked" : ""}> Also send to every company administrator (${(g.admins || []).length}${(g.admins || []).length ? ": " + esc(g.admins.join(", ")) : ""})</label>
+        <p style="margin:6px 0"><button class="btn ghost" id="dgMe" style="height:34px">＋ Add my e-mail (${esc(g.me)})</button></p>
+        <h3 style="margin:18px 0 4px">What the mail shows</h3>
+        <div>${DG_SECTIONS.map((x) => sec(x[0], x[1], x[2])).join("")}</div>
+        <h3 style="margin:18px 0 4px">Targets <small style="font-weight:400;color:var(--muted)">(used for the red / amber / green status)</small></h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+          ${num("dgEff", "Production efficiency target (%)", tv("eff_target"), "Green at or above; amber within 15 points; red below that.")}
+          ${num("dgAtt", "Attendance target (%)", tv("attendance_target"), "Green at or above; amber within 5 points.")}
+          ${num("dgDesp", "Despatch pace target (%)", tv("despatch_target"), "How much of the month's expected despatch must be done so far.")}
+          ${num("dgCal", "Calibration: list gauges due within (days)", tv("cal_days"), "Gauges coming due inside this window are listed.")}
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px"><button class="btn" id="dgSave">Save</button><span class="msg" id="dgMsg"></span></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+        <label class="f" style="display:block">Send a test mail with today's figures to
+          <div class="in"><input type="email" id="dgTest" value="${esc(g.me)}" style="min-width:280px"></div></label>
+        <p style="margin:8px 0"><button class="btn ghost" id="dgTestBtn">✉ Send test mail</button> <span class="msg" id="dgTMsg"></span></p>
+        <p style="font-size:13px;color:var(--muted);margin:6px 0 0">The test mail does not count as sent, so the morning mail still goes out. ${g.last_sent_on ? "Last morning mail: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + "." : ""} Each report carries a unique reference number and the report format revision in its footer.</p>
+      </div>`;
+    bindBack();
+    $("#dgMe").onclick = () => { const t = $("#dgTo"), cur = t.value.split(/[,;\s]+/).filter(Boolean); if (!cur.includes(g.me)) { cur.push(g.me); t.value = cur.join(", "); } };
+    $("#dgSave").onclick = async () => {
+      const msg = $("#dgMsg"); msg.className = "msg"; msg.textContent = "Saving…";
+      const sections = {}; document.querySelectorAll("[data-sec]").forEach((c) => { if (!c.disabled && !c.checked) sections[c.dataset.sec] = false; });
+      const targets = { eff_target: +$("#dgEff").value, attendance_target: +$("#dgAtt").value, despatch_target: +$("#dgDesp").value, cal_days: +$("#dgCal").value };
+      const r = await sb.rpc("kmr_digest_save", { p_slug: SLUG, p: { enabled: $("#dgOn").value, send_days: $("#dgDays").value, recipients: $("#dgTo").value, include_users: $("#dgAdm").checked ? "true" : "false", sections, targets } });
+      if (r.error) { msg.textContent = r.error.message; return; }
+      msg.className = "msg ok"; msg.textContent = "Saved.";
+    };
+    $("#dgTestBtn").onclick = async (e) => {
+      const b = e.currentTarget, msg = $("#dgTMsg"); b.disabled = true; msg.className = "msg"; msg.textContent = "Sending…";
+      try {
+        const ss = await sb.auth.getSession(), tk = ss && ss.data && ss.data.session && ss.data.session.access_token;
+        const r = await fetch("/it/console/api/digest/test", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + (tk || "") }, body: JSON.stringify({ slug: SLUG, to: $("#dgTest").value }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) throw new Error(j.error || "The test mail could not be sent.");
+        msg.className = "msg ok"; msg.textContent = `Test mail sent to ${j.to}: ${j.act} area${j.act === 1 ? "" : "s"} need action, ${j.watch} to watch.`;
+      } catch (x) { msg.textContent = x.message; }
+      b.disabled = false;
+    };
+  }
+
   async function usersView(note) {
     setView("users");
     const m = mainEl(); m.innerHTML = adminHead("Users & access", "One list for all your KMR apps. Choose what each person may do in each app.") + `<p class="msg">Loading…</p>`; bindBack();
@@ -418,9 +480,11 @@
     else if ((HASH === "users" || HASH === "admin") && isAdmin) usersView();
     else if (HASH === "company" && isAdmin) companyView();
     else if (HASH === "invoices" && isAdmin) invoicesView();
+    else if (HASH === "digest" && isAdmin) digestView();
     else if (HASH === "plants" && plants.length > 1 && plants[0].is_all) plantsView();
     else if (HASH === "grand" && isAdmin) grandView();
     else if (HASH === "data" && isAdmin) dataView();
+    else if (HASH === "yearbackup" && isAdmin && window.KMR_YB) { setView("yearbackup"); window.KMR_YB.open(ctxOf(), { back: "grand" }); }
     else if (/^ops(\/|$)/.test(HASH) && ops) opsView(HASH.split("/")[1] || "");
   }
 
