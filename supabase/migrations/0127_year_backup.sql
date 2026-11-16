@@ -86,7 +86,7 @@ revoke all on function console.yb_sorted(text) from public, anon, authenticated;
 
 -- the SQL expression that gives the DATE a record belongs to (alias a); null = the table has no date (kept under Masters)
 create or replace function console.yb_date_expr(p_sch text, p_tbl text, p_alias text default 'x', p_depth int default 0) returns text language plpgsql stable security definer set search_path = console, public as $$
-declare rel regclass := format('%I.%I', p_sch, p_tbl)::regclass; col text; ty oid; k record; sub text;
+declare rel regclass := format('%I.%I', p_sch, p_tbl)::regclass; col text; ty oid; k record; sub text; own text; par text;
 begin
   select a.attname, a.atttypid into col, ty
     from unnest(array['dc_date', 'grn_date', 'po_date', 'inv_date', 'work_date', 'prod_date', 'entry_at', 'cal_date', 'ev_date', 'quote_date', 'meeting_date', 'event_date', 'planned_on', 'received_on',
@@ -95,9 +95,10 @@ begin
     join pg_attribute a on a.attrelid = rel and a.attname = n.nm and not a.attisdropped and a.atttypid in ('date'::regtype, 'timestamptz'::regtype, 'timestamp'::regtype)
    order by n.o limit 1;
   if col is not null then
-    return case ty when 'date'::regtype then format('%s.%I', p_alias, col) else format('(%s.%I at time zone ''Asia/Kolkata'')::date', p_alias, col) end;
+    own := case ty when 'date'::regtype then format('%s.%I', p_alias, col) else format('(%s.%I at time zone ''Asia/Kolkata'')::date', p_alias, col) end;
   end if;
-  if p_depth < 3 then   -- no date of its own: follow the first record it is linked to (e.g. a challan line follows its challan)
+  -- the first record it is linked to (e.g. a challan line → its challan); used when it has no date of its own, or first for "…_lines" tables
+  if p_depth < 3 and (own is null or p_tbl like '%\_lines') then
     for k in select a.attname as child_col, pc.relname as parent_tbl, pn.nspname as parent_sch, pa.attname as parent_col
                from pg_constraint c
                join pg_class pc on pc.oid = c.confrelid join pg_namespace pn on pn.oid = pc.relnamespace
@@ -109,11 +110,13 @@ begin
               order by a.attnum loop
       sub := console.yb_date_expr(k.parent_sch, k.parent_tbl, 'p' || p_depth, p_depth + 1);
       if sub is not null then
-        return format('(select %s from %I.%I p%s where p%s.%I = %s.%I)', sub, k.parent_sch, k.parent_tbl, p_depth, p_depth, k.parent_col, p_alias, k.child_col);
+        par := format('(select %s from %I.%I p%s where p%s.%I = %s.%I)', sub, k.parent_sch, k.parent_tbl, p_depth, p_depth, k.parent_col, p_alias, k.child_col);
+        exit;
       end if;
     end loop;
   end if;
-  return null;
+  if par is not null and own is not null then return format('coalesce(%s, %s)', par, own); end if;
+  return coalesce(par, own);
 end $$;
 revoke all on function console.yb_date_expr(text, text, text, int) from public, anon, authenticated;
 
