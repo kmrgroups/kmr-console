@@ -35,6 +35,12 @@ function CellJ($v) {
   if ($v -is [IFormattable]) { return (J ($v.ToString($null, $inv))) }
   J ("$v")
 }
+function CellT($v) {   # the full date and time of an ERP date column (empty when the ERP stored no time)
+  if ($v -is [DateTime] -and $v.Year -ge 1990 -and $v.TimeOfDay.TotalSeconds -gt 0) { return '"' + $v.ToString('yyyy-MM-dd HH:mm:ss', $inv) + '"' }
+  '""'
+}
+# extra ERP columns that hold a creation / entry time are sent too, whatever the table (names like time, created, entered, entry, stamp, modified)
+function IsTimeCol($n) { ($n -match '(?i)(time|created|entered|stamp|modified|sysdate|logdt|entry(date|dt|time|on))') -and ($n -notmatch '(?i)(cycle|idle|lead|hours|mch|machine|takt|delivery|setup|downtime|runtime)') }
 function FindDriver {
   foreach ($root in 'HKLM:\SOFTWARE\ODBC\ODBCINST.INI\ODBC Drivers', 'HKLM:\SOFTWARE\Wow6432Node\ODBC\ODBCINST.INI\ODBC Drivers') {
     if (Test-Path $root) { $p = Get-ItemProperty $root; foreach ($n in ($p.PSObject.Properties | Where-Object { $_.Name -match 'MySQL' -and $_.Name -notmatch '^PS' })) { return $n.Name } }
@@ -95,10 +101,10 @@ function ReadTable($c, $sql, $name, $key1, $key2) {
   $cmd = $c.CreateCommand(); $cmd.CommandText = $sql; $cmd.CommandTimeout = 600
   $rd = $cmd.ExecuteReader()
   $want = @{}; foreach ($w in $W[$name].Split(',')) { $want[$w.ToLower()] = $true }
-  $idx = @(); $cols = @(); $i1 = -1; $i2 = -1
+  $idx = @(); $cols = @(); $tsIdx = @{}; $i1 = -1; $i2 = -1
   for ($i = 0; $i -lt $rd.FieldCount; $i++) {
     $n = $rd.GetName($i)
-    if ($want.ContainsKey($n.ToLower())) { $idx += $i; $cols += $n }
+    if ($want.ContainsKey($n.ToLower()) -or (IsTimeCol $n)) { $idx += $i; $cols += $n; if ($rd.GetFieldType($i) -eq [DateTime]) { $tsIdx[$i] = $true; $cols += ($n + '__ts') } }
     if ($key1 -and $n.ToLower() -eq $key1.ToLower()) { $i1 = $i }
     if ($key2 -and $n.ToLower() -eq $key2.ToLower()) { $i2 = $i }
   }
@@ -106,7 +112,7 @@ function ReadTable($c, $sql, $name, $key1, $key2) {
   while ($rd.Read()) {
     $sb = New-Object System.Text.StringBuilder; [void]$sb.Append('[')
     $first = $true
-    foreach ($i in $idx) { $v = $null; try { $v = $rd.GetValue($i) } catch { $v = $null }; if (-not $first) { [void]$sb.Append(',') }; $first = $false; [void]$sb.Append((CellJ $v)) }
+    foreach ($i in $idx) { $v = $null; try { $v = $rd.GetValue($i) } catch { $v = $null }; if (-not $first) { [void]$sb.Append(',') }; $first = $false; [void]$sb.Append((CellJ $v)); if ($tsIdx.ContainsKey($i)) { [void]$sb.Append(','); [void]$sb.Append((CellT $v)) } }
     [void]$sb.Append(']'); [void]$rows.Add($sb.ToString())
     if ($i1 -ge 0) { $v = $null; try { $v = $rd.GetValue($i1) } catch { }; [void]$k1.Add("$v".Trim()) }
     if ($i2 -ge 0) { $v = $null; try { $v = $rd.GetValue($i2) } catch { }; [void]$k2.Add("$v".Trim().ToUpper()) }
