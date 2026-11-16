@@ -3,6 +3,7 @@
 --   • a draft DC made in the last 30 days (the challan is being prepared, so the process has started)
 -- Cancelled and closed challans do not count (a closed one means the gauge came back and its due date was already updated on the GRN).
 -- This also covers gauges whose status is still 'In use' (ERP-imported challans, status changed by hand). Needs 0115 + 0113. Safe to re-run.
+create index if not exists dcg_dcl_inst on console.dcg_dc_lines (instrument_id) where instrument_id is not null;
 create or replace function public.kmr_cal_due_scan() returns jsonb language plpgsql security definer set search_path = console, public as $$
 declare d0 date := (now() at time zone 'Asia/Kolkata')::date; res jsonb := '[]'; s record; rws jsonb; rcp text[];
 begin
