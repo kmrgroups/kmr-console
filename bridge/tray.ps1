@@ -1,5 +1,5 @@
 # KMR universal ERP bridge - status icon next to the clock. Runs the bridge every 5 minutes, starts with Windows, no window.
-# Green = fine, amber = working now, red = a problem. Right-click: Show status / Run now / Read everything again / Open log / Exit.
+# Green = fine, amber = working now, red = a problem. Right-click: Show status / Run now / Read everything again / Open log / Open file location / Restart / Exit.
 Add-Type -AssemblyName System.Windows.Forms, System.Drawing
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $created = $false
@@ -23,7 +23,7 @@ $tray.Icon = $iAmber; $tray.Visible = $true; $tray.Text = 'KMR ERP bridge: start
 $menu = New-Object System.Windows.Forms.ContextMenuStrip
 $mStatus = $menu.Items.Add('KMR ERP bridge'); $mStatus.Enabled = $false
 [void]$menu.Items.Add('-')
-$mShow = $menu.Items.Add('Show status'); $mNow = $menu.Items.Add('Run now'); $mFull = $menu.Items.Add('Read everything again'); $mLog = $menu.Items.Add('Open log'); $mExit = $menu.Items.Add('Exit (stops the bridge)')
+$mShow = $menu.Items.Add('Show status'); $mNow = $menu.Items.Add('Run now (all plants)'); $mFull = $menu.Items.Add('Read everything again (all plants)'); $mLog = $menu.Items.Add('Open log'); $mOpen = $menu.Items.Add('Open file location'); $mRestart = $menu.Items.Add('Restart the bridge (all plants)'); $mExit = $menu.Items.Add('Exit (stops the bridge)')
 $tray.ContextMenuStrip = $menu
 
 $script:proc = $null; $script:state = ''
@@ -54,6 +54,15 @@ $first = New-Object System.Windows.Forms.Timer; $first.Interval = 4000; $first.A
 $mNow.Add_Click({ StartRun $false }); $mFull.Add_Click({ StartRun $true }); $mLog.Add_Click({ if (Test-Path $logPath) { Start-Process notepad.exe $logPath } })
 $mShow.Add_Click({ $tray.ShowBalloonTip(15000, 'KMR ERP bridge', (StatusText), 'Info') })
 $tray.Add_DoubleClick({ $tray.ShowBalloonTip(15000, 'KMR ERP bridge', (StatusText), 'Info') })
+$mOpen.Add_Click({ $f = Join-Path $dir 'bridge.ps1'; if (Test-Path $f) { Start-Process explorer.exe ('/select,"' + $f + '"') } else { Start-Process explorer.exe ('"' + $dir + '"') } })
+# Restart: stop a run that is in progress, start this status icon again (it reads every plant in units.txt straight away) and close this copy
+$mRestart.Add_Click({
+  try { if ($script:proc -and -not $script:proc.HasExited) { Stop-Process -Id $script:proc.Id -Force -ErrorAction SilentlyContinue } } catch { }
+  $tray.Visible = $false; $tray.Dispose()
+  try { $mutex.ReleaseMutex(); $mutex.Dispose() } catch { }
+  Start-Process wscript.exe ('"' + (Join-Path $dir 'tray-hidden.vbs') + '"')
+  [System.Windows.Forms.Application]::Exit()
+})
 $mExit.Add_Click({ $tray.Visible = $false; $tray.Dispose(); [System.Windows.Forms.Application]::Exit() })
 $poll.Start(); $every.Start(); $first.Start()
 [System.Windows.Forms.Application]::Run()
