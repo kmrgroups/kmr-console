@@ -13,12 +13,12 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /** The universal ERP bridge posts raw ERP tables here (gzip JSON). Header x-sync-key = the plant's sync key (Sales Flow › Daily despatch › New key).
- *  Body: { kind: "invoices" | "production" | "purchase" | "opsmaster" | "calibration", unit: "Unit-2", dryRun?: boolean, tables: { name: { c: [...], r: [[...]] } } }.
+ *  Body: { kind: "invoices" | "production" | "purchase" | "opsmaster" | "calibration" | "finance" (Tally / ERP money figures), unit: "Unit-2", dryRun?: boolean, tables: { name: { c: [...], r: [[...]] } } }.
  *  Every import function skips what is already loaded, so sending the same data again never duplicates it. See migration 0123. */
 export async function POST(req: Request) {
   const key = req.headers.get("x-sync-key") || "";
   if (!key) return NextResponse.json({ ok: false, error: "sync key missing" }, { status: 401 });
-  let body: { kind?: string; unit?: string; dryRun?: boolean; tables?: Tables; stage?: { id: string; n: number; of: number } };
+  let body: { finance?: { source?: string; from_date?: string; open_items?: unknown[]; entries?: unknown[] }; kind?: string; unit?: string; dryRun?: boolean; tables?: Tables; stage?: { id: string; n: number; of: number } };
   try {
     let buf = Buffer.from(await req.arrayBuffer());
     if (req.headers.get("x-body-gzip") === "1") buf = gunzipSync(buf);
@@ -90,6 +90,14 @@ export async function POST(req: Request) {
       const g = buildCalibration(t, unit); const a: Record<string, number> = {};
       for (const c of chunk(g, 100)) add(a, await run("kmr_cal_import_erp", c, "calibration", c.length));
       Object.assign(out, { gauges: g.length, result: a });
+    } else if (kind === "finance") {
+      // Tally / ERP money figures, already in the plain shape of console.fin_open_items / fin_entries (migration 0129). One request replaces that source's bills.
+      const f = body.finance || {}; const src = String(f.source || "");
+      if (src !== "tally" && src !== "erp") return NextResponse.json({ ok: false, error: "finance.source must be tally or erp" }, { status: 400 });
+      const p: Record<string, unknown> = { source: src }; if (f.from_date) p.from_date = f.from_date;
+      if (Array.isArray(f.open_items)) p.open_items = f.open_items; if (Array.isArray(f.entries)) p.entries = f.entries;
+      const n = (Array.isArray(f.open_items) ? f.open_items.length : 0) + (Array.isArray(f.entries) ? f.entries.length : 0);
+      Object.assign(out, { rows: n, result: await run("kmr_fin_bridge", p, "finance", n) });
     } else return NextResponse.json({ ok: false, error: "unknown kind" }, { status: 400 });
     return NextResponse.json(out);
   } catch (e) {

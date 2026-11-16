@@ -168,7 +168,7 @@
         ${plants.length > 1 ? `<label style="display:block;padding:6px 10px"><small style="display:block;opacity:.7;margin-bottom:3px">Plant</small><select id="plantSel" style="width:100%;padding:6px;border-radius:8px">${plants.map((x) => `<option value="${esc(x.slug)}"${x.slug === SLUG ? " selected" : ""}>${esc(x.is_main ? "Main · " + x.name : x.plant_code + " · " + x.name.split(" – ").pop())}</option>`).join("")}${plants[0].is_all ? `<option value="__all"${view === "plants" ? " selected" : ""}>★ All plants · dashboard</option>` : ""}</select></label>` : ""}
         <h4>Your apps</h4>${mine.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}${r.ok ? "" : '<span class="lock">Paused</span>'}</a>`).join("") || `<small style="padding:0 10px;opacity:.6">No apps yet</small>`}
         ${ops || isAdmin ? `<h4>Masters</h4>` : ""}${ops ? `<a href="${viewHref("ops")}" data-ops="1"><i style="background:#0EA5E9"></i>Operations Master</a>` : ""}${isAdmin ? `<a href="${viewHref("data")}" data-datam="1"><i style="background:#0EA5E9"></i>Data Master</a><a href="${viewHref("grand")}" data-grand="1"><i style="background:#B45309"></i>Grand Master</a>` : ""}
-        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
+        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("finance")}" data-admin="finance"><i style="background:#F3C55A"></i>Finance mail (top management)</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
         <h4>More KMR apps</h4>${others.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}<span class="lock">Try</span></a>`).join("")}
         ${SOON.map(([k, n]) => `<button data-soon="${k}" data-name="${esc(n)}"><i style="background:#64748b"></i>${esc(n)}<span class="lock">Soon</span></button>`).join("")}
         <button id="pw">Change password</button>
@@ -193,7 +193,7 @@
       mn.querySelectorAll("[data-name]").forEach((t) => { if (t.closest(".tb")) return; t.style.display = !q || (t.dataset.name + " " + t.textContent.toLowerCase()).includes(q) ? "" : "none"; });
       mn.querySelectorAll(".grp:not(.pane)").forEach((g) => { g.style.display = [...g.querySelectorAll("[data-name]")].some((t) => t.style.display !== "none") ? "" : "none"; }); }; }
     onLink("[data-open]", (b) => open(b.dataset.open));
-    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : usersView()));
+    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : b.dataset.admin === "finance" ? financeView() : usersView()));
     onLink("[data-datam]", () => dataView());
     onLink("[data-grand]", () => grandView());
     onLink("[data-ops]", () => opsView());
@@ -378,6 +378,124 @@
     };
   }
 
+  // ---- Finance mail for top management (migration 0129): settings, and the money data typed or pasted here when the figures are not loaded by the ERP bridge ----
+  const FN_SECTIONS = [["sales", "Sales value (from Sales Invoicing)"], ["receivables", "Receivables: money to collect, overdue, ageing, days sales outstanding"], ["payables", "Payables: money to pay, overdue, due in 7 days"], ["expenses", "Expenses against budget, and cost as % of sales"], ["cash", "Cash movement of the month"]];
+  const fnDate = (v) => { v = String(v || "").trim(); let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`; m = v.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/); if (m) return `${m[3].length === 2 ? "20" + m[3] : m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`; return ""; };
+  const fnRows = (txt) => String(txt || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => l.split(l.includes("\t") ? "\t" : ",").map((c) => c.trim().replace(/^"|"$/g, "")));
+  const fnIsHead = (r) => r.length && !/\d/.test(r[r.length - 1] || "x");
+  async function financeView(note) {
+    setView("finance");
+    const m = mainEl(), T0 = "Finance mail for top management", S0 = "A separate daily mail only for the top management: sales, money to collect, money to pay, expenses against budget and as a percentage of sales, and cash movement, with what to do. It is not the plant mail.";
+    m.innerHTML = adminHead(T0, S0) + `<p class="msg">Loading…</p>`; bindBack();
+    const { data: g, error } = await sb.rpc("kmr_fin_get", { p_slug: SLUG });
+    if (error) { m.querySelector(".msg").textContent = /does not exist|Could not find/i.test(error.message) ? "This needs the latest KMR database update (0129). Please contact KMR support." : error.message; return; }
+    const tg = g.targets || {}, tv = (k, d) => (tg[k] !== undefined && tg[k] !== null ? tg[k] : d), src = g.source || "app", c = g.counts || {};
+    const sec = ([key, label]) => `<label style="display:flex;gap:8px;align-items:flex-start;margin:5px 0"><input type="checkbox" data-fsec="${key}" ${g.sections[key] !== false ? "checked" : ""} style="margin-top:3px"><span>${esc(label)}</span></label>`;
+    const num = (id, label, val, hint, ph) => `<label class="f">${label}<div class="in"><input type="number" id="${id}" min="0" max="365" step="1" value="${esc(val)}" placeholder="${ph || ""}"></div><small style="color:var(--muted)">${hint}</small></label>`;
+    const ta = (id, ph, rows) => `<textarea id="${id}" rows="${rows || 5}" style="width:100%;font-family:monospace;font-size:12px" placeholder="${esc(ph)}"></textarea>`;
+    const own = src === "app";
+    m.innerHTML = adminHead(T0, S0) + `
+      ${note ? `<div class="card" style="border-color:#1E7B4A;background:#E7F8EF;margin-bottom:14px;max-width:860px">${note}</div>` : ""}
+      <div class="card" style="max-width:860px">
+        <label style="display:flex;gap:10px;align-items:center;margin:0 0 14px;flex-wrap:wrap"><b>Finance mail</b>
+          <select id="fnOn" style="padding:6px 10px"><option value="true" ${g.enabled ? "selected" : ""}>On</option><option value="false" ${g.enabled ? "" : "selected"}>Off</option></select>
+          <select id="fnDays" style="padding:6px 10px"><option value="daily" ${g.send_days === "daily" ? "selected" : ""}>Every day</option><option value="mon_sat" ${g.send_days === "mon_sat" ? "selected" : ""}>Monday to Saturday</option></select></label>
+        <label class="f" style="display:block">Send to — top management e-mail addresses only, separated by comma
+          <div class="in"><textarea id="fnTo" rows="2" style="width:100%" placeholder="md@company.com, finance-head@company.com">${esc(g.recipients)}</textarea></div></label>
+        <p style="margin:6px 0"><button class="btn ghost" id="fnMe" style="height:34px">＋ Add my e-mail (${esc(g.me)})</button></p>
+        <label class="f" style="display:block;margin-top:10px">Where do receivables, payables, expenses and receipts come from?
+          <div class="in"><select id="fnSrc" style="padding:6px 10px"><option value="app" ${src === "app" ? "selected" : ""}>Typed or pasted here (below)</option><option value="tally" ${src === "tally" ? "selected" : ""}>Tally (loaded by the KMR ERP Bridge)</option><option value="erp" ${src === "erp" ? "selected" : ""}>Esbee ERP (loaded by the KMR ERP Bridge)</option></select></div>
+          <small style="color:var(--muted)">Sales value always comes from Sales Invoicing${g.invoicing ? "" : " (the Invoicing app is not in your plan, so the sales section stays empty)"}. Raw material cost comes from Raw Material Planning${g.rmp ? "" : " (not in your plan)"}. Now loaded: ${nfmt(c.recv)} receivable bills, ${nfmt(c.pay)} payable bills, ${nfmt(c.entries)} receipts / payments / expenses, ${nfmt(c.budget)} budget lines${c.loaded_on ? "; bills loaded on " + esc(String(c.loaded_on).split("-").reverse().join("-")) : ""}.</small></label>
+        <h3 style="margin:18px 0 4px">What the mail shows</h3>
+        <div>${FN_SECTIONS.map(sec).join("")}</div>
+        <h3 style="margin:18px 0 4px">Targets <small style="font-weight:400;color:var(--muted)">(used for the red / amber / green status)</small></h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px">
+          ${num("fnDso", "Days sales outstanding target (days)", tv("dso_target", 60), "Green at or below; amber up to 15 days more.")}
+          ${num("fnOd", "Overdue share of receivables (%)", tv("overdue_pct_target", 10), "Green at or below; amber up to 15 points more.")}
+          ${num("fnEx", "Expenses as % of sales (optional)", tv("expense_pct_target", ""), "Leave empty to show without a colour.", "none")}
+          ${num("fnMa", "Raw material as % of sales (optional)", tv("material_pct_target", ""), "Leave empty to show without a colour.", "none")}
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px"><button class="btn" id="fnSave">Save</button><span class="msg" id="fnMsg"></span></div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+        <label class="f" style="display:block">Send a test mail with today's figures to
+          <div class="in"><input type="email" id="fnTest" value="${esc(g.me)}" style="min-width:280px"></div></label>
+        <p style="margin:8px 0"><button class="btn ghost" id="fnTestBtn">✉ Send test mail</button> <span class="msg" id="fnTMsg"></span></p>
+        <p style="font-size:13px;color:var(--muted);margin:6px 0 0">The test mail does not count as sent. ${g.last_sent_on ? "Last finance mail: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + ". " : ""}It carries a unique reference number and the report format revision in its footer, and is marked confidential.</p>
+      </div>
+      ${own ? `
+      <div class="card" style="max-width:860px;margin-top:14px"><h3 style="margin:0 0 4px">1. Outstanding bills (receivable and payable)</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 8px">Paste from your accounts sheet, one bill per line: <b>party, bill no, bill date, due date, outstanding amount</b>. The old list of that type is replaced. Dates as 31-12-2026 or 2026-12-31.</p>
+        <select id="fnObK" style="padding:6px 10px"><option value="recv">Receivable — customers owe us</option><option value="pay">Payable — we owe suppliers</option></select>
+        ${ta("fnOb", "Bosch India, INV/26-27/0012, 05-11-2026, 05-12-2026, 590000", 5)}
+        <p style="margin:8px 0"><button class="btn" id="fnObBtn">Save this list</button> <span class="msg" id="fnObMsg"></span></p></div>
+      <div class="card" style="max-width:860px;margin-top:14px"><h3 style="margin:0 0 4px">2. Receipts, payments and expenses</h3>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;align-items:end;margin:6px 0">
+          <label class="f">Type<div class="in"><select id="fnEk"><option value="expense">Expense</option><option value="receipt">Receipt</option><option value="payment">Payment</option></select></div></label>
+          <label class="f">Date<div class="in"><input type="date" id="fnEd" value="${new Date().toISOString().slice(0, 10)}"></div></label>
+          <label class="f">Party<div class="in"><input id="fnEp" placeholder="optional"></div></label>
+          <label class="f">Expense head<div class="in"><input id="fnEh" placeholder="Power, Salaries…"></div></label>
+          <label class="f">Amount (₹)<div class="in"><input type="number" id="fnEa" min="0" step="0.01"></div></label>
+          <button class="btn" id="fnEBtn">Add</button></div>
+        <details style="margin:6px 0"><summary style="cursor:pointer;font-size:13px">Or paste many lines: type, date, party, head, amount</summary>
+          ${ta("fnEp2", "expense, 05-11-2026, , Power, 90000\nreceipt, 06-11-2026, Bosch India, , 250000", 4)}<p style="margin:6px 0"><button class="btn ghost" id="fnEBtn2">Save pasted lines</button></p></details>
+        <span class="msg" id="fnEMsg"></span><div id="fnRecent"></div></div>
+      <div class="card" style="max-width:860px;margin:14px 0"><h3 style="margin:0 0 4px">3. Monthly budget per expense head</h3>
+        <p style="font-size:13px;color:var(--muted);margin:0 0 8px">One line per head: <b>head, amount</b> (every month), or <b>head, amount, 2026-12</b> for one month only. A head you enter again is replaced.</p>
+        ${ta("fnBg", "Salaries, 600000\nPower, 70000\nRent, 40000", 4)}
+        <p style="margin:8px 0"><button class="btn" id="fnBgBtn">Save budget</button> <span class="msg" id="fnBgMsg"></span></p><div id="fnBgList"></div></div>`
+      : `<div class="card" style="max-width:860px;margin:14px 0"><b>${src === "tally" ? "Tally" : "Esbee ERP"} is the source.</b> Receivables, payables, receipts, payments and expenses are loaded by the KMR ERP Bridge on the plant computer. Monthly budgets are still entered here.
+        <div style="margin-top:10px"><h3 style="margin:0 0 4px">Monthly budget per expense head</h3>${ta("fnBg", "Salaries, 600000\nPower, 70000", 4)}<p style="margin:8px 0"><button class="btn" id="fnBgBtn">Save budget</button> <span class="msg" id="fnBgMsg"></span></p><div id="fnBgList"></div></div></div>`}`;
+    bindBack();
+    const rupee = (v) => "₹" + Number(v).toLocaleString("en-IN");
+    const refresh = async () => {
+      const r = await sb.rpc("kmr_fin_recent", { p_slug: SLUG }); if (r.error || !r.data) return;
+      const E = $("#fnRecent");
+      if (E) E.innerHTML = (r.data.entries || []).length ? `<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px"><thead><tr style="text-align:left;background:#F5F7FB"><th style="padding:5px">Date</th><th>Type</th><th>Party / head</th><th style="text-align:right">Amount</th><th></th></tr></thead><tbody>${r.data.entries.map((e) => `<tr><td style="padding:4px 5px">${esc(String(e.entry_date).split("-").reverse().join("-"))}</td><td>${esc(e.kind)}</td><td>${esc([e.party, e.head].filter(Boolean).join(" · "))}</td><td style="text-align:right">${rupee(e.amount)}</td><td><button class="btn ghost" data-fdel="entry:${e.id}" style="height:26px;padding:0 8px">✕</button></td></tr>`).join("")}</tbody></table><small style="color:var(--muted)">Latest 25 lines typed here.</small>` : "";
+      const B = $("#fnBgList");
+      if (B) B.innerHTML = (r.data.budget || []).length ? `<table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>${r.data.budget.map((b) => `<tr><td style="padding:4px 5px">${esc(b.head)}</td><td>${b.month === "*" ? "every month" : esc(b.month)}</td><td style="text-align:right">${rupee(b.amount)}</td><td><button class="btn ghost" data-fdel="budget:${esc(b.head)}:${esc(b.month)}" style="height:26px;padding:0 8px">✕</button></td></tr>`).join("")}</tbody></table>` : "";
+      document.querySelectorAll("[data-fdel]").forEach((b) => (b.onclick = async () => { const [w, id, mo] = b.dataset.fdel.split(":"); const d = await sb.rpc("kmr_fin_delete", { p_slug: SLUG, p_what: w, p_id: id, p_month: mo || null }); if (!d.error) refresh(); }));
+    };
+    refresh();
+    const run = async (msgSel, fn) => { const msg = $(msgSel); msg.className = "msg"; msg.textContent = "Saving…"; try { const r = await fn(); if (r.error) throw new Error(r.error.message); msg.className = "msg ok"; msg.textContent = `Saved ${r.data.saved} line${r.data.saved === 1 ? "" : "s"}${r.data.skipped ? `; ${r.data.skipped} could not be read (check the date and amount)` : ""}.`; refresh(); } catch (x) { msg.textContent = x.message; } };
+    $("#fnMe").onclick = () => { const t = $("#fnTo"), cur = t.value.split(/[,;\s]+/).filter(Boolean); if (!cur.includes(g.me)) { cur.push(g.me); t.value = cur.join(", "); } };
+    $("#fnSave").onclick = async () => {
+      const msg = $("#fnMsg"); msg.className = "msg"; msg.textContent = "Saving…";
+      const sections = {}; document.querySelectorAll("[data-fsec]").forEach((x) => { if (!x.checked) sections[x.dataset.fsec] = false; });
+      const targets = { dso_target: +$("#fnDso").value, overdue_pct_target: +$("#fnOd").value }; if ($("#fnEx").value !== "") targets.expense_pct_target = +$("#fnEx").value; if ($("#fnMa").value !== "") targets.material_pct_target = +$("#fnMa").value;
+      const r = await sb.rpc("kmr_fin_save", { p_slug: SLUG, p: { enabled: $("#fnOn").value, send_days: $("#fnDays").value, recipients: $("#fnTo").value, source: $("#fnSrc").value, sections, targets } });
+      if (r.error) { msg.textContent = r.error.message; return; }
+      msg.className = "msg ok"; msg.textContent = "Saved."; if ($("#fnSrc").value !== src) financeView("Saved. The page now shows the data screens for the chosen source.");
+    };
+    $("#fnTestBtn").onclick = async (e) => {
+      const b = e.currentTarget, msg = $("#fnTMsg"); b.disabled = true; msg.className = "msg"; msg.textContent = "Sending…";
+      try {
+        const ss = await sb.auth.getSession(), tk = ss && ss.data && ss.data.session && ss.data.session.access_token;
+        const r = await fetch("/it/console/api/finance/test", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + (tk || "") }, body: JSON.stringify({ slug: SLUG, to: $("#fnTest").value }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.ok) throw new Error(j.error || "The test mail could not be sent.");
+        msg.className = "msg ok"; msg.textContent = `Test mail sent to ${j.to}: ${j.act} area${j.act === 1 ? "" : "s"} need action, ${j.watch} to watch.`;
+      } catch (x) { msg.textContent = x.message; }
+      b.disabled = false;
+    };
+    $("#fnBgBtn").onclick = () => run("#fnBgMsg", () => {
+      const rows = fnRows($("#fnBg").value).filter((r) => !fnIsHead(r)).map((r) => ({ head: r[0], amount: r[1], month: r[2] || "*" }));
+      return sb.rpc("kmr_fin_import", { p_slug: SLUG, p_kind: "budget", p_rows: rows });
+    });
+    if (own) {
+      $("#fnObBtn").onclick = () => run("#fnObMsg", () => {
+        const rows = fnRows($("#fnOb").value).filter((r) => !fnIsHead(r)).map((r) => ({ party: r[0], ref_no: r[1], doc_date: fnDate(r[2]), due_date: fnDate(r[3]), amount: r[4] }));
+        if (!confirm(`Replace the whole ${$("#fnObK").value === "recv" ? "receivable" : "payable"} list with these ${rows.length} bills?`)) return Promise.resolve({ error: { message: "Not saved." } });
+        return sb.rpc("kmr_fin_import", { p_slug: SLUG, p_kind: $("#fnObK").value, p_rows: rows });
+      });
+      $("#fnEBtn").onclick = () => run("#fnEMsg", () => sb.rpc("kmr_fin_import", { p_slug: SLUG, p_kind: "entry", p_rows: [{ kind: $("#fnEk").value, entry_date: $("#fnEd").value, party: $("#fnEp").value, head: $("#fnEh").value, amount: $("#fnEa").value }] }));
+      $("#fnEBtn2").onclick = () => run("#fnEMsg", () => {
+        const rows = fnRows($("#fnEp2").value).filter((r) => !fnIsHead(r)).map((r) => ({ kind: r[0], entry_date: fnDate(r[1]), party: r[2], head: r[3], amount: r[4] }));
+        return sb.rpc("kmr_fin_import", { p_slug: SLUG, p_kind: "entry", p_rows: rows });
+      });
+    }
+  }
+  const nfmt = (n) => Number(n || 0).toLocaleString("en-IN");
+
   async function usersView(note) {
     setView("users");
     const m = mainEl(); m.innerHTML = adminHead("Users & access", "One list for all your KMR apps. Choose what each person may do in each app.") + `<p class="msg">Loading…</p>`; bindBack();
@@ -481,6 +599,7 @@
     else if (HASH === "company" && isAdmin) companyView();
     else if (HASH === "invoices" && isAdmin) invoicesView();
     else if (HASH === "digest" && isAdmin) digestView();
+    else if (HASH === "finance" && isAdmin) financeView();
     else if (HASH === "plants" && plants.length > 1 && plants[0].is_all) plantsView();
     else if (HASH === "grand" && isAdmin) grandView();
     else if (HASH === "data" && isAdmin) dataView();

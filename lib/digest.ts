@@ -18,49 +18,49 @@ export type SectionKey = (typeof SECTION_KEYS)[number];
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type K = Record<string, any>;
 type Tile = { label: string; value: string; sub?: string; st?: St };
-type Section = {
-  key: SectionKey; title: string; std: string; st: St; tiles: Tile[]; html?: string; open?: string;
+export type Section = {
+  key: string; title: string; std: string; st: St; tiles: Tile[]; html?: string; open?: string;
   mgmt: string[];                                     // management: where to concentrate
   team: { who: string; text: string }[];              // teams: what to do today
   good?: string[];                                    // what is OK
 };
 
-const COL: Record<St, { bg: string; fg: string; bar: string; word: string }> = {
+export const COL: Record<St, { bg: string; fg: string; bar: string; word: string }> = {
   act: { bg: "#FDECEA", fg: "#B3261E", bar: "#D93025", word: "ACTION" },
   watch: { bg: "#FFF4DB", fg: "#8A5A00", bar: "#F0A500", word: "WATCH" },
   ok: { bg: "#E6F4EA", fg: "#1E6B3A", bar: "#2E9E5B", word: "ON TRACK" },
 };
-const RANK: Record<St, number> = { act: 2, watch: 1, ok: 0 };
-const worst = (...s: St[]): St => s.reduce((a, b) => (RANK[b] > RANK[a] ? b : a), "ok" as St);
+export const RANK: Record<St, number> = { act: 2, watch: 1, ok: 0 };
+export const worst = (...s: St[]): St => s.reduce((a, b) => (RANK[b] > RANK[a] ? b : a), "ok" as St);
 
 export const esc = (s: unknown) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
-const nf = (n: number | null | undefined, d = 0) => (n === null || n === undefined || Number.isNaN(Number(n)) ? "–" : Number(n).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d }));
-const pct = (n: number | null | undefined, d = 0) => (n === null || n === undefined ? "–" : nf(n, d) + "%");
-const dmy = (d?: string | null) => (d ? String(d).slice(0, 10).split("-").reverse().join("-") : "–");
-const dshort = (d: string) => { const [, m, dd] = d.split("-"); return `${dd}-${m}`; };
-const ago = (iso: string | null | undefined, today: string) => (iso ? Math.round((Date.parse(today) - Date.parse(iso)) / 86_400_000) : null);
-const money = (n: number) => (n >= 1e7 ? "₹" + nf(n / 1e7, 2) + " Cr" : n >= 1e5 ? "₹" + nf(n / 1e5, 2) + " L" : "₹" + nf(n));
+export const nf = (n: number | null | undefined, d = 0) => (n === null || n === undefined || Number.isNaN(Number(n)) ? "–" : Number(n).toLocaleString("en-IN", { maximumFractionDigits: d, minimumFractionDigits: d }));
+export const pct = (n: number | null | undefined, d = 0) => (n === null || n === undefined ? "–" : nf(n, d) + "%");
+export const dmy = (d?: string | null) => (d ? String(d).slice(0, 10).split("-").reverse().join("-") : "–");
+export const dshort = (d: string) => { const [, m, dd] = d.split("-"); return `${dd}-${m}`; };
+export const ago = (iso: string | null | undefined, today: string) => (iso ? Math.round((Date.parse(today) - Date.parse(iso)) / 86_400_000) : null);
+export const money = (n: number) => (n >= 1e7 ? "₹" + nf(n / 1e7, 2) + " Cr" : n >= 1e5 ? "₹" + nf(n / 1e5, 2) + " L" : "₹" + nf(n));
 
-function tile(t: Tile) {
+export function tile(t: Tile) {
   const c = COL[t.st ?? "ok"], edge = t.st ? c.bar : "#c9d1de";
   return `<td valign="top" style="padding:0 6px 8px 0;width:25%"><table role="presentation" width="100%" style="border-collapse:collapse;background:#f7f8fb;border-left:4px solid ${edge}"><tr><td style="padding:8px 10px">
 <div style="font-size:11px;color:#5e6778;text-transform:uppercase;letter-spacing:.03em">${esc(t.label)}</div>
 <div style="font-size:21px;font-weight:700;color:#0b1c3a;line-height:1.25">${esc(t.value)}</div>${t.sub ? `<div style="font-size:11px;color:#5e6778">${esc(t.sub)}</div>` : ""}</td></tr></table></td>`;
 }
-function tiles(ts: Tile[]) {
+export function tiles(ts: Tile[]) {
   const rows: string[] = [];
   for (let i = 0; i < ts.length; i += 4) rows.push(`<tr>${ts.slice(i, i + 4).map(tile).join("")}${"<td></td>".repeat(Math.max(0, 4 - ts.slice(i, i + 4).length))}</tr>`);
   return `<table role="presentation" width="100%" style="border-collapse:collapse;margin:8px 0 4px">${rows.join("")}</table>`;
 }
 /** A horizontal bar made of table cells (works in every mail program, no images). */
-function bar(value: number | null, max: number, st: St, label: string, right: string) {
+export function bar(value: number | null, max: number, st: St, label: string, right: string) {
   const w = value === null ? 0 : Math.max(2, Math.min(100, Math.round((value / max) * 100)));
   return `<tr><td style="padding:3px 8px 3px 0;font-size:12px;color:#344054;white-space:nowrap;width:78px">${esc(label)}</td>
 <td style="padding:3px 0"><table role="presentation" width="100%" style="border-collapse:collapse;background:#eef0f4"><tr>${value === null ? `<td style="height:12px;font-size:1px;line-height:1px">&nbsp;</td>` : `<td width="${w}%" style="height:12px;background:${COL[st].bar};font-size:1px;line-height:1px">&nbsp;</td><td style="font-size:1px">&nbsp;</td>`}</tr></table></td>
 <td style="padding:3px 0 3px 8px;font-size:12px;font-weight:700;color:#0b1c3a;white-space:nowrap;width:70px;text-align:right">${esc(right)}</td></tr>`;
 }
-const barTable = (rows: string[]) => `<table role="presentation" width="100%" style="border-collapse:collapse;margin:4px 0 8px">${rows.join("")}</table>`;
-const mini = (h: string, rows: string[][]) => rows.length
+export const barTable = (rows: string[]) => `<table role="presentation" width="100%" style="border-collapse:collapse;margin:4px 0 8px">${rows.join("")}</table>`;
+export const mini = (h: string, rows: string[][]) => rows.length
   ? `<div style="font-size:12px;font-weight:700;color:#0b1c3a;margin:10px 0 3px">${esc(h)}</div><table role="presentation" width="100%" style="border-collapse:collapse;font-size:12px">${rows.map((r) => `<tr>${r.map((c, i) => `<td style="padding:3px ${i ? 0 : 8}px 3px 0;border-bottom:1px solid #eef0f4;color:${i ? "#344054" : "#0b1c3a"}${i ? "" : ";font-weight:600"}">${esc(c)}</td>`).join("")}</tr>`).join("")}</table>` : "";
 
 /* ------------------------------------------------------------------ sections ------------------------------------------------------------------ */
@@ -317,11 +317,21 @@ export function buildDigest(inp: DigestInput) {
   if (on("audit")) S.push(audit(kp.audit!));
   if (on("invoicing")) S.push(invoicing(kp.invoicing!, today));
   if (on("rmp")) S.push(rmp(kp.rmp!, today));
+  const missing = SECTION_KEYS.filter((k) => inp.sections?.[k] !== false && !kp[k]).map((m) => ({ production: "Production", delivery: "Delivery", dcg: "DC &amp; GRN", calibration: "Calibration", maintenance: "Maintenance", hrm: "HRM", actions: "Actions", meetings: "Meetings", audit: "Audit", invoicing: "Invoicing", rmp: "Raw material planning" }[m]));
+  return compose({ S, slug: inp.slug, company: inp.company, today, test: inp.test, platformUrl: inp.platformUrl, refPrefix: "DMR", format: FORMAT, title: "Daily management report", missing,
+    mgmtTitle: "Management: where to concentrate today", teamTitle: "Teams: what to do today", settingsPath: "Administration › Daily management mail", openLabel: "Open the app" });
+}
+
+export type ComposeIn = { S: Section[]; slug: string; company: string; today: string; test?: boolean; platformUrl: string; refPrefix: string; format: string; title: string; missing: string[];
+  mgmtTitle: string; teamTitle: string; settingsPath: string; openLabel: string; allClear?: string; noTeam?: string };
+/** The common layout of both mails: scoreboard, management list, team list, what is OK, one block per area (worst first), reading guide. */
+export function compose(inp: ComposeIn) {
+  const { S, today } = inp;
   const count = (s: St) => S.filter((x) => x.st === s).length;
   const act = count("act"), watch = count("watch"), ok = count("ok");
   const order = [...S].sort((a, b) => RANK[b.st] - RANK[a.st]);
   const code = (inp.slug.match(/c(\d{3,5})$/i)?.[0] || inp.slug.slice(-6)).toUpperCase();
-  const refNo = `DMR-${code}-${today.replace(/-/g, "")}${inp.test ? "-TEST" : ""}`;
+  const refNo = `${inp.refPrefix}-${code}-${today.replace(/-/g, "")}${inp.test ? "-TEST" : ""}`;
   const link = (key: string, label: string) => {
     const base = inp.platformUrl, co = encodeURIComponent(inp.slug);
     return `<a href="${esc(HOME[key] ? `${base}/it/${HOME[key]}?kmr=1&co=${co}` : `${base}/it/app/${co}`)}" style="color:#0b1c3a;font-weight:700;font-size:12px">${esc(label)} →</a>`;
@@ -333,15 +343,15 @@ export function buildDigest(inp: DigestInput) {
   h += `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 14px"><tr>${score("act", act, "areas need action")}${score("watch", watch, "areas to watch")}${score("ok", ok, "areas on track")}</tr></table>`;
 
   const mg = order.flatMap((s) => s.mgmt.slice(0, 1).map((t) => ({ s, t }))).slice(0, 7);   // the single most important point of each area, worst areas first
-  h += `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 12px;border:1px solid #d9dfe9"><tr><td style="background:#0b1c3a;color:#fff;padding:8px 12px;font-weight:700;font-size:14px">Management: where to concentrate today</td></tr><tr><td style="padding:8px 12px">`;
+  h += `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 12px;border:1px solid #d9dfe9"><tr><td style="background:#0b1c3a;color:#fff;padding:8px 12px;font-weight:700;font-size:14px">${esc(inp.mgmtTitle)}</td></tr><tr><td style="padding:8px 12px">`;
   h += mg.length ? mg.map(({ s, t }) => `<div style="padding:5px 0;border-bottom:1px solid #eef0f4;font-size:13px;line-height:1.5"><span style="display:inline-block;background:${COL[s.st].bg};color:${COL[s.st].fg};font-weight:700;font-size:10px;padding:1px 6px;margin-right:6px">${COL[s.st].word}</span><b>${esc(s.title)}:</b> ${esc(t)}</div>`).join("")
-    : `<div style="font-size:13px;padding:4px 0;color:#1E6B3A"><b>Nothing needs management attention today.</b> All areas below are on track.</div>`;
+    : `<div style="font-size:13px;padding:4px 0;color:#1E6B3A">${esc(inp.allClear || "Nothing needs management attention today. All areas below are on track.")}</div>`;
   h += `</td></tr></table>`;
 
   const tm = new Map<string, string[]>();
   for (const s of order) for (const x of s.team) { if (!tm.has(x.who)) tm.set(x.who, []); tm.get(x.who)!.push(x.text); }
-  h += `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 16px;border:1px solid #d9dfe9"><tr><td style="background:#c6a15b;color:#0b1c3a;padding:8px 12px;font-weight:700;font-size:14px">Teams: what to do today</td></tr><tr><td style="padding:8px 12px">`;
-  h += tm.size ? Array.from(tm.entries()).slice(0, 8).map(([who, ts]) => `<div style="padding:5px 0;border-bottom:1px solid #eef0f4;font-size:13px;line-height:1.5"><b>${esc(who)}</b><br>${ts.slice(0, 2).map((t) => `• ${esc(t)}`).join("<br>")}</div>`).join("") : `<div style="font-size:13px;padding:4px 0;color:#1E6B3A">No open items for the teams today. Keep it up.</div>`;
+  h += `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 16px;border:1px solid #d9dfe9"><tr><td style="background:#c6a15b;color:#0b1c3a;padding:8px 12px;font-weight:700;font-size:14px">${esc(inp.teamTitle)}</td></tr><tr><td style="padding:8px 12px">`;
+  h += tm.size ? Array.from(tm.entries()).slice(0, 8).map(([who, ts]) => `<div style="padding:5px 0;border-bottom:1px solid #eef0f4;font-size:13px;line-height:1.5"><b>${esc(who)}</b><br>${ts.slice(0, 2).map((t) => `• ${esc(t)}`).join("<br>")}</div>`).join("") : `<div style="font-size:13px;padding:4px 0;color:#1E6B3A">${esc(inp.noTeam || "No open items for the teams today. Keep it up.")}</div>`;
   h += `</td></tr></table>`;
 
   const oks = S.filter((s) => s.good?.length).flatMap((s) => s.good!.map((g) => g)).slice(0, 5);
@@ -351,12 +361,11 @@ export function buildDigest(inp: DigestInput) {
     const c = COL[s.st];
     h += `<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 14px;border:1px solid #d9dfe9"><tr><td style="padding:8px 12px;background:#f7f8fb;border-left:5px solid ${c.bar}">
 <table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="font-size:15px;font-weight:700;color:#0b1c3a">${esc(s.title)}</td><td align="right"><span style="display:inline-block;background:${c.bg};color:${c.fg};font-weight:700;font-size:11px;padding:2px 8px;letter-spacing:.04em">${c.word}</span></td></tr></table>
-<div style="font-size:11px;color:#5e6778">Standard: ${esc(s.std)}</div></td></tr><tr><td style="padding:6px 12px 8px">${s.html ?? tiles(s.tiles)}<div style="margin-top:6px">${s.open ? link(s.open, "Open the app") : ""}</div></td></tr></table>`;
+<div style="font-size:11px;color:#5e6778">Standard: ${esc(s.std)}</div></td></tr><tr><td style="padding:6px 12px 8px">${s.html ?? tiles(s.tiles)}<div style="margin-top:6px">${s.open ? link(s.open, inp.openLabel) : ""}</div></td></tr></table>`;
   }
-  const missing = SECTION_KEYS.filter((k) => inp.sections?.[k] !== false && !kp[k]);
-  if (missing.length) h += `<div style="font-size:11px;color:#5e6778;margin:0 0 8px">Not shown (app not in use, switched off or no data yet): ${missing.map((m) => ({ production: "Production", delivery: "Delivery", dcg: "DC &amp; GRN", calibration: "Calibration", maintenance: "Maintenance", hrm: "HRM", actions: "Actions", meetings: "Meetings", audit: "Audit", invoicing: "Invoicing", rmp: "Raw material planning" }[m])).join(", ")}.</div>`;
-  h += `<div style="font-size:11px;color:#5e6778;border-top:1px solid #e6dfd1;padding-top:8px">How to read: <b style="color:${COL.act.fg}">ACTION</b> = outside target, needs someone today · <b style="color:${COL.watch.fg}">WATCH</b> = drifting, keep an eye · <b style="color:${COL.ok.fg}">ON TRACK</b> = within target. Targets and sections can be changed by your administrator (Administration › Daily management mail).</div>`;
+  if (inp.missing.length) h += `<div style="font-size:11px;color:#5e6778;margin:0 0 8px">Not shown (not in use, switched off or no data yet): ${inp.missing.join(", ")}.</div>`;
+  h += `<div style="font-size:11px;color:#5e6778;border-top:1px solid #e6dfd1;padding-top:8px">How to read: <b style="color:${COL.act.fg}">ACTION</b> = outside target, needs someone today · <b style="color:${COL.watch.fg}">WATCH</b> = drifting, keep an eye · <b style="color:${COL.ok.fg}">ON TRACK</b> = within target. Targets and sections can be changed by your administrator (${esc(inp.settingsPath)}).</div>`;
 
-  const subject = `${inp.test ? "TEST — " : ""}Daily management report ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""} · ${inp.company}`;
-  return { subject, html: h, refNo, revision: FORMAT, counts: { act, watch, ok }, sections: S.length };
+  const subject = `${inp.test ? "TEST — " : ""}${inp.title} ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""} · ${inp.company}`;
+  return { subject, html: h, refNo, revision: inp.format, counts: { act, watch, ok }, sections: S.length };
 }
