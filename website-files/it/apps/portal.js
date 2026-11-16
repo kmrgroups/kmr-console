@@ -319,7 +319,7 @@
 
   /* Daily management mail: one mail a day with every app's dashboard and KPIs, what is OK and what to do. Sent at about 8:30 am India time. */
   const DG_SECTIONS = [["production", "mmd", "Production efficiency (month to date, last entry, machine-wise, day-wise)"], ["delivery", "sales", "Delivery to customers (despatch against plan)"], ["dcg", "dcg", "Delivery challans overdue, purchase orders and GRN"], ["calibration", "calib", "Calibration of gauges"],
-    ["maintenance", "mnt", "Maintenance (breakdowns, preventive maintenance)"], ["hrm", "hrms", "People and attendance"], ["actions", "tsk", "Actions (ActionTrack)"], ["meetings", "mom", "Meeting actions"], ["audit", "aud", "Internal audit findings"], ["invoicing", "inv", "Invoicing"]];
+    ["maintenance", "mnt", "Maintenance (breakdowns, preventive maintenance)"], ["hrm", "hrms", "People and attendance"], ["actions", "tsk", "Actions (ActionTrack)"], ["meetings", "mom", "Meeting actions"], ["audit", "aud", "Internal audit findings"], ["invoicing", "inv", "Invoicing"], ["rmp", "rmp", "Raw material planning (plan vs received, delays, low stock, overdue orders)"]];
   async function digestView(note) {
     setView("digest");
     const m = mainEl(), T0 = "Daily management mail", S0 = "One mail every morning with the dashboards and KPIs of all your apps: what is OK, where management has to concentrate and what each team has to do. It also carries the Calibration Hub due list, so the separate calibration mail is no longer sent.";

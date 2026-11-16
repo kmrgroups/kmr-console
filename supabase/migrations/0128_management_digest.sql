@@ -213,6 +213,44 @@ begin
       into r from console.inv_invoice where customer_id = p_cid;
     res := res || jsonb_build_object('invoicing', r);
   end if;
+  -- ---- raw material planning (RMP): this month's weekly plan against what has been received, delays, stock below safety, open orders past due
+  ok := coalesce((select a.ok from console.access_state('rmp', p_cid) a), false);
+  if ok and exists (select 1 from console.rmp_plan_week where customer_id = p_cid and month = to_char(ms, 'YYYY-MM')) then
+    -- week w covers days 7(w-1)+1 .. 7w of the month (week 5 runs to month end); a week is "elapsed" once its last day is before today
+    with w as (
+      select pw.material_code, pw.week, pw.planned_qty, pw.received_qty, st.rate, coalesce(st.unit, 'kg') as unit,
+             case when pw.week >= 5 then (date_trunc('month', ms) + interval '1 month - 1 day')::date else (ms + 7 * pw.week - 1) end as wend2,
+             pw.planned_qty * coalesce(st.rate, 0) as pv, coalesce(pw.cost_amt, pw.received_qty * coalesce(st.rate, 0)) as av
+        from console.rmp_plan_week pw left join console.rmp_stock st on st.customer_id = pw.customer_id and st.material_code = pw.material_code
+       where pw.customer_id = p_cid and pw.month = to_char(ms, 'YYYY-MM')),
+    m as (select material_code, max(unit) as unit, max(rate) as rate, sum(planned_qty) as pq, sum(received_qty) as rq,
+                 sum(planned_qty) filter (where wend2 < d0) as pq_e, sum(received_qty) filter (where wend2 < d0) as rq_e
+            from w group by material_code)
+    select jsonb_build_object('month', to_char(ms, 'YYYY-MM'), 'today', d0,
+      'materials', (select count(*) from m where pq > 0 or rq > 0),
+      'plan_qty', (select round(coalesce(sum(pq), 0)) from m), 'recv_qty', (select round(coalesce(sum(rq), 0)) from m),
+      'plan_qty_td', (select round(coalesce(sum(pq_e), 0)) from m), 'recv_qty_td', (select round(coalesce(sum(rq_e), 0)) from m),
+      'plan_lakh', (select round((coalesce(sum(pv), 0) / 100000.0)::numeric, 2) from w),
+      'plan_lakh_td', (select round((coalesce(sum(pv) filter (where wend2 < d0), 0) / 100000.0)::numeric, 2) from w),
+      'actual_lakh', (select round((coalesce(sum(av), 0) / 100000.0)::numeric, 2) from w),
+      'actual_lakh_td', (select round((coalesce(sum(av) filter (where wend2 < d0), 0) / 100000.0)::numeric, 2) from w),
+      'elapsed_weeks', (select count(distinct week) from w where wend2 < d0),
+      'delayed', (select count(*) from m where coalesce(pq_e, 0) - coalesce(rq_e, 0) > 0.0001),
+      'late', coalesce((select jsonb_agg(jsonb_build_object('code', t.material_code, 'unit', t.unit, 'plan', round(t.pq_e), 'recv', round(coalesce(t.rq_e, 0)), 'short', round(t.pq_e - coalesce(t.rq_e, 0)),
+                          'pct', round((100.0 * coalesce(t.rq_e, 0) / nullif(t.pq_e, 0))::numeric)) order by (t.pq_e - coalesce(t.rq_e, 0)) * coalesce(t.rate, 1) desc)
+                  from (select * from m where coalesce(pq_e, 0) - coalesce(rq_e, 0) > 0.0001 order by (pq_e - coalesce(rq_e, 0)) * coalesce(rate, 1) desc limit 5) t), '[]'),
+      'no_rate', (select count(*) from m where (pq > 0 or rq > 0) and coalesce(rate, 0) = 0),
+      'below_safety', (select count(*) from console.rmp_stock where customer_id = p_cid and not sample and safety_kg > 0 and on_hand_kg < safety_kg),
+      'low', coalesce((select jsonb_agg(jsonb_build_object('code', t.material_code, 'on_hand', round(t.on_hand_kg), 'safety', round(t.safety_kg)) order by t.on_hand_kg / t.safety_kg)
+                  from (select material_code, on_hand_kg, safety_kg from console.rmp_stock where customer_id = p_cid and not sample and safety_kg > 0 and on_hand_kg < safety_kg order by on_hand_kg / safety_kg limit 5) t), '[]'),
+      'orders_open', (select count(*) from console.rmp_orders where customer_id = p_cid and not sample and status in ('planned', 'ordered')),
+      'orders_late', (select count(*) from console.rmp_orders where customer_id = p_cid and not sample and status in ('planned', 'ordered') and due_date < d0),
+      'orders_top', coalesce((select jsonb_agg(jsonb_build_object('code', t.material_code, 'po', t.po_no, 'days', d0 - t.due_date, 'qty', round(t.qty_kg)) order by t.due_date)
+                  from (select material_code, po_no, due_date, qty_kg from console.rmp_orders where customer_id = p_cid and not sample and status in ('planned', 'ordered') and due_date < d0 order by due_date limit 5) t), '[]'),
+      'updated_on', (select (max(updated_at) at time zone 'Asia/Kolkata')::date from console.rmp_plan_week where customer_id = p_cid and month = to_char(ms, 'YYYY-MM'))
+    ) into r;
+    res := res || jsonb_build_object('rmp', r);
+  end if;
   return res;
 end $$;
 revoke all on function console.digest_kpis(uuid, jsonb) from public, anon, authenticated;
@@ -233,7 +271,7 @@ begin
   select * into s from console.digest_settings where customer_id = cid;
   return jsonb_build_object('enabled', coalesce(s.enabled, false), 'recipients', coalesce(s.recipients, ''), 'include_users', coalesce(s.include_users, false),
     'send_days', coalesce(s.send_days, 'daily'), 'sections', coalesce(s.sections, '{}'), 'targets', coalesce(s.targets, '{}'), 'last_sent_on', s.last_sent_on,
-    'apps', coalesce((select jsonb_agg(a.code order by a.code) from (select x.code from (values ('mmd'), ('sales'), ('dcg'), ('calib'), ('mnt'), ('hrms'), ('tsk'), ('mom'), ('aud'), ('inv')) x(code)
+    'apps', coalesce((select jsonb_agg(a.code order by a.code) from (select x.code from (values ('mmd'), ('sales'), ('dcg'), ('calib'), ('mnt'), ('hrms'), ('tsk'), ('mom'), ('aud'), ('inv'), ('rmp')) x(code)
                        where coalesce((select z.ok from console.access_state(x.code, cid) z), false)) a), '[]'),
     'admins', coalesce((select jsonb_agg(m.email order by m.email) from console.customer_members m where m.customer_id = cid and m.is_admin and m.email is not null), '[]'),
     'me', lower(coalesce(auth.jwt() ->> 'email', '')));

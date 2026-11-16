@@ -12,7 +12,7 @@ import type { Brand } from "@/lib/mail";
 export type St = "ok" | "watch" | "act";
 export type Targets = { eff_target?: number; attendance_target?: number; despatch_target?: number; cal_days?: number };
 export const DEFAULTS = { eff_target: 85, attendance_target: 92, despatch_target: 95, cal_days: 14 };
-export const SECTION_KEYS = ["production", "delivery", "dcg", "calibration", "maintenance", "hrm", "actions", "meetings", "audit", "invoicing"] as const;
+export const SECTION_KEYS = ["production", "delivery", "dcg", "calibration", "maintenance", "hrm", "actions", "meetings", "audit", "invoicing", "rmp"] as const;
 export type SectionKey = (typeof SECTION_KEYS)[number];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -265,7 +265,40 @@ export type DigestInput = {
 };
 
 const FORMAT = "Format F-DMR-01 · Rev 00 · 16-11-2026";
-const HOME: Record<string, string> = { mmd: "mmd.html", sales: "sales.html", dcg: "dcg.html", calib: "calibration.html", inv: "inv.html" };
+const HOME: Record<string, string> = { mmd: "mmd.html", sales: "sales.html", dcg: "dcg.html", calib: "calibration.html", inv: "inv.html", rmp: "rmp.html" };
+
+function rmp(k: K, today: string): Section {
+  const pd = k.plan_qty_td > 0 ? Math.round((100 * k.recv_qty_td) / k.plan_qty_td) : null;   // received against what was planned in weeks already over
+  const recSt: St = pd === null ? "ok" : pd >= 95 ? "ok" : pd >= 80 ? "watch" : "act";
+  const lateSt: St = k.delayed === 0 ? "ok" : k.delayed >= 3 ? "act" : "watch";
+  const stkSt: St = k.below_safety === 0 ? "ok" : k.below_safety >= 3 ? "act" : "watch";
+  const ordSt: St = k.orders_late === 0 ? "ok" : "act";
+  const stale = ago(k.updated_on, today);
+  const st = worst(recSt, lateSt, stkSt, ordSt);
+  const tl: Tile[] = [
+    { label: "Received vs plan (weeks over)", value: pd === null ? "–" : pct(pd), sub: `${nf(k.recv_qty_td)} of ${nf(k.plan_qty_td)} planned`, st: pd === null ? undefined : recSt },
+    { label: "Materials behind plan", value: nf(k.delayed), sub: `of ${nf(k.materials)} materials`, st: lateSt },
+    { label: "Below safety stock", value: nf(k.below_safety), st: stkSt },
+    { label: "Orders past due date", value: nf(k.orders_late), sub: `${nf(k.orders_open)} open order${k.orders_open === 1 ? "" : "s"}`, st: k.orders_open ? ordSt : undefined },
+    { label: "Plan value to date", value: "₹" + nf(k.plan_lakh_td, 2) + " L", sub: `month ₹${nf(k.plan_lakh, 2)} L` },
+    { label: "Actual value to date", value: "₹" + nf(k.actual_lakh, 2) + " L", sub: `weeks over ₹${nf(k.actual_lakh_td, 2)} L vs ₹${nf(k.plan_lakh_td, 2)} L` },
+    { label: "Weeks over", value: nf(k.elapsed_weeks) + " of 5", sub: "week 1 = days 1-7 of the month" },
+    { label: "Plan last updated", value: dmy(k.updated_on), sub: stale === null ? undefined : stale === 0 ? "today" : `${stale} days ago`, st: stale !== null && stale > 7 ? "watch" : undefined },
+  ];
+  let html = tiles(tl);
+  html += mini("Behind plan (weeks already over)", (k.late || []).map((x: any) => [x.code, `received ${nf(x.recv)} of ${nf(x.plan)} ${x.unit} · short ${nf(x.short)} (${x.pct ?? 0}%)`]));
+  html += mini("Below safety stock", (k.low || []).map((x: any) => [x.code, `stock ${nf(x.on_hand)} · safety ${nf(x.safety)}`]));
+  html += mini("Orders past due date", (k.orders_top || []).map((x: any) => [`${x.po || "Order"} · ${x.code}`, `${nf(x.days)} days late · ${nf(x.qty)} kg`]));
+  const mgmt: string[] = [], team: Section["team"] = [], good: string[] = [];
+  if (pd !== null && pd < 95) { mgmt.push(`Material received is ${pct(pd)} of what the plan expected by now; production for these materials is at risk. Escalate to the suppliers.`); team.push({ who: "Purchase", text: "Call the suppliers of the late materials, get firm dates and update the weekly received quantity." }); } else if (pd !== null) good.push("Material is arriving as planned.");
+  if (k.delayed > 0 && (k.late || []).length) team.push({ who: "Purchase / Stores", text: `Late: ${(k.late as any[]).slice(0, 3).map((x) => x.code).join(", ")}${k.delayed > 3 ? " and more" : ""}. Confirm what is in transit and tell Planning.` });
+  if (k.below_safety > 0) { mgmt.push(`${nf(k.below_safety)} material${k.below_safety === 1 ? " is" : "s are"} below safety stock; a line stop is possible if they do not arrive.`); team.push({ who: "Stores", text: "Recount the stock of the low materials and raise purchase requests today." }); } else good.push("Every material is at or above safety stock.");
+  if (k.orders_late > 0) { mgmt.push(`${nf(k.orders_late)} purchase order${k.orders_late === 1 ? " is" : "s are"} past the due date.`); team.push({ who: "Purchase", text: "Chase the overdue purchase orders and record the new promise dates." }); }
+  if (k.no_rate > 0) team.push({ who: "Planning", text: `${nf(k.no_rate)} planned material${k.no_rate === 1 ? " has" : "s have"} no rate, so value is understated. Enter the rates.` });
+  if (stale !== null && stale > 7) team.push({ who: "Planning", text: `The weekly received quantities were last updated ${stale} days ago. Update them so this report is true.` });
+  return { key: "rmp", title: "Raw material planning", std: "IATF 16949 §8.4.2 control of external providers, §8.5.1.1 · ISO 9001 §8.4, §8.1 · VDA 6.3 P4 / P6 · APQP", st, tiles: tl, html, open: "rmp", mgmt, team, good };
+}
+
 
 export function buildDigest(inp: DigestInput) {
   const T: Required<Targets> = { ...DEFAULTS, ...Object.fromEntries(Object.entries(inp.targets || {}).filter(([, v]) => Number.isFinite(Number(v))).map(([k, v]) => [k, Number(v)])) } as Required<Targets>;
@@ -283,6 +316,7 @@ export function buildDigest(inp: DigestInput) {
   if (on("meetings")) S.push(meetings(kp.meetings!));
   if (on("audit")) S.push(audit(kp.audit!));
   if (on("invoicing")) S.push(invoicing(kp.invoicing!, today));
+  if (on("rmp")) S.push(rmp(kp.rmp!, today));
   const count = (s: St) => S.filter((x) => x.st === s).length;
   const act = count("act"), watch = count("watch"), ok = count("ok");
   const order = [...S].sort((a, b) => RANK[b.st] - RANK[a.st]);
@@ -320,7 +354,7 @@ export function buildDigest(inp: DigestInput) {
 <div style="font-size:11px;color:#5e6778">Standard: ${esc(s.std)}</div></td></tr><tr><td style="padding:6px 12px 8px">${s.html ?? tiles(s.tiles)}<div style="margin-top:6px">${s.open ? link(s.open, "Open the app") : ""}</div></td></tr></table>`;
   }
   const missing = SECTION_KEYS.filter((k) => inp.sections?.[k] !== false && !kp[k]);
-  if (missing.length) h += `<div style="font-size:11px;color:#5e6778;margin:0 0 8px">Not shown (app not in use, switched off or no data yet): ${missing.map((m) => ({ production: "Production", delivery: "Delivery", dcg: "DC &amp; GRN", calibration: "Calibration", maintenance: "Maintenance", hrm: "HRM", actions: "Actions", meetings: "Meetings", audit: "Audit", invoicing: "Invoicing" }[m])).join(", ")}.</div>`;
+  if (missing.length) h += `<div style="font-size:11px;color:#5e6778;margin:0 0 8px">Not shown (app not in use, switched off or no data yet): ${missing.map((m) => ({ production: "Production", delivery: "Delivery", dcg: "DC &amp; GRN", calibration: "Calibration", maintenance: "Maintenance", hrm: "HRM", actions: "Actions", meetings: "Meetings", audit: "Audit", invoicing: "Invoicing", rmp: "Raw material planning" }[m])).join(", ")}.</div>`;
   h += `<div style="font-size:11px;color:#5e6778;border-top:1px solid #e6dfd1;padding-top:8px">How to read: <b style="color:${COL.act.fg}">ACTION</b> = outside target, needs someone today · <b style="color:${COL.watch.fg}">WATCH</b> = drifting, keep an eye · <b style="color:${COL.ok.fg}">ON TRACK</b> = within target. Targets and sections can be changed by your administrator (Administration › Daily management mail).</div>`;
 
   const subject = `${inp.test ? "TEST — " : ""}Daily management report ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""} · ${inp.company}`;

@@ -138,6 +138,7 @@ ppap:[
 ['APQP','Phase 4','Product and process validation','PPAP submission closes the validation phase.'],
 ['VDA','P4','Product and process development realisation','Approval records show readiness before series.']],
 rmp:[
+['IATF','9.1.1.1 / 8.4.2.4','Monitoring of delivery performance of suppliers','Every morning the Daily management mail shows raw material received against the weekly plan, the materials behind plan (with shortfall), stock below safety, purchase orders past their due date and the planned against actual value, with ACTION / WATCH / ON TRACK status and what Purchase and Stores must do.','mail'],
 ['ISO','8.1','Operational planning and control','Raw-material requirement is calculated from the sales plan and BOM.'],
 ['ISO','8.4.1 / 8.4.3','Control of externally provided processes, products and services','Orders are placed against the plan with supplier, quantity and due date.'],
 ['IATF','8.4.2.4','Supplier monitoring','Order status and on-time receipt are visible per supplier.'],
