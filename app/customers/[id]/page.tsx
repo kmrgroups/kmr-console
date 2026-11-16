@@ -161,6 +161,11 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         {<ThemePicker action={saveCustomerTheme} id={c.id} current={(c as { portal_theme?: string | null }).portal_theme ?? null} inherited={isPlant ? ((parentRes.data as { portal_theme?: string | null } | null)?.portal_theme ?? null) : null} />}
       </div>
 
+      {companySlug && <div className="card">
+        <h2>Backup this customer's data</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Opens the customer's Year-wise Backup &amp; Restore (sign in as KMR staff). <b>All data — one JSON file</b> for {c.name}, or <b>App › Year files</b> in a ZIP with a JSON and an Excel workbook (dashboard, analysis, raw data) for every app and financial year. Upload the JSON on the same screen to restore it; records are added or updated, nothing is deleted.</p>
+        <p style={{ margin: 0 }}><a className="btn small" href={`${env.platformUrl}/it/app/${companySlug}#yearbackup`} target="_blank" rel="noopener">Open year-wise backup for {c.name}</a></p>
+      </div>}
       {!isPlant && <div className="card">
         <h2>Customer portal</h2>
         {!("slug" in c) && <div className="alert warn">The customer portal is not set up in the database yet. In Supabase → SQL Editor run <b>supabase/migrations/0004_portal.sql</b> (and 0005_data_tools.sql), then refresh this page.</div>}
