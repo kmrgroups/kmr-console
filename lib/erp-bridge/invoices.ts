@@ -1,4 +1,4 @@
-import { Tables, rows, num, trim, r2, pySum } from "./common";
+import { Tables, rows, num, trim, r2, pySum, erpTime } from "./common";
 
 /** ERP invoicemaster + invoicedetail + customer  ->  { invoices: [...] } for kmr_inv_import (same rules as the one-time loader). */
 export function buildInvoices(t: Tables) {
@@ -19,7 +19,7 @@ export function buildInvoices(t: Tables) {
     const supply = gst.length === 15 ? "B2B" : (country !== "" && country !== "INDIA" ? "EXPWOP" : "B2B");
     const d = r2(tot - (tx + cg + sg + ig + tcs));
     res.push({
-      no, date: m.invdate, po_no: trim(m.pono), po_date: m.podate || "", buyer_code: trim(m.custcode), buyer_name: trim(c.custname || m.custcode), gstin: gst.length === 15 ? gst : "",
+      no, date: m.invdate, erp_time: erpTime(m, "invdate"), po_no: trim(m.pono), po_date: m.podate || "", buyer_code: trim(m.custcode), buyer_name: trim(c.custname || m.custcode), gstin: gst.length === 15 ? gst : "",
       addr: trim(c.address), loc: trim(c.CITY), pin: trim(c.billpin), state: trim(c.Statecode || gst.slice(0, 2)), supply, dc_no: trim(m.dcno), dc_date: m.dcdate || "",
       vehicle: trim(m.transth), mode: trim(m.transmode), terms: trim(m.Deliverytrm), pay_days: trim(m.Paytrm), remarks: trim(m.Remarks),
       taxable: r2(tx), cgst: cg, sgst: sg, igst: ig, tcs, round_off: Math.abs(d) <= 1 ? d : 0, total: tot, cancelled: (trim(m.CANCELL || "NO")).toUpperCase() === "YES", lines: outL,
