@@ -4,7 +4,7 @@ import { sendMail, type Brand } from "@/lib/mail";
 import { env } from "@/lib/env";
 
 // Calibration Hub: every morning (vercel.json) e-mails each company / plant that has the "mail alert" on the list of gauges that will
-// become overdue within its chosen number of days (default 12). The list is mailed every morning for as long as a gauge is inside the window, until it is calibrated. Needs CRON_SECRET, like the backup route,
+// become overdue within its chosen number of days (default 12). The list is mailed every morning for as long as a gauge is inside the window, until it is calibrated. A gauge that is already on a Delivery Challan (DC) is left out, because its calibration has started (0126). Needs CRON_SECRET, like the backup route,
 // and RESEND_API_KEY + EMAIL_FROM for the mail itself (same as the HRM). Without the mail keys nothing is marked as sent, so the list goes out once they are set.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
