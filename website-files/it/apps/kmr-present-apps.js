@@ -412,4 +412,20 @@
       { id: "tal", name: "Not yet sent to Tally", value: iss.filter(function (i) { return !i.tally_at; }).length, target: 0, amber: 10, dir: "low", std: S("ISO 7.5.3.2"), why: "Issued invoices not yet exported to Tally." }],
       charts: [barOf("Invoice value by customer (this year)", byC, "Value", "val")] };
   } };
+  KMRPA.pnl = { name: "Profit & Loss", code: "pnl", ctxFn: "kmr_pnl_context", std: "pnl", load: async function (call) {
+    var td = new Date(Date.now() + 19800000).toISOString().slice(0, 10), ym = td.slice(0, 7), S = std, a = ym + "-01";
+    var r = await call("kmr_pnl_report", { p_from: a, p_to: a }), T = r.totals, L = r.lines || [];
+    var amt = function (h) { var x = L.filter(function (l) { return l.head === h; })[0]; return x ? +x.amt || 0 : 0; };
+    var pc = function (v) { return T.sales > 0 ? +(100 * v / T.sales).toFixed(1) : null; };
+    var over = L.filter(function (l) { return l.budget && (l.grp === "income" ? false : l.amt > l.budget); }), byH = {};
+    L.filter(function (l) { return l.grp === "direct" && l.amt > 0; }).forEach(function (l) { byH[l.head] = l.amt; });
+    var kp = [{ id: "sales", name: "Sales this month (lakh)", value: +(T.sales / 1e5).toFixed(2), unit: "lakh", std: S("ISO 9.1.1", "ISO 9.3.2"), why: "Taxable value of issued invoices less credit notes." }];
+    if (T.gp_pct != null) kp.push({ id: "gp", name: "Gross profit % of sales", value: T.gp_pct, unit: "%", target: 30, amber: 20, dir: "high", std: S("ISO 9.1.1", "ISO 9.3.2"), why: "Sales less direct expenses (material, tooling, consumables, wages ...), as % of sales." });
+    if (T.np_pct != null) kp.push({ id: "np", name: "Net profit % of sales", value: T.np_pct, unit: "%", target: 8, amber: 3, dir: "high", std: S("ISO 9.1.1", "ISO 9.3.2"), why: "Gross profit plus other income less indirect expenses, as % of sales." });
+    if (pc(amt("Raw material")) != null) kp.push({ id: "rm", name: "Raw material % of sales", value: pc(amt("Raw material")), unit: "%", target: 45, amber: 55, dir: "low", std: S("ISO 8.4.1", "ISO 9.1.1"), why: "Raw material received (or consumed) against sales." });
+    if (pc(amt("Tooling")) != null) kp.push({ id: "tl", name: "Tooling % of sales", value: pc(amt("Tooling")), unit: "%", target: 4, amber: 6, dir: "low", std: S("ISO 7.1.3", "ISO 9.1.1"), why: "Tooling cost against sales." });
+    if (pc(amt("Consumables")) != null) kp.push({ id: "cs", name: "Consumables % of sales", value: pc(amt("Consumables")), unit: "%", target: 3, amber: 5, dir: "low", std: S("ISO 7.1.3", "ISO 9.1.1"), why: "Consumables cost against sales." });
+    kp.push({ id: "ob", name: "Heads over budget", value: over.length, target: 0, amber: 2, dir: "low", std: S("ISO 6.1", "ISO 7.1.1"), why: "Expense heads whose month-to-date spend is above their budget." });
+    return { period: "Month " + ym, kpis: kp, charts: [barOf("Direct expenses this month (rupees)", byH, "Amount", "rm")] };
+  } };
 })();

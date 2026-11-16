@@ -130,7 +130,7 @@
     location.href = path + (path.includes("?") ? "&" : "?") + "kmr=1" + (SLUG ? "&co=" + encodeURIComponent(SLUG) : "") + tail;
   }
 
-  const GROUPS = [["Quality & engineering", "#7C3AED", ["cad", "balloon", "pd", "apqp", "ppap", "calib", "msa", "spc", "d8", "aud", "qms"]], ["Planning & production", "#10B981", ["capacity", "sales", "crm", "rmp", "mmd", "dcg", "inv", "mnt"]], ["People & meetings", "#0EA5E9", ["hrms", "mom", "connect", "tsk", "off", "dwm"]]];
+  const GROUPS = [["Quality & engineering", "#7C3AED", ["cad", "balloon", "pd", "apqp", "ppap", "calib", "msa", "spc", "d8", "aud", "qms"]], ["Planning & production", "#10B981", ["capacity", "sales", "crm", "rmp", "mmd", "dcg", "inv", "pnl", "mnt"]], ["People & meetings", "#0EA5E9", ["hrms", "mom", "connect", "tsk", "off", "dwm"]]];
   function imgOf(r) { const m = media[r.product_code] || {}; return safeUrl(m.img) || (ART[r.product_code] ? `/img/kmr/app-${r.product_code}.svg` : ""); }
   function tile(r, locked) {
     const m = META[r.product_code] || {}, im = imgOf(r), st = stats[r.product_code] || {};
@@ -379,7 +379,7 @@
   }
 
   // ---- Finance mail for top management (migration 0129): settings, and the money data typed or pasted here when the figures are not loaded by the ERP bridge ----
-  const FN_SECTIONS = [["sales", "Sales value (from Sales Invoicing)"], ["receivables", "Receivables: money to collect, overdue, ageing, days sales outstanding"], ["payables", "Payables: money to pay, overdue, due in 7 days"], ["expenses", "Expenses against budget, and cost as % of sales"], ["cash", "Cash movement of the month"]];
+  const FN_SECTIONS = [["sales", "Sales value (from Sales Invoicing)"], ["receivables", "Receivables: money to collect, overdue, ageing, days sales outstanding"], ["payables", "Payables: money to pay, overdue, due in 7 days"], ["expenses", "Expenses against budget, and cost as % of sales"], ["pnl", "Profit and loss, month to date (needs the Profit & Loss app)"], ["cash", "Cash movement of the month"]];
   const fnDate = (v) => { v = String(v || "").trim(); let m = v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`; m = v.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/); if (m) return `${m[3].length === 2 ? "20" + m[3] : m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`; return ""; };
   const fnRows = (txt) => String(txt || "").split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => l.split(l.includes("\t") ? "\t" : ",").map((c) => c.trim().replace(/^"|"$/g, "")));
   const fnIsHead = (r) => r.length && !/\d/.test(r[r.length - 1] || "x");

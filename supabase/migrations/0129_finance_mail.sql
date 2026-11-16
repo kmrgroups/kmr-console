@@ -28,11 +28,13 @@ create index if not exists fin_open_items_c on console.fin_open_items (customer_
 -- receipts from customers, payments to suppliers, expenses
 create table if not exists console.fin_entries (
   id uuid primary key default gen_random_uuid(), customer_id uuid not null references console.customers(id) on delete cascade,
-  kind text not null check (kind in ('receipt', 'payment', 'expense')),
+  kind text not null check (kind in ('receipt', 'payment', 'expense', 'income')),   -- income / expense = booked for the profit and loss; receipt / payment = money moved
   source text not null default 'app' check (source in ('app', 'tally', 'erp')),
   entry_date date not null, party text, head text not null default '', ref_no text, amount numeric not null check (amount > 0), note text,
   created_by text, created_at timestamptz not null default now());
 create index if not exists fin_entries_c on console.fin_entries (customer_id, source, kind, entry_date);
+alter table console.fin_entries drop constraint if exists fin_entries_kind_check;
+alter table console.fin_entries add constraint fin_entries_kind_check check (kind in ('receipt', 'payment', 'expense', 'income'));
 -- monthly budget per expense head; month '*' = every month
 create table if not exists console.fin_budget (
   customer_id uuid not null references console.customers(id) on delete cascade,
@@ -47,7 +49,7 @@ do $$ declare t text; begin
 end $$;
 
 -- ---------- the figures ----------
-create or replace function console.fin_kpis(p_cid uuid, p jsonb default '{}', p_source text default 'app') returns jsonb language plpgsql stable security definer set search_path = console, public as $$
+create or replace function console.fin_kpis_base(p_cid uuid, p jsonb default '{}', p_source text default 'app') returns jsonb language plpgsql stable security definer set search_path = console, public as $$
 declare
   d0 date := (now() at time zone 'Asia/Kolkata')::date;
   ms date := date_trunc('month', (now() at time zone 'Asia/Kolkata'))::date;
@@ -142,6 +144,8 @@ begin
   end if;
   return res;
 end $$;
+revoke all on function console.fin_kpis_base(uuid, jsonb, text) from public, anon, authenticated;
+create or replace function console.fin_kpis(p_cid uuid, p jsonb default '{}', p_source text default 'app') returns jsonb language sql stable security definer set search_path = console, public as $$ select console.fin_kpis_base(p_cid, p, p_source) $$;   -- 0130 adds the Profit & Loss block
 revoke all on function console.fin_kpis(uuid, jsonb, text) from public, anon, authenticated;
 
 -- ---------- Administration screen (company administrators only) ----------
@@ -193,8 +197,8 @@ end $$;
 grant execute on function public.kmr_fin_save(text, jsonb) to authenticated;
 
 -- typed / pasted data. kind: recv | pay (outstanding bills, replaces the old list), entry (receipt / payment / expense lines, added), budget (per head and month, replaced for those heads)
-create or replace function public.kmr_fin_import(p_slug text, p_kind text, p_rows jsonb) returns jsonb language plpgsql security definer set search_path = console, public as $$
-declare cid uuid := console.fin_admin(p_slug); x jsonb; n int := 0; amt numeric; dt date; dd date; k text; hd text; mo text;
+create or replace function console.fin_import_core(cid uuid, p_kind text, p_rows jsonb) returns jsonb language plpgsql security definer set search_path = console, public as $$
+declare x jsonb; n int := 0; amt numeric; dt date; dd date; k text; hd text; mo text;
 begin
   if jsonb_typeof(p_rows) <> 'array' or jsonb_array_length(p_rows) = 0 then raise exception 'There are no rows to save.'; end if;
   if jsonb_array_length(p_rows) > 5000 then raise exception 'Please load at most 5000 rows at a time.'; end if;
@@ -211,7 +215,7 @@ begin
     for x in select * from jsonb_array_elements(p_rows) loop
       k := lower(coalesce(x ->> 'kind', ''));
       amt := nullif(regexp_replace(coalesce(x ->> 'amount', ''), '[^0-9.\-]', '', 'g'), '')::numeric;
-      if k not in ('receipt', 'payment', 'expense') or amt is null or amt <= 0 then continue; end if;
+      if k not in ('receipt', 'payment', 'expense', 'income') or amt is null or amt <= 0 then continue; end if;
       dt := nullif(x ->> 'entry_date', '')::date; if dt is null then continue; end if;
       insert into console.fin_entries (customer_id, kind, source, entry_date, party, head, ref_no, amount, note, created_by)
       values (cid, k, 'app', dt, nullif(trim(x ->> 'party'), ''), coalesce(trim(x ->> 'head'), ''), nullif(trim(x ->> 'ref_no'), ''), amt, nullif(trim(x ->> 'note'), ''), lower(coalesce(auth.jwt() ->> 'email', '')));
@@ -230,6 +234,10 @@ begin
   if n = 0 then raise exception 'No valid row found. Check the date format (YYYY-MM-DD) and the amount.'; end if;
   return jsonb_build_object('saved', n, 'skipped', jsonb_array_length(p_rows) - n);
 end $$;
+revoke all on function console.fin_import_core(uuid, text, jsonb) from public, anon, authenticated;
+create or replace function public.kmr_fin_import(p_slug text, p_kind text, p_rows jsonb) returns jsonb language sql security definer set search_path = console, public as $$
+  select console.fin_import_core(console.fin_admin(p_slug), p_kind, p_rows)
+$$;
 grant execute on function public.kmr_fin_import(text, text, jsonb) to authenticated;
 
 -- latest lines typed in the app (to correct a mistake) and delete
@@ -271,7 +279,7 @@ begin
     delete from console.fin_entries where customer_id = cid and source = src and entry_date >= coalesce(fd, date '1900-01-01');
     for x in select * from jsonb_array_elements(p -> 'entries') loop
       amt := (x ->> 'amount')::numeric;
-      if amt is null or amt <= 0 or coalesce(x ->> 'kind', '') not in ('receipt', 'payment', 'expense') or nullif(x ->> 'entry_date', '') is null then continue; end if;
+      if amt is null or amt <= 0 or coalesce(x ->> 'kind', '') not in ('receipt', 'payment', 'expense', 'income') or nullif(x ->> 'entry_date', '') is null then continue; end if;
       insert into console.fin_entries (customer_id, kind, source, entry_date, party, head, ref_no, amount, created_by)
       values (cid, x ->> 'kind', src, (x ->> 'entry_date')::date, left(nullif(trim(x ->> 'party'), ''), 120), left(coalesce(trim(x ->> 'head'), ''), 80), left(nullif(trim(x ->> 'ref_no'), ''), 60), amt, 'bridge');
       n2 := n2 + 1;

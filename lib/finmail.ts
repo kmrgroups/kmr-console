@@ -8,7 +8,7 @@ import { COL, compose, dmy, esc, mini, nf, tiles, worst, type Section, type St }
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type K = Record<string, any>;
-export const FIN_KEYS = ["sales", "receivables", "payables", "expenses", "cash"] as const;
+export const FIN_KEYS = ["sales", "receivables", "payables", "expenses", "pnl", "cash"] as const;
 export type FinKey = (typeof FIN_KEYS)[number];
 export type FinTargets = { dso_target?: number; overdue_pct_target?: number; expense_pct_target?: number | null; material_pct_target?: number | null };
 export const FIN_DEFAULTS = { dso_target: 60, overdue_pct_target: 10 };
@@ -142,6 +142,34 @@ function expenses(k: K, T: FinTargets, salesMtd: number | null): Section {
   return { key: "expenses", title: "Expenses and cost against sales", std: STD + " · ISO 9001 §9.1.1 monitoring and measurement", st, tiles: tl, html, open: "fin", mgmt, team, good };
 }
 
+function pnl(k: K): Section {
+  const T = k.totals, P = k.prev || {}, sales = T.sales || 0;
+  const gpSt: St = T.gross_profit < 0 ? "act" : T.gp_pct !== null && P.gp_pct !== null && T.gp_pct < P.gp_pct - 3 ? "watch" : "ok";
+  const npSt: St = T.net_profit < 0 ? "act" : T.np_pct !== null && P.np_pct !== null && T.np_pct < P.np_pct - 3 ? "watch" : "ok";
+  const st = worst(gpSt, npSt);
+  const lines = (k.lines || []) as { head: string; grp: string; amt: number; budget: number | null }[];
+  const mat = lines.find((l) => l.head === "Raw material");
+  const tl = [
+    { label: "Sales (month to date)", value: rs(sales), sub: `last month ${rs(P.sales)}` },
+    { label: "Gross profit", value: rs(T.gross_profit), sub: T.gp_pct === null ? undefined : `${nf(T.gp_pct, 1)}% of sales · last month ${P.gp_pct === null || P.gp_pct === undefined ? "–" : nf(P.gp_pct, 1) + "%"}`, st: gpSt },
+    { label: "Net profit", value: rs(T.net_profit), sub: T.np_pct === null ? undefined : `${nf(T.np_pct, 1)}% of sales · last month ${P.np_pct === null || P.np_pct === undefined ? "–" : nf(P.np_pct, 1) + "%"}`, st: npSt },
+    { label: "Raw material", value: mat && sales > 0 ? nf((100 * mat.amt) / sales, 1) + "%" : "–", sub: "of sales" },
+  ];
+  const split = lines.filter((l) => l.grp === "direct" || l.grp === "indirect").sort((a, b) => b.amt - a.amt).slice(0, 10);
+  let html = tiles(tl);
+  html += mini("Where the money went (largest first, % of sales)", split.map((l) => [l.head, `${rs(l.amt)}${sales > 0 ? " · " + nf((100 * l.amt) / sales, 1) + "%" : ""}${l.budget ? ` · budget ${rs(l.budget)}${l.amt > l.budget ? " (OVER)" : ""}` : ""}`]));
+  const mgmt: string[] = [], team: Section["team"] = [], good: string[] = [];
+  if (T.gross_profit < 0) { mgmt.push(`Direct costs (${rs(T.direct)}) are more than sales (${rs(sales)}) so far this month. Check material, wages and tooling heads.`); team.push({ who: "Accounts", text: "Check that all sales invoices are raised and that stock values are entered; then review the largest cost heads." }); }
+  else if (gpSt === "watch") mgmt.push(`Gross profit has slipped to ${nf(T.gp_pct, 1)}% from ${nf(P.gp_pct, 1)}% last month.`);
+  if (T.net_profit < 0 && T.gross_profit >= 0) mgmt.push(`Gross profit is positive but indirect costs (${rs(T.indirect)}) take net profit to ${rs(T.net_profit)}.`);
+  if (st === "ok") good.push(`Profit is healthy: net ${nf(T.np_pct, 1)}% of sales.`);
+  const over = lines.filter((l) => l.budget && l.amt > l.budget);
+  if (over.length) team.push({ who: "Department heads", text: `Over budget: ${over.slice(0, 3).map((l) => l.head).join(", ")}.` });
+  if (!k.stock?.entered) team.push({ who: "Accounts", text: "Enter opening and closing stock so the profit shows material consumed, as in Tally." });
+  if (k.unclassified > 0) team.push({ who: "Accounts", text: `${rs(k.unclassified)} of GRN purchases are not in the account. Add keyword rules in the Profit & Loss app.` });
+  return { key: "pnl", title: "Profit and loss (month to date)", std: STD + " · ISO 9001 §9.1.1", st, tiles: tl, html, open: "pnl", mgmt, team, good };
+}
+
 function cash(k: K): Section {
   const net = k.receipts - k.payments;
   const st: St = net < 0 ? "watch" : "ok";
@@ -165,8 +193,9 @@ export function buildFinance(inp: FinInput) {
   if (on("receivables")) S.push(receivables(kp.receivables!, T, kp.sales ? num(kp.sales.gross_90) : null));
   if (on("payables")) S.push(payables(kp.payables!, T));
   if (on("expenses")) S.push(expenses(kp.expenses!, T, kp.sales ? num(kp.sales.mtd) : null));
+  if (on("pnl")) S.push(pnl(kp.pnl!));
   if (on("cash")) S.push(cash(kp.cash!));
-  const missing = FIN_KEYS.filter((k) => inp.sections?.[k] !== false && !kp[k]).map((m) => ({ sales: "Sales (Sales Invoicing has no issued invoice)", receivables: "Receivables (no outstanding bills loaded)", payables: "Payables (no outstanding bills loaded)", expenses: "Expenses (no expense or budget entered)", cash: "Cash movement (no receipt or payment entered)" }[m]));
+  const missing = FIN_KEYS.filter((k) => inp.sections?.[k] !== false && !kp[k]).map((m) => ({ sales: "Sales (Sales Invoicing has no issued invoice)", receivables: "Receivables (no outstanding bills loaded)", payables: "Payables (no outstanding bills loaded)", expenses: "Expenses (no expense or budget entered)", pnl: "Profit and loss (Profit & Loss app not in plan or no figures yet)", cash: "Cash movement (no receipt or payment entered)" }[m]));
   const r = compose({ S, slug: inp.slug, company: inp.company, today, test: inp.test, platformUrl: inp.platformUrl, refPrefix: "FIN", format: FORMAT, title: "Finance report", missing,
     mgmtTitle: "Top management: where to concentrate today", teamTitle: "Accounts and sales: what to do today", settingsPath: "Administration › Finance mail", openLabel: "Open the portal",
     allClear: "Nothing needs top management attention today. Money figures are within targets.", noTeam: "No open money items for the teams today." });

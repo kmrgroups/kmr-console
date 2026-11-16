@@ -1,0 +1,201 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
+<title>Profit &amp; Loss · KMR Apps</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0891b2;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;color:#130a3a;font-weight:800;font-size:14px;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tab{text-decoration:none;display:inline-block;border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;flex:none}.tab.on{background:var(--card);color:var(--b1);box-shadow:0 -2px 0 var(--b1) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%;min-width:0}
+.btn{border:0;border-radius:9px;padding:8px 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer;text-decoration:none;display:inline-block}.btn.o{background:none;color:var(--b1);border:1px solid var(--b1)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row>.grow{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b1))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}
+.mut{color:var(--mut)}.hide{display:none}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
+a{color:var(--b1)}
+.bar{display:flex;gap:2px;min-width:120px}.bar i{flex:1;height:8px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}.bar i b{position:absolute;inset:0 auto 0 0;background:var(--g)}
+.ph{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.ph>h3{margin:0;padding:10px 12px;background:var(--bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}.ph>h3 .grow{flex:1}
+.ph table{min-width:820px}.ph input,.ph select{padding:4px 6px;font-size:13px}
+tr.done td:nth-child(3) b{color:var(--mut);text-decoration:line-through}tr.na{opacity:.55}
+.src{font-size:12px;margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.src.missing a,.src.na{color:var(--mut)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tile{border:1px solid var(--line);border-radius:12px;padding:10px;border-top:3px solid var(--c,var(--b1))}.tile b{font-size:20px}.tile small{display:block;color:var(--mut)}
+.links{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.links a{border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12px;text-decoration:none;color:var(--ink)}.links a:hover{border-color:var(--b1)}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:9;padding:10px}.modal.on{display:flex}.in{background:var(--card);border-radius:14px;width:min(720px,100%);max-height:92vh;overflow:auto;padding:16px}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.frm label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--mut);margin:8px 0}
+.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
+.rep h2{margin:0 0 4px}.rep table{min-width:0}
+@media print{body{background:#fff;color:#000;padding:0}header,.tabs,.noprint,.kmr-foot,.kmr-demo,.back{display:none!important}.panel{border:0;padding:0}main{padding:0}.ph{break-inside:avoid}}
+.num{text-align:right;font-variant-numeric:tabular-nums}.ph table{min-width:0}.late{color:var(--r);font-weight:700}.tabs .tab.on{}
+.sup{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.sup>h3{margin:0;padding:10px 12px;background:var(--bg);font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sup>h3 .grow{flex:1}
+.rmp-sc{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:6px 0}.rmp-sc::-webkit-scrollbar{height:14px;width:14px}.rmp-sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px;border:3px solid #eef1f6}.rmp-sc thead th{position:sticky;top:0;z-index:3;background:#EEF2F8}.rmp-sc table{margin:0}.bars{display:flex;flex-direction:column;gap:3px}.bars i{display:block;height:7px;border-radius:4px;min-width:2px}.sum{display:flex;gap:18px;flex-wrap:wrap;padding:2px 14px 12px}.sum span{color:var(--mut)}.sum b{color:var(--ink)}
+.cp{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8);white-space:nowrap}.cp.cg{--c:#16a34a}.cp.ca{--c:#d97706}.cp.cr{--c:#dc2626}.cp.cb{--c:#174b80}.cp.cm{--c:#64748b}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 14px}.kp div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,#174b80)}.kp b{display:block;font-size:22px}.kp span{color:var(--mut);font-size:12px}
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:8px 0}.dg label{display:block;font-size:12px;color:var(--mut);margin-bottom:2px}
+.lt{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}.lt th,.lt td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}.lt th{background:var(--bg);position:sticky;top:0;z-index:2;white-space:nowrap}.lt td input,.lt td select{padding:5px 6px;min-width:70px}.lt td.n,.lt th.n{text-align:right}.lt td.w input{min-width:160px}
+.sc{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--card)}.sc::-webkit-scrollbar{height:14px;width:14px}.sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:var(--card)}.box h3{margin:0 0 6px;font-size:15px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}.seg label.on{border-color:var(--b1);background:#174b8014}.seg input{width:auto}
+.late{color:var(--r);font-weight:700}.num{text-align:right;font-variant-numeric:tabular-nums}.grow{flex:1}.note{font-size:12px;color:var(--mut);margin:6px 0}
+.docv{background:#fff;color:#000;border:1px solid #444;padding:14px 16px;margin:10px 0;font:12px/1.4 Arial,Helvetica,sans-serif;position:relative;overflow:hidden}.docv h2{margin:0;text-align:center;font-size:17px;letter-spacing:.5px}.docv .sub{text-align:center;font-size:11px;margin-bottom:6px}
+.docv table{border-collapse:collapse;width:100%;margin:8px 0}.docv th,.docv td{border:1px solid #444;padding:4px 6px;text-align:left;vertical-align:top}.docv th{background:#e7e6e6}.docv td.n,.docv th.n{text-align:right}
+.docv .two{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #444;margin-top:6px}.docv .two>div{padding:6px 8px}.docv .two>div+div{border-left:1px solid #444}.docv .cl{font-weight:700;text-align:right;font-size:11px}
+.docv .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #444;margin-top:10px}.docv .sg div{height:62px;padding:4px 8px;font-size:11px;display:flex;align-items:flex-end}.docv .sg div+div{border-left:1px solid #444}
+.docv .wm{position:absolute;inset:0;display:grid;place-items:center;font-size:70px;font-weight:800;color:#dc262622;transform:rotate(-20deg);pointer-events:none}
+.pgb{page-break-after:always}
+@media print{.docv{border:1px solid #000;margin:0}.docv.pgb:last-child{page-break-after:auto}.sc{max-height:none;overflow:visible;border:0}.lt{min-width:0}}
+@media(max-width:640px){.docv .two,.docv .sg{grid-template-columns:1fr}.docv .two>div+div,.docv .sg div+div{border-left:0;border-top:1px solid #444}}
+
+.tt td{border:0!important;padding:2px 6px}.tt{width:100%;margin:0;min-width:0}.tot{margin-left:auto;width:min(340px,100%)}.tot div{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line)}.tot .big{font-weight:800;font-size:16px;border-bottom:0}
+.docv .tot div{border-bottom:1px dotted #888}
+.docv .big2{font-size:12px;font-weight:700;margin:4px 0}
+</style></head><body>
+<header><span class="clogo" id="clogo" hidden></span><div><h1>Profit &amp; Loss</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="pl" href="#go=pl">Profit &amp; Loss</a><a class="tab" data-t="ent" href="#go=ent">Entries &amp; budget</a><a class="tab" data-t="set" href="#go=set">Heads, rules &amp; stock</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="pl" class="hide"></section><section id="ent" class="hide"></section><section id="set" class="hide"></section></div></main>
+<script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-mobile.js"></script><script src="/it/apps/kmr-select.js"></script>
+<script>
+const {$,esc,say,call}=QP;
+const S={d:null,go:null,rep:null,prev:null,tr:null,per:'m0',from:'',to:'',zero:false};
+const td=()=>new Date(Date.now()+19800000).toISOString().slice(0,10);
+const inr=(v)=>(v==null?'–':(v<0?'−':'')+'₹'+Math.abs(Math.round(v)).toLocaleString('en-IN'));
+const lk=(v)=>v==null?'–':(Math.abs(v)>=1e7?(v/1e7).toFixed(2)+' Cr':Math.abs(v)>=1e5?(v/1e5).toFixed(2)+' L':Math.round(v).toLocaleString('en-IN'));
+const pc=(a,b)=>b>0&&a!=null?(100*a/b).toFixed(1)+'%':'–';
+const canEdit=()=>QP.canEdit;
+const hashGo=()=>{const m=location.hash.match(/go=([a-z]+)/);return m?m[1]:'std'};
+const rep=(title,doc,no)=>{if(window.KMRReport)window.KMRReport.set({title,doc:doc||'',format:'KMR/PNL/F-'+no,rev:'01',date:'2026-11-16'})};
+const mAdd=(ym,n)=>{let y=+ym.slice(0,4),m=+ym.slice(5,7)-1+n;y+=Math.floor(m/12);m=((m%12)+12)%12;return y+'-'+String(m+1).padStart(2,'0')};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const mlab=(ym)=>MON[+ym.slice(5,7)-1]+' '+ym.slice(0,4);
+const fyStart=(ym)=>{const y=+ym.slice(0,4),m=+ym.slice(5,7);return (m<4?y-1:y)+'-04'};
+const SRC={invoicing:'Sales Invoicing',rmp:'Raw Material Planning',payroll:'HRM payroll',maintenance:'Maintenance',calibration:'Calibration Hub',purchases:'DC & GRN purchases',entered:'Entered / Tally / ERP'};
+const GRP={income:'Income',direct:'Direct expenses',indirect:'Indirect expenses'};
+const dmy=(s)=>s?String(s).slice(0,10).split('-').reverse().join('/'):'';
+
+function range(){const cur=td().slice(0,7);
+  if(S.per==='m0')return [cur,cur];if(S.per==='m1'){const p=mAdd(cur,-1);return [p,p]}
+  if(S.per==='q')return [mAdd(cur,-2),cur];if(S.per==='fy')return [fyStart(cur),cur];
+  if(S.per==='lfy'){const f=mAdd(fyStart(cur),-12);return [f,mAdd(f,11)]}
+  return [S.from||cur,S.to||S.from||cur]}
+function prevRange(r){const n=(+r[1].slice(0,4)-+r[0].slice(0,4))*12+(+r[1].slice(5,7)-+r[0].slice(5,7))+1;return [mAdd(r[0],-n),mAdd(r[0],-1)]}
+const dt=(ym)=>ym+'-01';
+async function loadPL(){const r=range(),p=prevRange(r);
+  const [a,b,t]=await Promise.all([call('kmr_pnl_report',{p_from:dt(r[0]),p_to:dt(r[1])}),call('kmr_pnl_report',{p_from:dt(p[0]),p_to:dt(p[1])}),call('kmr_pnl_trend',{p_months:6})]);
+  S.rep=a;S.prev=b;S.tr=t}
+async function loadSet(){S.d=await call('kmr_pnl_load',{})}
+
+async function route(){const go=hashGo();if(go!==S.go){S.go=go}
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
+  ['std','pl','ent','set'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  if(go==='std'){KMRStd.draw($('#std'),'pnl');return}
+  try{if(go==='pl'){await loadPL();drawPL()}else{await loadSet();go==='ent'?drawEnt():drawSet()}}catch(e){say(e.message)}}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
+window.addEventListener('hashchange',route);
+
+/* ---------- Profit & Loss ---------- */
+function drawPL(){const r=S.rep,p=S.prev,T=r.totals,PT=p.totals,rg=range();
+  const line=(l)=>{const pl=(p.lines.find(x=>x.head===l.head)||{}).amt||0;return {...l,prev:pl}};
+  const rows=(g)=>r.lines.filter(l=>l.grp===g&&(S.zero||l.amt||l.budget||l.auto)).map(line);
+  const pct=(a)=>T.sales>0?(100*a/T.sales).toFixed(1)+'%':'–';
+  const bud=(l)=>{if(!l.budget)return '<td class="num mut">–</td><td></td>';const v=l.grp==='income'?l.amt-l.budget:l.budget-l.amt;return '<td class="num">'+inr(l.budget)+'</td><td class="num '+(v<0?'late':'')+'">'+(v<0?'over ':'under ')+inr(Math.abs(v))+'</td>'};
+  const tr=(l)=>'<tr><td>'+esc(l.head)+(l.unmapped?' <span class="chip a" title="This ledger name is not mapped to a head - add it under Heads, rules & stock">unmapped</span>':'')+'</td><td class="num">'+inr(l.amt)+'</td><td class="num">'+(l.grp==='income'?'':pct(l.amt))+'</td><td class="num mut">'+inr(l.prev)+'</td>'+bud(l)+'<td class="mut" style="font-size:12px">'+esc(SRC[l.src]||'')+'</td></tr>';
+  const tot=(label,a,pa,cls)=>'<tr style="font-weight:700;background:#f1f5f9;color:#000"><td>'+label+'</td><td class="num '+(cls&&a<0?'late':'')+'">'+inr(a)+'</td><td class="num">'+pct(a)+'</td><td class="num">'+inr(pa)+'</td><td></td><td></td><td></td></tr>';
+  const inc=rows('income'),dir=rows('direct'),ind=rows('indirect');
+  const st=r.stock;
+  const sk=st.entered?'<tr><td>Opening stock</td><td class="num">'+inr(st.opening||0)+'</td><td class="num">'+pct(st.opening||0)+'</td><td></td><td></td><td></td><td class="mut" style="font-size:12px">Entered</td></tr><tr><td>Less: closing stock</td><td class="num">−'+inr(st.closing||0).replace('−','')+'</td><td class="num">'+pct(st.closing||0)+'</td><td></td><td></td><td></td><td class="mut" style="font-size:12px">Entered</td></tr>':'';
+  const per=rg[0]===rg[1]?mlab(rg[0]):mlab(rg[0])+' to '+mlab(rg[1]);
+  const gpS=T.gross_profit<0?'r':T.gp_pct<15?'a':'g',npS=T.net_profit<0?'r':T.np_pct<5?'a':'g';
+  const mat=(r.lines.find(l=>l.head==='Raw material')||{}).amt||0;
+  const notes=[];
+  if(!r.pulled.invoicing)notes.push('Sales Invoicing is not in your plan: enter Sales as income under Entries & budget (or load it from Tally).');
+  if(!st.entered)notes.push('Opening / closing stock is not entered for this period, so material cost is the material PURCHASED, not CONSUMED. Enter the stock under Heads, rules & stock for a Tally-true gross profit.');
+  if(r.unclassified>0)notes.push(inr(r.unclassified)+' of purchases received on GRNs matched no rule, so they are not in this account. Add a keyword rule under Heads, rules & stock.');
+  if(r.lines.some(l=>l.unmapped))notes.push('Some ledger names are not mapped to a head (shown with an amber tag). They are counted under indirect expenses until you map them.');
+  if(r.source!=='app')notes.push('Entries are read from '+(r.source==='tally'?'Tally':'the ERP')+' (Administration > Finance mail > source). Entries typed here are used only when the source is "Typed or pasted".');
+  $('#pl').innerHTML='<div class="noprint"><div class="row"><label>Period <select id="per" style="width:auto"><option value="m0">This month</option><option value="m1">Last month</option><option value="q">Last 3 months</option><option value="fy">Financial year to date</option><option value="lfy">Last financial year</option><option value="c">Choose months…</option></select></label>'
+   +'<span id="cust" class="hide"><input type="month" id="cf" style="width:auto"> to <input type="month" id="ct" style="width:auto"></span>'
+   +'<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="zero" style="width:auto"> show lines with no amount</label><span class="grow"></span><button class="btn o" id="prn">🖨 Print / PDF</button></div></div>'
+   +'<div class="kpis"><div class="kpi" style="--c:var(--b1)"><small class="mut">Sales</small><br><b style="font-size:20px">₹'+lk(T.sales)+'</b><br><small class="mut">before: ₹'+lk(PT.sales)+'</small></div>'
+   +'<div class="kpi" style="--c:var(--'+gpS+')"><small class="mut">Gross profit</small><br><b style="font-size:20px">₹'+lk(T.gross_profit)+'</b><br><small>'+(T.gp_pct==null?'–':T.gp_pct+'% of sales')+' · before '+(PT.gp_pct==null?'–':PT.gp_pct+'%')+'</small></div>'
+   +'<div class="kpi" style="--c:var(--'+npS+')"><small class="mut">Net profit</small><br><b style="font-size:20px">₹'+lk(T.net_profit)+'</b><br><small>'+(T.np_pct==null?'–':T.np_pct+'% of sales')+' · before '+(PT.np_pct==null?'–':PT.np_pct+'%')+'</small></div>'
+   +'<div class="kpi" style="--c:var(--b2)"><small class="mut">Raw material</small><br><b style="font-size:20px">'+pct(mat)+'</b><br><small class="mut">of sales</small></div></div>'
+   +(notes.length?'<div class="msg" style="background:#fef3c7;color:#92400e">'+notes.map(n=>'• '+esc(n)).join('<br>')+'</div>':'')
+   +'<div class="docv" data-nofilter><h2>Profit and Loss account</h2><div style="text-align:center;margin-bottom:6px">'+esc(per)+' · amounts in rupees · figures pulled from the KMR apps and Tally / ERP</div>'
+   +'<table><thead><tr><th>Particulars</th><th class="n">Amount</th><th class="n">% of sales</th><th class="n">Previous period</th><th class="n">Budget</th><th class="n">Against budget</th><th>Source</th></tr></thead><tbody>'
+   +'<tr><td colspan="7"><b>Income</b></td></tr>'+inc.map(tr).join('')
+   +'<tr><td colspan="7"><b>Direct expenses</b></td></tr>'+sk+dir.map(tr).join('')
+   +tot('Gross profit (sales less direct expenses)',T.gross_profit,PT.gross_profit,1)
+   +'<tr><td colspan="7"><b>Indirect expenses</b></td></tr>'+ind.map(tr).join('')
+   +tot('Net profit (gross profit + other income − indirect expenses)',T.net_profit,PT.net_profit,1)
+   +'</tbody></table><div class="note" style="color:#444">Prepared from the KMR apps (Sales Invoicing, Raw Material Planning, HRM payroll, Maintenance, Calibration Hub, DC &amp; GRN) and entered / Tally / ERP figures. A head with entered figures replaces the pulled figure. This is a management account, not an audited statement.</div></div>'
+   +trendHtml();
+  $('#per').value=S.per;$('#cust').classList.toggle('hide',S.per!=='c');$('#cf').value=S.from||rg[0];$('#ct').value=S.to||rg[1];$('#zero').checked=S.zero;
+  $('#per').onchange=async(e)=>{S.per=e.target.value;if(S.per==='c'){const r=range();S.from=r[0];S.to=r[1]}try{await loadPL();drawPL()}catch(x){say(x.message)}};
+  $('#cf').onchange=$('#ct').onchange=async()=>{S.from=$('#cf').value;S.to=$('#ct').value||S.from;if(S.from&&S.to>=S.from){try{await loadPL();drawPL()}catch(x){say(x.message)}}};
+  $('#zero').onchange=(e)=>{S.zero=e.target.checked;drawPL()};
+  $('#prn').onclick=()=>{rep('Profit and Loss account',per,1);window.print()};rep('Profit and Loss account',per,1)}
+function trendHtml(){const t=S.tr||[];if(!t.length)return '';const mx=Math.max(1,...t.map(x=>Math.max(Math.abs(x.sales||0),Math.abs(x.net_profit||0))));
+  return '<div class="box noprint"><h3>Last 6 months</h3><table style="min-width:0"><thead><tr><th>Month</th><th></th><th class="num">Sales</th><th class="num">Gross profit</th><th class="num">Net profit</th><th class="num">Net %</th></tr></thead><tbody>'
+   +t.map(x=>'<tr><td>'+mlab(x.m)+'</td><td style="width:40%"><div style="height:9px;background:var(--b1);width:'+Math.max(1,Math.round(100*Math.abs(x.sales||0)/mx))+'%;border-radius:3px"></div><div style="height:9px;margin-top:2px;background:var(--'+((x.net_profit||0)<0?'r':'g')+');width:'+Math.max(1,Math.round(100*Math.abs(x.net_profit||0)/mx))+'%;border-radius:3px"></div></td><td class="num">'+inr(x.sales)+'</td><td class="num">'+inr(x.gross_profit)+'</td><td class="num '+((x.net_profit||0)<0?'late':'')+'">'+inr(x.net_profit)+'</td><td class="num">'+(x.np_pct==null?'–':x.np_pct+'%')+'</td></tr>').join('')
+   +'</tbody></table><div class="note">Blue = sales, green / red = net profit.</div></div>'}
+
+/* ---------- parsing for pasted lines ---------- */
+const fnDate=(v)=>{v=String(v||'').trim();let m=v.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');m=v.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/);if(m)return (m[3].length===2?'20'+m[3]:m[3])+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');return ''};
+const fnRows=(t)=>String(t||'').split(/\r?\n/).map(l=>l.trim()).filter(Boolean).map(l=>l.split(l.includes('\t')?'\t':',').map(c=>c.trim().replace(/^"|"$/g,'')));
+const fnHead=(r)=>r.length&&!/\d/.test(r[r.length-1]||'x');
+const run=async(sel,fn)=>{const m=$(sel);m.className='msg';m.textContent='Saving…';try{const r=await fn();m.className='msg ok';m.textContent=r&&r.saved!=null?('Saved '+r.saved+' line'+(r.saved===1?'':'s')+(r.skipped?'; '+r.skipped+' could not be read (check date and amount)':'')+'.'):'Saved.';await loadSet();S.go==='ent'?drawEnt(sel,m.textContent):drawSet(sel,m.textContent)}catch(x){m.textContent=x.message}};
+
+/* ---------- Entries & budget ---------- */
+function drawEnt(keep,txt){const d=S.d,ed=canEdit(),opts=d.heads.filter(h=>h.auto!=='sales'||true).map(h=>'<option value="'+esc(h.head)+'">'+esc(h.head)+'  ('+(h.grp==='income'?'income':h.grp==='direct'?'direct':'indirect')+')</option>').join('');
+  $('#ent').innerHTML=(d.source!=='app'?'<div class="msg" style="background:#fef3c7;color:#92400e">The Profit &amp; Loss currently reads entries from '+(d.source==='tally'?'Tally':'the ERP')+'. Lines typed here are kept but counted only when the source (Administration › Finance mail) is "Typed or pasted".</div>':'')
+   +'<div class="box"><h3>Add an expense or income</h3><p class="note">Use this for what no KMR app holds: power bill, rent, tooling bought without a GRN, bank charges, other income… An amount entered for a head <b>replaces</b> the figure pulled from the apps for that head.</p>'
+   +(ed?'<div class="frm" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:end"><div><label>Type</label><select id="ek"><option value="expense">Expense</option><option value="income">Income</option></select></div><div><label>Date</label><input type="date" id="ed" value="'+td()+'"></div><div><label>Head</label><select id="eh">'+opts+'</select></div><div><label>Amount (₹)</label><input type="number" id="ea" min="0" step="0.01"></div><div><label>Party / note</label><input id="ep"></div><div><button class="btn" id="eadd">Add</button></div></div>'
+   +'<details style="margin:10px 0"><summary style="cursor:pointer">Or paste many lines: type, date, head or Tally ledger name, amount, party</summary><textarea id="epast" rows="4" placeholder="expense, 05-11-2026, Electricity charges, 90000&#10;income, 06-11-2026, Scrap sales, 12000" style="font-family:monospace;font-size:12px"></textarea><p><button class="btn o" id="epasteb">Save pasted lines</button></p></details>':'<p class="mut">You can view but not enter. Ask your administrator for editor access.</p>')
+   +'<div id="emsg" class="msg ok '+(txt&&keep==='#emsg'?'':'hide')+'">'+esc(txt||'')+'</div>'
+   +(d.entries.length?'<table style="min-width:0"><thead><tr><th>Date</th><th>Type</th><th>Head</th><th>Party</th><th class="num">Amount</th><th></th></tr></thead><tbody>'+d.entries.map(e=>'<tr><td>'+dmy(e.entry_date)+'</td><td>'+esc(e.kind)+'</td><td>'+esc(e.head)+'</td><td>'+esc(e.party||'')+'</td><td class="num">'+inr(e.amount)+'</td><td>'+(ed?'<button class="btn o" data-del="entry:'+e.id+'" style="padding:2px 8px">✕</button>':'')+'</td></tr>').join('')+'</tbody></table><div class="note">Latest 30 lines typed here.</div>':'<p class="mut">Nothing typed yet.</p>')+'</div>'
+   +'<div class="box"><h3>Monthly budget per head</h3><p class="note">One line per head: <b>head, amount</b> (every month) or <b>head, amount, 2026-12</b> (that month only). The P&amp;L shows each head against its budget.</p>'
+   +(ed?'<textarea id="bpast" rows="4" placeholder="Raw material, 3000000&#10;Power &amp; fuel, 150000&#10;Tooling, 80000" style="font-family:monospace;font-size:12px"></textarea><p><button class="btn" id="bsave">Save budget</button> <span id="bmsg" class="msg ok hide"></span></p>':'')
+   +(d.budget.length?'<table style="min-width:0"><tbody>'+d.budget.map(b=>'<tr><td>'+esc(b.head)+'</td><td>'+(b.month==='*'?'every month':esc(b.month))+'</td><td class="num">'+inr(b.amount)+'</td><td>'+(ed?'<button class="btn o" data-del="budget:'+esc(b.head)+':'+esc(b.month)+'" style="padding:2px 8px">✕</button>':'')+'</td></tr>').join('')+'</tbody></table>':'')+'</div>';
+  if(!ed)return;
+  $('#eadd').onclick=()=>run('#emsg',()=>call('kmr_pnl_import',{p_kind:'entry',p_rows:[{kind:$('#ek').value,entry_date:$('#ed').value,head:$('#eh').value,amount:$('#ea').value,party:$('#ep').value}]}));
+  $('#epasteb').onclick=()=>run('#emsg',()=>{const rows=fnRows($('#epast').value).filter(r=>!fnHead(r)).map(r=>({kind:r[0],entry_date:fnDate(r[1]),head:r[2],amount:r[3],party:r[4]}));return call('kmr_pnl_import',{p_kind:'entry',p_rows:rows})});
+  $('#bsave').onclick=()=>run('#bmsg',()=>{const rows=fnRows($('#bpast').value).filter(r=>!fnHead(r)).map(r=>({head:r[0],amount:r[1],month:r[2]||'*'}));return call('kmr_pnl_import',{p_kind:'budget',p_rows:rows})});
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{const [w,id,mo]=b.dataset.del.split(':');try{await call('kmr_pnl_delete',{p_what:w,p_id:id,p_month:mo||null});await loadSet();drawEnt()}catch(x){say(x.message)}})}
+
+/* ---------- Heads, rules & stock ---------- */
+function drawSet(keep,txt){const d=S.d,ed=canEdit(),hs=d.heads,ho=(sel)=>hs.map(h=>'<option '+(h.head===sel?'selected':'')+' value="'+esc(h.head)+'">'+esc(h.head)+'</option>').join('');
+  const gsel=(g)=>'<select data-g>'+Object.keys(GRP).map(k=>'<option value="'+k+'" '+(k===g?'selected':'')+'>'+GRP[k]+'</option>').join('')+'</select>';
+  const AU={sales:'Sales Invoicing',rmp:'Raw Material Planning',payroll:'HRM payroll',maintenance:'Maintenance',calibration:'Calibration Hub'};
+  const up=d.uses||{},upk={sales:'invoicing',rmp:'rmp',payroll:'payroll',maintenance:'maintenance',calibration:'calibration'};
+  $('#set').innerHTML='<div id="smsg" class="msg ok '+(txt?'':'hide')+'">'+esc(txt||'')+'</div>'
+   +'<div class="box"><h3>1. Heads of the account</h3><p class="note">The lines of the profit and loss. Heads filled by an app show where they come from; you can still enter a figure for them (it then replaces the pulled one). Add your own heads (for example “Tooling – carbide inserts”).</p>'
+   +'<table style="min-width:0"><thead><tr><th>Head</th><th>Belongs to</th><th>Filled automatically from</th><th></th></tr></thead><tbody>'+hs.map(h=>'<tr data-h="'+esc(h.head)+'"><td>'+esc(h.head)+'</td><td>'+(ed?gsel(h.grp):GRP[h.grp])+'</td><td>'+(h.auto?esc(AU[h.auto])+(up[upk[h.auto]]?'':' <span class="chip x">app not in plan</span>'):'<span class="mut">entered / Tally / rules</span>')+'</td><td>'+(ed&&!h.auto?'<button class="btn o" data-hd="'+esc(h.head)+'" style="padding:2px 8px">✕</button>':'')+'</td></tr>').join('')+'</tbody></table>'
+   +(ed?'<div class="row" style="margin-top:8px"><input id="nh" placeholder="New head name" style="max-width:260px"><select id="ng" style="width:auto"><option value="direct">Direct expense</option><option value="indirect">Indirect expense</option><option value="income">Income</option></select><button class="btn" id="hadd">Add head</button></div>':'')+'</div>'
+   +'<div class="box"><h3>2. Purchases on GRN → heads (keyword rules)</h3><p class="note">Every purchase received on a GRN in DC &amp; GRN (accepted quantity × PO rate) goes to the head of the first rule whose word appears in the item name or code, for example “insert” → Tooling, “coolant” → Consumables. Items that match nothing are listed as not classified.</p>'
+   +(d.rules.length?'<table style="min-width:0"><tbody>'+d.rules.map(r=>'<tr><td>contains “'+esc(r.keyword)+'”</td><td>→ '+esc(r.head)+'</td><td>'+(ed?'<button class="btn o" data-rd="'+r.id+'" style="padding:2px 8px">✕</button>':'')+'</td></tr>').join('')+'</tbody></table>':'<p class="mut">No rule yet.</p>')
+   +(ed?'<div class="row" style="margin-top:8px"><input id="rk" placeholder="word in item name, e.g. insert" style="max-width:260px"><select id="rh" style="width:auto">'+ho()+'</select><button class="btn" id="radd">Add rule</button></div>':'')
+   +'<div class="row"><label>Raw material comes from <select id="rms" style="width:auto"><option value="rmp" '+(d.rm_source==='rmp'?'selected':'')+'>Raw Material Planning (received value)</option><option value="purchases" '+(d.rm_source==='purchases'?'selected':'')+'>GRN purchases (by the rules above)</option><option value="entries" '+(d.rm_source==='entries'?'selected':'')+'>Entered / Tally only</option></select></label>'+(ed?'<button class="btn o" id="rmsb">Save</button>':'')+'</div></div>'
+   +'<div class="box"><h3>3. Tally / ERP ledger names → heads</h3><p class="note">When expenses are loaded from Tally or the ERP, each ledger name (for example “Electricity Charges”) is placed under a head here. Names that match a head name exactly need no mapping.</p>'
+   +(d.aliases.length?'<table style="min-width:0"><tbody>'+d.aliases.map(a=>'<tr><td>'+esc(a.alias)+'</td><td>→ '+esc(a.head)+'</td><td>'+(ed?'<button class="btn o" data-ad="'+esc(a.alias)+'" style="padding:2px 8px">✕</button>':'')+'</td></tr>').join('')+'</tbody></table>':'<p class="mut">No mapping yet.</p>')
+   +(ed?'<div class="row" style="margin-top:8px"><input id="an" placeholder="Ledger name as in Tally / ERP" style="max-width:300px"><select id="ah" style="width:auto">'+ho()+'</select><button class="btn" id="aadd">Add mapping</button></div>':'')+'</div>'
+   +'<div class="box"><h3>4. Opening and closing stock (value)</h3><p class="note">Tally works out the cost of material <b>consumed</b> = opening stock + purchases − closing stock. Enter the stock values per month (raw material, work in progress and finished goods together).'+(d.rmp_stock_value?' Raw material stock value now in Raw Material Planning: <b>'+inr(d.rmp_stock_value)+'</b> (raw material only, for reference).':'')+'</p>'
+   +(d.stock.length?'<table style="min-width:0"><thead><tr><th>Month</th><th class="num">Opening</th><th class="num">Closing</th><th></th></tr></thead><tbody>'+d.stock.map(s=>'<tr><td>'+mlab(s.month)+'</td><td class="num">'+inr(s.opening)+'</td><td class="num">'+inr(s.closing)+'</td><td>'+(ed?'<button class="btn o" data-sd="'+s.month+'" style="padding:2px 8px">✕</button>':'')+'</td></tr>').join('')+'</tbody></table>':'')
+   +(ed?'<div class="row" style="margin-top:8px"><input type="month" id="sm" value="'+td().slice(0,7)+'" style="width:auto"><input type="number" id="so" placeholder="Opening stock ₹" style="max-width:170px"><input type="number" id="sc" placeholder="Closing stock ₹" style="max-width:170px"><button class="btn" id="sadd">Save stock</button></div>':'')+'</div>';
+  if(!ed)return;
+  const sv=(p)=>run('#smsg',()=>call('kmr_pnl_save',{p}));
+  document.querySelectorAll('[data-h] [data-g]').forEach(sel=>sel.onchange=()=>sv({op:'head',head:sel.closest('tr').dataset.h,grp:sel.value}));
+  document.querySelectorAll('[data-hd]').forEach(b=>b.onclick=()=>{if(confirm('Remove the head “'+b.dataset.hd+'”? Its rules and mappings are removed too.'))sv({op:'head_delete',head:b.dataset.hd})});
+  $('#hadd').onclick=()=>sv({op:'head',head:$('#nh').value,grp:$('#ng').value});
+  $('#radd').onclick=()=>sv({op:'rule',keyword:$('#rk').value,head:$('#rh').value});
+  document.querySelectorAll('[data-rd]').forEach(b=>b.onclick=()=>sv({op:'rule_delete',id:b.dataset.rd}));
+  $('#aadd').onclick=()=>sv({op:'alias',alias:$('#an').value,head:$('#ah').value});
+  document.querySelectorAll('[data-ad]').forEach(b=>b.onclick=()=>sv({op:'alias_delete',alias:b.dataset.ad}));
+  $('#rmsb').onclick=()=>sv({op:'settings',rm_source:$('#rms').value});
+  $('#sadd').onclick=()=>sv({op:'stock',month:$('#sm').value,opening:$('#so').value,closing:$('#sc').value});
+  document.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>sv({op:'stock_delete',month:b.dataset.sd}))}
+
+(async()=>{try{await QP.init('pnl','kmr_pnl_context');if(!QP.ctx)return;await route()}catch(e){say(e.message)}})();
+</script><script src="/it/apps/back.js"></script><script src="/it/apps/kmr-present-link.js"></script></body></html>

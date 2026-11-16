@@ -59,6 +59,16 @@ sales:[
 ['ISO','9.1.3','Analysis and evaluation - sales loss by reason','Loss by reason, plant and customer with a cumulative % shows which few causes make most of the loss.'],
 ['IATF','10.2.4','Error-proofing','Each action in the conclusion screen ends with a permanent fix and a check in the next review; the permanent action is where error-proofing is decided.'],
 ['ISO','10.3','Continual improvement','The same loss figures are compared month after month; an action is closed only when the loss from its reason falls.']],
+pnl:[
+['ISO','9.1.1','Monitoring, measurement, analysis and evaluation','The profit and loss is worked out for any month or period straight from the KMR apps and Tally / ERP: sales, every direct and indirect cost head, gross and net profit, each cost as % of sales and against the previous period.'],
+['ISO','9.3.2','Management review inputs - performance and adequacy of resources','Gross profit, net profit, material cost % and heads over budget are shown for the review, with a 6-month trend, and are the figures of the Presentation screen and the Finance mail to top management.'],
+['ISO','7.1.1','Resources','Monthly budget per head is kept and every head is shown against it (under / over), so resource use is controlled and overspending is seen early.'],
+['ISO','6.1','Actions to address risks and opportunities','Heads over budget, negative gross profit and falling profit % are flagged; the Finance mail tells management and teams what to do.'],
+['ISO','8.4.1','Control of externally provided products and services','Purchases received on a GRN are valued (accepted quantity x PO rate) and sorted into heads by keyword rules, so what is bought is seen as cost; purchases that match no rule are listed, not hidden.'],
+['ISO','7.1.3','Infrastructure - tooling, maintenance and calibration cost','Tooling, repairs and maintenance (from Maintenance) and calibration cost (from Calibration Hub) are separate lines of the account.'],
+['IATF','9.3.2.1','Management review inputs - cost of poor quality','"Cost of poor quality (scrap, rework)" is a head of its own, so internal and external failure cost is visible next to the other costs and against sales.'],
+['IATF','8.4.2.4','Supplier monitoring','Purchase value per head is derived from the GRNs, giving the cost side of supplier performance; supplier delivery performance stays in DC & GRN and Raw Material Planning.']
+],
 inv:[
 ['ISO','9.3.2','Management review inputs - financial performance and resources','A separate daily Finance mail goes only to the top management you name: sales value, receivables and payables with ageing and overdue, days sales outstanding, expenses against budget and as a % of sales, raw material cost %, and cash movement, each with ON TRACK / WATCH / ACTION status and what Accounts and Sales must do.','mail'],
 ['GST','Section 31 CGST Act 2017','Tax invoice','A tax invoice is issued for every supply of goods, numbered in a series for the financial year, with date, supplier and recipient details, HSN, quantity, taxable value, tax rate and amount, place of supply, and signature.'],
