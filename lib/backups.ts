@@ -2,8 +2,8 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // Nightly backups (kept 30 days) in the private bucket kmr-backups:
-//   console/<date>.json — Console, billing and website data;  apps/<date>.json — the customers' app data
-const B = "kmr-backups", DIR = "console", APPS = "apps", KEEP = 30;
+//   console/<date>.json — Console, billing and website data;  customers/<plant>/<date>/ — each plant's app data (lib/dailybackup.ts)
+const B = "kmr-backups", DIR = "console", KEEP = 30;
 export const today = () => new Date(Date.now() + 330 * 6e4).toISOString().slice(0, 10);   // India date
 
 export async function exportConsole() {
@@ -23,20 +23,7 @@ export async function saveBackup(date = today()) {
   const cutoff = new Date(Date.parse(date) - KEEP * 864e5).toISOString().slice(0, 10);
   const old = (await listBackups()).filter((b) => b.date < cutoff).map((b) => `${DIR}/${b.date}.json`);
   if (old.length) await db.storage.from(B).remove(old);
-  return json.length + (await saveAppsBackup(date, cutoff));
-}
-/** Second file: Operations Master, Balloon Inspector, Process Documents and Capacity Planner data. */
-async function saveAppsBackup(date: string, cutoff: string) {
-  const db = createAdminClient();
-  const { data, error } = await db.rpc("apps_export");
-  if (error) throw new Error(`Apps export failed: ${error.message}`);
-  const json = JSON.stringify(data);
-  const up = await db.storage.from(B).upload(`${APPS}/${date}.json`, new Blob([json], { type: "application/json" }), { upsert: true, contentType: "application/json" });
-  if (up.error) throw new Error(up.error.message);
-  const { data: files } = await db.storage.from(B).list(APPS, { limit: 100, sortBy: { column: "name", order: "asc" } });
-  const old = (Array.isArray(files) ? files : []).filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f.name) && f.name.slice(0, 10) < cutoff).map((f) => `${APPS}/${f.name}`);
-  if (old.length) await db.storage.from(B).remove(old);
-  return json.length;
+  return json.length;   // the customers' app data is saved per plant by lib/dailybackup.ts
 }
 export async function readBackup(date: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;

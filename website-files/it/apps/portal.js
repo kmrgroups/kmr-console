@@ -168,7 +168,7 @@
         ${plants.length > 1 ? `<label style="display:block;padding:6px 10px"><small style="display:block;opacity:.7;margin-bottom:3px">Plant</small><select id="plantSel" style="width:100%;padding:6px;border-radius:8px">${plants.map((x) => `<option value="${esc(x.slug)}"${x.slug === SLUG ? " selected" : ""}>${esc(x.is_main ? "Main · " + x.name : x.plant_code + " · " + x.name.split(" – ").pop())}</option>`).join("")}${plants[0].is_all ? `<option value="__all"${view === "plants" ? " selected" : ""}>★ All plants · dashboard</option>` : ""}</select></label>` : ""}
         <h4>Your apps</h4>${mine.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}${r.ok ? "" : '<span class="lock">Paused</span>'}</a>`).join("") || `<small style="padding:0 10px;opacity:.6">No apps yet</small>`}
         ${ops || isAdmin ? `<h4>Masters</h4>` : ""}${ops ? `<a href="${viewHref("ops")}" data-ops="1"><i style="background:#0EA5E9"></i>Operations Master</a>` : ""}${isAdmin ? `<a href="${viewHref("data")}" data-datam="1"><i style="background:#0EA5E9"></i>Data Master</a><a href="${viewHref("grand")}" data-grand="1"><i style="background:#B45309"></i>Grand Master</a>` : ""}
-        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("finance")}" data-admin="finance"><i style="background:#F3C55A"></i>Finance mail (top management)</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
+        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("finance")}" data-admin="finance"><i style="background:#F3C55A"></i>Finance mail (top management)</a><a href="${viewHref("backup")}" data-admin="backup"><i style="background:#F3C55A"></i>Daily backup mail</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
         <h4>More KMR apps</h4>${others.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}<span class="lock">Try</span></a>`).join("")}
         ${SOON.map(([k, n]) => `<button data-soon="${k}" data-name="${esc(n)}"><i style="background:#64748b"></i>${esc(n)}<span class="lock">Soon</span></button>`).join("")}
         <button id="pw">Change password</button>
@@ -193,7 +193,7 @@
       mn.querySelectorAll("[data-name]").forEach((t) => { if (t.closest(".tb")) return; t.style.display = !q || (t.dataset.name + " " + t.textContent.toLowerCase()).includes(q) ? "" : "none"; });
       mn.querySelectorAll(".grp:not(.pane)").forEach((g) => { g.style.display = [...g.querySelectorAll("[data-name]")].some((t) => t.style.display !== "none") ? "" : "none"; }); }; }
     onLink("[data-open]", (b) => open(b.dataset.open));
-    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : b.dataset.admin === "finance" ? financeView() : usersView()));
+    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : b.dataset.admin === "backup" ? backupView() : b.dataset.admin === "finance" ? financeView() : usersView()));
     onLink("[data-datam]", () => dataView());
     onLink("[data-grand]", () => grandView());
     onLink("[data-ops]", () => opsView());
@@ -320,6 +320,35 @@
   /* Daily management mail: one mail a day with every app's dashboard and KPIs, what is OK and what to do. Sent at about 8:30 am India time. */
   const DG_SECTIONS = [["production", "mmd", "Production efficiency (month to date, last entry, machine-wise, day-wise)"], ["delivery", "sales", "Delivery to customers (despatch against plan)"], ["dcg", "dcg", "Delivery challans overdue, purchase orders and GRN"], ["calibration", "calib", "Calibration of gauges"],
     ["maintenance", "mnt", "Maintenance (breakdowns, preventive maintenance)"], ["hrm", "hrms", "People and attendance"], ["actions", "tsk", "Actions (ActionTrack)"], ["meetings", "mom", "Meeting actions"], ["audit", "aud", "Internal audit findings"], ["invoicing", "inv", "Invoicing"], ["rmp", "rmp", "Raw material planning (plan vs received, delays, low stock, overdue orders)"]];
+  async function backupView(note) {
+    setView("backup");
+    const m = mainEl(), T0 = "Daily backup mail", S0 = "Every night all the data of this plant (every app, settings, users and masters) is backed up. A mail with the download links goes to the people chosen here. Backups are kept for the number of days you set.";
+    m.innerHTML = adminHead(T0, S0) + `<p class="msg">Loading…</p>`; bindBack();
+    const { data: g, error } = await sb.rpc("kmr_bk_get", { p_slug: SLUG });
+    if (error) { m.querySelector(".msg").textContent = /does not exist|Could not find/i.test(error.message) ? "This needs the latest KMR database update (0134). Please contact KMR support." : error.message; return; }
+    const d = g.last_detail || {}, last = g.last_run_on ? String(g.last_run_on).split("-").reverse().join("-") : "";
+    m.innerHTML = adminHead(T0, S0) + `
+      ${note ? `<div class="card" style="border-color:#1E7B4A;background:#E7F8EF;margin-bottom:14px;max-width:820px">${note}</div>` : ""}
+      <div class="card" style="max-width:820px">
+        <label style="display:flex;gap:10px;align-items:center;margin:0 0 14px"><b>Daily backup</b>
+          <select id="bkOn" style="padding:6px 10px"><option value="true" ${g.enabled ? "selected" : ""}>On</option><option value="false" ${g.enabled ? "" : "selected"}>Off</option></select></label>
+        <label class="f" style="display:block">Send the backup mail to — e-mail addresses, separated by comma
+          <div class="in"><textarea id="bkTo" rows="2" style="width:100%" placeholder="name@company.com, other@company.com">${esc(g.recipients)}</textarea></div></label>
+        <p style="margin:6px 0"><button class="btn ghost" id="bkMe" style="height:34px">＋ Add my e-mail (${esc(g.me)})</button></p>
+        <label class="f" style="display:block;max-width:260px">Keep backups for (days)
+          <div class="in"><input type="number" id="bkKeep" min="7" max="365" step="1" value="${esc(g.keep_days)}"></div></label>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:16px"><button class="btn" id="bkSave">Save</button><span class="msg" id="bkMsg"></span></div>
+        <p style="font-size:13px;color:var(--muted);margin:14px 0 0">${last ? `Last backup: ${esc(last)} — ${esc(g.last_status || "")}${d.records ? `, ${Number(d.records).toLocaleString("en-IN")} records in ${esc(d.groups)} groups` : ""}.` : "No backup has run yet."} The backup runs after midnight (India time). Each mail carries a unique reference number and the report format revision in its footer.</p>
+      </div>`;
+    bindBack();
+    $("#bkMe").onclick = () => { const t = $("#bkTo"), cur = t.value.split(/[,;\s]+/).filter(Boolean); if (!cur.includes(g.me)) { cur.push(g.me); t.value = cur.join(", "); } };
+    $("#bkSave").onclick = async () => {
+      const msg = $("#bkMsg"); msg.className = "msg"; msg.textContent = "Saving…";
+      const r = await sb.rpc("kmr_bk_save", { p_slug: SLUG, p: { enabled: $("#bkOn").value, recipients: $("#bkTo").value, keep_days: $("#bkKeep").value } });
+      if (r.error) { msg.textContent = r.error.message; return; }
+      msg.className = "msg ok"; msg.textContent = "Saved.";
+    };
+  }
   async function digestView(note) {
     setView("digest");
     const m = mainEl(), T0 = "Daily management mail", S0 = "One mail every morning with the dashboards and KPIs of all your apps: what is OK, where management has to concentrate and what each team has to do. It also carries the Calibration Hub due list, so the separate calibration mail is no longer sent.";
@@ -599,6 +628,7 @@
     else if (HASH === "company" && isAdmin) companyView();
     else if (HASH === "invoices" && isAdmin) invoicesView();
     else if (HASH === "digest" && isAdmin) digestView();
+    else if (HASH === "backup" && isAdmin) backupView();
     else if (HASH === "finance" && isAdmin) financeView();
     else if (HASH === "plants" && plants.length > 1 && plants[0].is_all) plantsView();
     else if (HASH === "grand" && isAdmin) grandView();
