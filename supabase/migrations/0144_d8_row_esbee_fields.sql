@@ -1,0 +1,2 @@
+-- 0144 (applied via connector): console.d8_row_json adds 'esbee' (sections.esbee: NC ref, 8D ref, D-2/D-14/D-60 dates, repeated Y/N) only for reports that carry it;
+-- every other customer's 8D list rows are returned exactly as before.

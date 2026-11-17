@@ -1,0 +1,4 @@
+-- 0143 (applied via connector): 8D settings keep the customer's print format (set per customer by KMR staff, not editable in Setup);
+-- Esbee Unit-2 (eeab3ab2-47c2-4117-b79b-27d240b26e54) gets print_format = 'esbee' and its 28 complaints of 2026 (22 Advik, 6 Bosch) loaded from the
+-- 14-11-2026 complaint list (form F-03-27) as 8D/25-26/0001..0007 and 8D/26-27/0001..0021; counters continue from there.
+-- kmr_d8_settings_save now drops any print_format sent by the screen and keeps the stored one.
