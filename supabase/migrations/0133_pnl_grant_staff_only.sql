@@ -1,0 +1,1 @@
+-- KMR 0133 — Profit & Loss access can be given only by KMR staff: company administrators can still manage every other app, but their save keeps each person's existing Profit & Loss level. Applied via the Supabase connector.
