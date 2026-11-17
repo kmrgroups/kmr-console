@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronDenied } from "@/lib/cronauth";
 import { saveBackup } from "@/lib/backups";
 import { runDailyBackup } from "@/lib/dailybackup";
 import { alertEmail, sendMail } from "@/lib/mail";
@@ -8,9 +9,8 @@ import { alertEmail, sendMail } from "@/lib/mail";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not set" }, { status: 503 });
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const denied = await cronDenied(req);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
   const pass = Number(new URL(req.url).searchParams.get("pass") || 1), last = pass >= 5, problems: string[] = [];
   let bytes = 0, res: Awaited<ReturnType<typeof runDailyBackup>> | null = null;
   if (pass === 1) { try { bytes = await saveBackup(); } catch (e) { problems.push(`Console data: ${(e as Error).message}`); } }

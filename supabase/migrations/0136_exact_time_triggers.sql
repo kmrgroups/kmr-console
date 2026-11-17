@@ -1,0 +1,2 @@
+-- Exact-time triggering of the website's scheduled jobs from the database (pg_cron + pg_net); applied via the connector.
+-- Adds console.trigger_secret, public.kmr_trigger_ok(text) and console.kmr_fire(path); the job list is in 0137.

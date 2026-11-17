@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cronDenied } from "@/lib/cronauth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMail, type Brand } from "@/lib/mail";
 import { buildFinance, type FinTargets } from "@/lib/finmail";
@@ -13,9 +14,8 @@ export const maxDuration = 120;
 type Scan = { customer_id: string; slug: string; company: string; brand?: Brand; recipients: string[]; sections: Record<string, boolean>; targets: FinTargets; kpis: Record<string, unknown> };
 
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return NextResponse.json({ error: "CRON_SECRET is not set" }, { status: 503 });
-  if (req.headers.get("authorization") !== `Bearer ${secret}`) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const denied = await cronDenied(req);
+  if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
   try {
     const db = createAdminClient().schema("public");
     const { data, error } = await db.rpc("kmr_fin_scan");
