@@ -235,7 +235,7 @@
     main.innerHTML = `<h1>All plants</h1><p class="sub">${esc(brand.name.split(" – ")[0])} · every plant at a glance. Pick a plant in the menu to work in it.</p><p class="sub">Loading…</p>`;
     const res = await Promise.all(plants.map(async (x) => {
       const [pr, st] = await Promise.all([sb.rpc("kmr_portal", { p_slug: x.slug }), sb.rpc("kmr_portal_stats", { p_slug: x.slug })]);
-      return { x, rows: (pr.data || []).filter((r) => r.purchased), stats: (st && st.data) || {} };
+      return { x, rows: (pr.data || []).filter((r) => r.purchased && (r.product_code !== "pnl" || r.has_access || DEV)), stats: (st && st.data) || {} };
     }));
     const salesSlug = (plants.find((x) => x.is_main) || plants[0]).slug;
     main.innerHTML = `<h1>All plants</h1><p class="sub">${esc(brand.name.split(" – ")[0])} · every plant at a glance. Pick a plant in the menu to work in it.</p>
@@ -501,7 +501,7 @@
     const m = mainEl(); m.innerHTML = adminHead("Users & access", "One list for all your KMR apps. Choose what each person may do in each app.") + `<p class="msg">Loading…</p>`; bindBack();
     const [{ data: list, error }, { data: c }] = await Promise.all([sb.rpc("kmr_admin_users", { p_slug: SLUG }), sb.rpc("kmr_admin_company", { p_slug: SLUG })]);
     if (error) { m.querySelector(".msg").textContent = error.message; return; }
-    const tools = [...((c && c.tools) || []), { code: "ops", name: "Operations Master" }];
+    const tools = [...((c && c.tools) || []), { code: "ops", name: "Operations Master" }].filter((t) => t.code !== "pnl" || DEV);   // Profit & Loss is set by KMR only, so company administrators do not see it here
     const label = (code, v) => (ROLE_OPTS.other.find((o) => o[0] === v) || ["", "—"])[1];
     m.innerHTML = adminHead("Users & access", "One list for all your KMR apps. Choose what each person may do in each app.") + `
       ${note ? `<div class="card" style="border-color:#1E7B4A;background:#E7F8EF;margin-bottom:14px">${note}</div>` : ""}
@@ -584,7 +584,7 @@
     const { data, error } = await sb.rpc("kmr_portal", { p_slug: SLUG });
     if (error) return loginView("Could not load your apps right now. Please try again.");
     if (!data || !data.length) { await sb.auth.signOut(); return loginView(`This login does not belong to ${brand.name}. Use the email your company's apps were set up with.`); }
-    rows = data; brand = { name: data[0].customer_name, logo_url: data[0].logo_url };
+    rows = data.filter((r) => r.product_code !== "pnl" || r.has_access || DEV); brand = { name: data[0].customer_name, logo_url: data[0].logo_url };
     try { const pr = await sb.rpc("kmr_plants", { p_slug: SLUG }); plants = !pr.error && Array.isArray(pr.data) ? pr.data : []; } catch (e) { plants = []; }   // empty until 0061_plants.sql is run
     try { localStorage.setItem("kmr-portal", JSON.stringify({ slug: SLUG, name: brand.name, logo: brand.logo_url || null, plants: plants.map((x) => ({ slug: x.slug, name: x.name, code: x.plant_code, main: x.is_main })), all: !!(plants[0] && plants[0].is_all) })); } catch (e) {}
     setIcon(brand.logo_url);
