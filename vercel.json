@@ -38,6 +38,18 @@
     {
       "path": "/it/console/api/cron/backup?pass=5",
       "schedule": "25 20 * * *"
+    },
+    {
+      "path": "/it/console/api/cron/digest",
+      "schedule": "50 2 * * *"
+    },
+    {
+      "path": "/it/console/api/cron/digest",
+      "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/it/console/api/cron/finance",
+      "schedule": "0 4 * * *"
     }
   ]
 }
