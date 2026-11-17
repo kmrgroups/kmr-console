@@ -1,0 +1,1 @@
+-- 0142 (applied via connector): rmp_plan_week.planned_src; console.dcg_sched_sync fills weekly planned qty from released DCG schedules (never over a typed value); run from rmp_grn_sync; kmr_rmp_week_save marks typed planned qty manual; kmr_rmp_month returns 'ps'.

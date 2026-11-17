@@ -29,7 +29,7 @@
       const mine = lines.filter((l) => l.material_code === m.code && l.src !== "none");
       const need = mine.reduce((a, l) => a + l.qty, 0);
       const rateN = m.rate === null || m.rate === undefined ? 0 : n(m.rate);
-      const wk = [1, 2, 3, 4, 5].map((w) => { const x = (m.weeks || []).find((y) => y.w === w); const r = x ? n(x.r) : 0, pp = x ? n(x.p) : 0, c = x && x.c !== null && x.c !== undefined ? n(x.c) : null; return { w, p: pp, r, c, g: x && x.g !== null && x.g !== undefined ? n(x.g) : 0, s: x ? x.s || null : null, pc: pp * rateN, ac: c !== null ? c : r * rateN }; });
+      const wk = [1, 2, 3, 4, 5].map((w) => { const x = (m.weeks || []).find((y) => y.w === w); const r = x ? n(x.r) : 0, pp = x ? n(x.p) : 0, c = x && x.c !== null && x.c !== undefined ? n(x.c) : null; return { w, p: pp, r, c, g: x && x.g !== null && x.g !== undefined ? n(x.g) : 0, s: x ? x.s || null : null, ps: x ? x.ps || null : null, pc: pp * rateN, ac: c !== null ? c : r * rateN }; });
       const received = wk.reduce((a, x) => a + x.r, 0);
       const rate = m.rate === null || m.rate === undefined ? null : n(m.rate), gst = n(m.gst);
       const balance = need - n(m.on_hand), toBuy = Math.max(0, balance);
