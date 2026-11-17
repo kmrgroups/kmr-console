@@ -50,8 +50,8 @@ tr.done td:nth-child(3) b{color:var(--mut);text-decoration:line-through}tr.na{op
 @media(max-width:640px){.docv .two,.docv .sg{grid-template-columns:1fr}.docv .two>div+div,.docv .sg div+div{border-left:0;border-top:1px solid #444}}
 </style></head><body>
 <header><span class="clogo" id="clogo" hidden></span><div><h1>Delivery Challan &amp; GRN</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
-<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Dashboard</a><a class="tab" data-t="dc" href="#go=dc">Delivery challans</a><a class="tab" data-t="grn" href="#go=grn">GRN</a><a class="tab" data-t="po" href="#go=po">Purchase orders</a><a class="tab" data-t="pend" href="#go=pend">Pending returns</a></div>
-<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="dc" class="hide"></section><section id="grn" class="hide"></section><section id="po" class="hide"></section><section id="pend" class="hide"></section></div></main>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Dashboard</a><a class="tab" data-t="dc" href="#go=dc">Delivery challans</a><a class="tab" data-t="grn" href="#go=grn">GRN</a><a class="tab" data-t="po" href="#go=po">Purchase orders</a><a class="tab" data-t="sched" href="#go=sched">Delivery schedules</a><a class="tab" data-t="pend" href="#go=pend">Pending returns</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="dc" class="hide"></section><section id="grn" class="hide"></section><section id="po" class="hide"></section><section id="sched" class="hide"></section><section id="pend" class="hide"></section></div></main>
 <script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-mobile.js"></script>
 <script>
 const {$,esc,fmt,say,call}=QP;
@@ -84,9 +84,9 @@ const num=(v)=>v===''||v==null?0:Number(v);
 async function load(){S.d=await call('kmr_dcg_load',{p_months:S.months||3});if(!S.items&&!S.itemsBusy){S.itemsBusy=true;call('kmr_dcg_items',{}).then(r=>{S.items=r}).catch(()=>{S.items={items:[],parties:[]}}).finally(()=>{S.itemsBusy=false})}}
 async function route(){
   const go=hashGo();
-  if(go!==S.go){S.view=null;S.edit=null;S.grn=null;S.po=null;S.go=go}
+  if(go!==S.go){S.view=null;S.edit=null;S.grn=null;S.po=null;S.sch=null;S.sview=null;S.go=go}
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
-  ['std','dash','dc','grn','po','pend'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  ['std','dash','dc','grn','po','sched','pend'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
   if(go==='std'){KMRStd.draw($('#std'),'dcg');return}
   try{await load();S.stale=false;paint()}catch(e){say(e.message)}
 }
@@ -97,12 +97,12 @@ function olderBar(){let el=$('#older');if(!el){el=document.createElement('div');
 function paint(){
   olderBar();
   const go=hashGo();
-  ({dash:drawDash,dc:drawDc,grn:drawGrn,po:drawPo,pend:drawPend}[go]||(()=>{}))();
+  ({dash:drawDash,dc:drawDc,grn:drawGrn,po:drawPo,sched:drawSched,pend:drawPend}[go]||(()=>{}))();
   const tabs={dc:document.querySelector('[data-t=dc]'),pend:document.querySelector('[data-t=pend]')};
   const od=S.d.dcs.filter(overdue).length;
   if(tabs.pend)tabs.pend.innerHTML='Pending returns'+(od?` <span class="cp cr">${od}</span>`:'');
 }
-const reload=async(keep)=>{await load();if(!keep){S.view=null;S.edit=null;S.grn=null;S.po=null}paint()};
+const reload=async(keep)=>{await load();if(!keep){S.view=null;S.edit=null;S.grn=null;S.po=null;S.sch=null;S.sview=null}paint()};
 document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
 window.addEventListener('hashchange',route);
 const goTo=(t)=>{history.replaceState(null,'',location.pathname+location.search+'#go='+t);route()};
@@ -110,6 +110,7 @@ const goTo=(t)=>{history.replaceState(null,'',location.pathname+location.search+
 /* ----- typed values go straight into the document being edited (S.edit, S.grn or S.po) ----- */
 function onType(e){
   const t=e.target,o=t.dataset.o&&S[t.dataset.o];if(!o)return;
+  if(t.dataset.o==='sch'&&(t.dataset.q||t.dataset.d)){if(t.dataset.q)o.qty[t.dataset.q]=t.value;else o.due[t.dataset.d]=t.value;return}
   if(t.dataset.l!==undefined)o.lines[+t.dataset.l][t.dataset.f]=t.value;
   else if(t.dataset.h){o[t.dataset.h]=t.value;
     if(e.type==='change'&&t.dataset.h==='party_name'&&t.dataset.o==='edit'&&!o.party_addr){const p=S.d.dcs.find(x=>x.party_name===t.value&&x.party_addr),q=opsP().find(x=>x.name===t.value);if(p){o.party_addr=p.party_addr||'';o.party_gstin=p.party_gstin||'';editDc()}else if(q){o.party_addr=q.addr||'';o.party_gstin=q.gstin||'';editDc()}}
@@ -202,29 +203,30 @@ function docDc(id){
 }
 
 /* ===================== PURCHASE ORDERS ===================== */
-const newPo=()=>({id:null,po_no:'',po_date:td(),supplier_name:'',supplier_gstin:'',supplier_addr:'',remarks:'',lines:[{item_code:'',description:'',uom:'Nos',qty:'',rate:'',received_qty:0}]});
+const POT={regular:'Regular PO',rate_contract:'Rate contract',yearly:'Yearly PO',bulk:'Bulk quantity PO'};
+const newPo=()=>({id:null,po_type:'regular',valid_from:'',valid_to:'',po_no:'',po_date:td(),supplier_name:'',supplier_gstin:'',supplier_addr:'',remarks:'',lines:[{item_code:'',description:'',uom:'Nos',qty:'',rate:'',received_qty:0}]});
 function drawPo(){
   if(S.po)return editPo();
   const rows=S.d.pos.map(p=>{const q=p.lines.reduce((s,l)=>s+Number(l.qty),0),r=p.lines.reduce((s,l)=>s+Number(l.received_qty),0),v=p.lines.reduce((s,l)=>s+Number(l.qty)*Number(l.rate||0),0),ed=canEdit(),op=p.status==='open'||p.status==='part_received';
-    return `<tr><td><b>${esc(p.po_no)}</b></td><td>${fmt(p.po_date)}</td><td>${esc(p.supplier_name)}</td><td class="num">${p.lines.length}</td><td class="num">${n3(q)}</td><td class="num">${n3(r)}</td><td class="num">${v?inr(v):'—'}</td><td>${chip(PST,p.status)}</td>
-    <td style="white-space:nowrap">${ed&&op?`<button class="btn sm" data-a="po-recv" data-id="${p.id}">Receive (GRN)</button> `:''}${ed&&p.status!=='cancelled'?`<button class="btn o sm" data-a="po-edit" data-id="${p.id}">Open / edit</button> `:''}${ed&&op?`<button class="btn o sm" data-a="po-close" data-id="${p.id}">Close</button> `:''}${ed&&!p.lines.some(l=>Number(l.received_qty)>0)&&p.status!=='cancelled'?`<button class="btn o sm" data-a="po-cancel" data-id="${p.id}">Cancel</button> `:''}${ed&&!S.d.grns.some(g=>g.po_id===p.id&&g.status==='posted')?`<button class="btn o sm" data-a="po-del" data-id="${p.id}">Delete</button>`:''}</td></tr>`}).join('');
+    return `<tr><td><b>${esc(p.po_no)}</b></td><td>${fmt(p.po_date)}</td><td>${esc(p.supplier_name)}</td><td>${esc(POT[p.po_type]||'Regular PO')}${p.valid_to?'<div class="mut">till '+fmt(p.valid_to)+'</div>':''}</td><td class="num">${p.lines.length}</td><td class="num">${n3(q)}</td><td class="num">${n3(r)}</td><td class="num">${v?inr(v):'—'}</td><td>${chip(PST,p.status)}</td>
+    <td style="white-space:nowrap">${ed&&op?`<button class="btn sm" data-a="po-recv" data-id="${p.id}">Receive (GRN)</button> <button class="btn o sm" data-a="sch-new" data-id="${p.id}">Release schedule</button> `:''}${ed&&p.status!=='cancelled'?`<button class="btn o sm" data-a="po-edit" data-id="${p.id}">Open / edit</button> `:''}${ed&&op?`<button class="btn o sm" data-a="po-close" data-id="${p.id}">Close</button> `:''}${ed&&!p.lines.some(l=>Number(l.received_qty)>0)&&p.status!=='cancelled'?`<button class="btn o sm" data-a="po-cancel" data-id="${p.id}">Cancel</button> `:''}${ed&&!S.d.grns.some(g=>g.po_id===p.id&&g.status==='posted')?`<button class="btn o sm" data-a="po-del" data-id="${p.id}">Delete</button>`:''}</td></tr>`}).join('');
   $('#po').innerHTML=`<div class="row noprint">${canEdit()?'<button class="btn" data-a="po-new">+ New purchase order</button>':''}${canEdit()&&QP.ctx.has_rmp&&S.d.rmp_open>0?`<button class="btn o" data-a="po-rmp">Bring in ${S.d.rmp_open} order(s) from Raw Material Planning</button>`:''}</div>
-  <p class="note">Enter the purchase orders here (or bring in the orders placed in Raw Material Planning). Each GRN is made against a PO, and a receipt against an RMP order updates the raw material stock.</p>
-  <div class="sc"><table class="lt"><thead><tr><th>PO no.</th><th>Date</th><th>Supplier</th><th class="n">Items</th><th class="n">Ordered</th><th class="n">Received</th><th class="n">Value</th><th>Status</th><th class="noprint">Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="9" class="mut">No purchase orders yet.</td></tr>'}</tbody></table></div>`;
+  <p class="note">For a <b>rate contract, yearly PO or bulk quantity PO</b> choose the type, enter the total quantity and the validity, then release a monthly schedule against it under <b>Delivery schedules</b>. Enter the purchase orders here (or bring in the orders placed in Raw Material Planning). Each GRN is made against a PO, and a receipt against an RMP order updates the raw material stock.</p>
+  <div class="sc"><table class="lt"><thead><tr><th>PO no.</th><th>Date</th><th>Supplier</th><th>Type</th><th class="n">Items</th><th class="n">Ordered</th><th class="n">Received</th><th class="n">Value</th><th>Status</th><th class="noprint">Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="10" class="mut">No purchase orders yet.</td></tr>'}</tbody></table></div>`;
 }
 function editPo(){
   const e=S.po,lines=e.lines.map((l,i)=>`<tr><td>${i+1}</td><td><input data-o="po" data-l="${i}" data-f="item_code" value="${esc(l.item_code)}"></td><td class="w"><input data-o="po" data-l="${i}" data-f="description" value="${esc(l.description)}"></td>
    <td><input data-o="po" data-l="${i}" data-f="uom" value="${esc(l.uom)}" style="min-width:60px"></td><td><input data-o="po" data-l="${i}" data-f="qty" type="number" step="any" inputmode="decimal" value="${esc(l.qty)}"></td><td><input data-o="po" data-l="${i}" data-f="rate" type="number" step="any" inputmode="decimal" value="${esc(l.rate)}"></td>
    <td class="num">${n3(l.received_qty)}</td><td>${Number(l.received_qty)>0?'':`<button class="btn o sm" data-a="po-rm" data-i="${i}">✕</button>`}</td></tr>`).join('');
   $('#po').innerHTML=`${partyOpts()}<h3 style="margin:0 0 6px">${e.id?'Purchase order '+esc(e.po_no):'New purchase order'}</h3>
-  <div class="dg">${fld('po','po_no','PO number')}${fld('po','po_date','PO date','date')}<div><label>Supplier</label><input data-o="po" data-h="supplier_name" list="parties" value="${esc(e.supplier_name)}"></div>${fld('po','supplier_gstin','Supplier GSTIN')}<div style="grid-column:span 2"><label>Supplier address</label><input data-o="po" data-h="supplier_addr" value="${esc(e.supplier_addr)}"></div><div style="grid-column:span 2"><label>Remarks</label><input data-o="po" data-h="remarks" value="${esc(e.remarks)}"></div></div>
+  <div class="dg"><div><label>PO type</label><select data-o="po" data-h="po_type">${Object.keys(POT).map(k=>`<option value="${k}" ${e.po_type===k?'selected':''}>${POT[k]}</option>`).join('')}</select></div>${fld('po','valid_from','Valid from','date')}${fld('po','valid_to','Valid to','date')}${fld('po','po_no','PO number')}${fld('po','po_date','PO date','date')}<div><label>Supplier</label><input data-o="po" data-h="supplier_name" list="parties" value="${esc(e.supplier_name)}"></div>${fld('po','supplier_gstin','Supplier GSTIN')}<div style="grid-column:span 2"><label>Supplier address</label><input data-o="po" data-h="supplier_addr" value="${esc(e.supplier_addr)}"></div><div style="grid-column:span 2"><label>Remarks</label><input data-o="po" data-h="remarks" value="${esc(e.remarks)}"></div></div>
   ${itemBox('po')}
   <div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th><th>Item code</th><th>Description</th><th>Unit</th><th class="n">Qty</th><th class="n">Rate ₹</th><th class="n">Received</th><th></th></tr></thead><tbody>${lines}</tbody></table></div>
   <div class="row noprint"><button class="btn o sm" data-a="po-addl">+ Add item</button><span class="grow"></span><button class="btn o" data-a="po-closeed">Close</button><button class="btn" data-a="po-save">Save PO</button></div>`;
 }
 
 /* ===================== GRN ===================== */
-const newGrn=(t)=>({gtype:t||'dc_return',grn_date:td(),dc_id:'',po_id:'',party_name:'',party_doc_no:'',party_doc_date:'',vehicle_no:'',remarks:'',lines:[]});
+const newGrn=(t)=>({sched_id:'',gtype:t||'dc_return',grn_date:td(),dc_id:'',po_id:'',party_name:'',party_doc_no:'',party_doc_date:'',vehicle_no:'',remarks:'',lines:[]});
 function grnLinesFromDc(id){
   const d=dcOf(id);if(!d)return[];
   return d.lines.filter(l=>pend(l)>0).map(l=>{const g=l.instrument_id?instOf(l.instrument_id):null;
@@ -234,6 +236,10 @@ function grnLinesFromDc(id){
 function grnLinesFromPo(id){
   const p=poOf(id);if(!p)return[];
   return p.lines.filter(l=>Number(l.qty)-Number(l.received_qty)>0.0001).map(l=>({po_line_id:l.id,item_code:l.item_code,description:l.description,uom:l.uom,ordered:l.qty,done:l.received_qty,pending:Number(l.qty)-Number(l.received_qty),received_qty:'',rejected_qty:'0',reject_reason:''}));
+}
+function grnLinesFromSched(sid){
+  const sc=S.d.scheds.find(x=>x.id===sid);if(!sc)return[];const p=poOf(sc.po_id);if(!p)return[];
+  return sc.lines.map(sl=>({sl,l:p.lines.find(x=>x.id===sl.po_line_id)})).filter(x=>x.l&&Number(x.sl.qty)-Number(x.sl.delivered_qty)>0.0001).map(({sl,l})=>({po_line_id:l.id,sched_line_id:sl.id,item_code:l.item_code,description:l.description,uom:l.uom,ordered:sl.qty,done:sl.delivered_qty,pending:Number(sl.qty)-Number(sl.delivered_qty),received_qty:'',rejected_qty:'0',reject_reason:''}));
 }
 function startGrn(t,id){
   const g=newGrn(t);
@@ -258,7 +264,7 @@ function editGrn(){
   const g=S.grn,hc=QP.ctx.has_calib;
   const openDc=S.d.dcs.filter(isOpenDc),openPo=S.d.pos.filter(p=>p.status==='open'||p.status==='part_received');
   const pick=g.gtype==='dc_return'?`<div><label>Delivery challan</label><select data-a="grn-pickdc"><option value="">Choose the challan…</option>${openDc.map(d=>`<option value="${d.id}" ${d.id===g.dc_id?'selected':''}>${esc(d.dc_no)} — ${esc(d.party_name)} (${PUR[d.purpose]}, ${d.lines.filter(l=>pend(l)>0).length} pending)</option>`).join('')}</select></div>`
-    :g.gtype==='po_receipt'?`<div><label>Purchase order</label><select data-a="grn-pickpo"><option value="">Choose the PO…</option>${openPo.map(p=>`<option value="${p.id}" ${p.id===g.po_id?'selected':''}>${esc(p.po_no)} — ${esc(p.supplier_name)}</option>`).join('')}</select></div>`
+    :g.gtype==='po_receipt'?`<div><label>Purchase order</label><select data-a="grn-pickpo"><option value="">Choose the PO…</option>${openPo.map(p=>`<option value="${p.id}" ${p.id===g.po_id?'selected':''}>${esc(p.po_no)} — ${esc(p.supplier_name)}</option>`).join('')}</select></div>${(()=>{const sc=S.d.scheds.filter(x=>x.po_id===g.po_id&&x.status==='released');return g.po_id&&sc.length?`<div><label>Against schedule</label><select data-a="grn-picksch"><option value="">Whole PO (no schedule)</option>${sc.map(x=>`<option value="${x.id}" ${x.id===g.sched_id?'selected':''}>${esc(x.sched_no)} — ${monthName(x.month)}</option>`).join('')}</select></div>`:''})()}`
     :`<div><label>Received from</label><input data-o="grn" data-h="party_name" list="parties" value="${esc(g.party_name)}"></div>`;
   const cal=g.lines.some(l=>l.cal);
   const head=g.gtype==='other'?'<th>Description</th><th>Unit</th>':'<th>Item</th><th class="n">'+(g.gtype==='dc_return'?'Sent':'Ordered')+'</th><th class="n">Already received</th><th class="n">Pending</th>';
@@ -280,7 +286,7 @@ function grnPayload(){
       if(jq>rq)throw new Error(`${l.description}: rejected quantity is more than received.`);
       if(jq>0&&!String(l.reject_reason||'').trim())throw new Error(`${l.description}: enter the reason for the rejected quantity.`);
       if(l.cal&&!l.cal_date)throw new Error(`Gauge ${l.tag}: enter the calibration date from the certificate.`);
-      return {dc_line_id:l.dc_line_id||null,po_line_id:l.po_line_id||null,description:l.description,item_code:l.item_code||'',uom:l.uom,received_qty:rq,rejected_qty:jq,accepted_qty:rq-jq,reject_reason:l.reject_reason,
+      return {dc_line_id:l.dc_line_id||null,po_line_id:l.po_line_id||null,sched_line_id:l.sched_line_id||null,description:l.description,item_code:l.item_code||'',uom:l.uom,received_qty:rq,rejected_qty:jq,accepted_qty:rq-jq,reject_reason:l.reject_reason,
         cal_date:l.cal?l.cal_date:'',cert_no:l.cal?l.cert_no:'',lab:l.cal?l.lab:'',cal_result:l.cal?l.cal_result:'',as_found_ok:l.cal?l.as_found_ok:'',next_due:l.cal?l.next_due:'',cost:l.cal?l.cost:''}})};
 }
 async function saveGrn(){
@@ -300,6 +306,56 @@ function docGrn(id){
    ${g.remarks?`<div><b>Remarks:</b> ${esc(g.remarks)}</div>`:''}${g.status==='cancelled'?`<div class="late">Cancelled: ${esc(g.cancel_reason||'')}</div>`:''}
    <div class="sg"><div>Received by (Stores)${g.created_by?': '+esc(g.created_by):''}</div><div>Inspected by (Quality)</div><div>Approved by</div></div></div>`;
   rep('Goods Receipt Note',g.grn_no,'02');
+}
+
+
+/* ===================== DELIVERY SCHEDULES ===================== */
+const SST={draft:['Draft','cm'],released:['Released','cb'],closed:['Completed','cg'],cancelled:['Cancelled','cr']};
+const monthName=m=>{try{return new Date(m+'-01T00:00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'})}catch(e){return m}};
+const schOf=id=>S.d.scheds.find(x=>x.id===id);
+const booked=(plId,exceptId)=>S.d.scheds.filter(x=>x.id!==exceptId&&(x.status==='draft'||x.status==='released')).reduce((a,x)=>a+x.lines.filter(l=>l.po_line_id===plId).reduce((b,l)=>b+Number(l.qty),0),0);
+function drawSched(){
+  if(S.sch)return editSched();
+  if(S.sview)return docSched(S.sview);
+  const ed=canEdit();
+  const rows=S.d.scheds.map(x=>{const p=poOf(x.po_id),q=x.lines.reduce((a,l)=>a+Number(l.qty),0),d=x.lines.reduce((a,l)=>a+Number(l.delivered_qty),0);
+    return `<tr><td><b>${esc(x.sched_no)}</b></td><td>${monthName(x.month)}</td><td>${p?esc(p.po_no):'—'}<div class="mut">${p?esc(POT[p.po_type]||''):''}</div></td><td>${p?esc(p.supplier_name):''}</td><td class="num">${x.lines.length}</td><td class="num">${n3(q)}</td><td class="num">${n3(d)}</td><td class="num ${q-d>0.0001&&x.status==='released'?'late':''}">${n3(Math.max(0,q-d))}</td><td>${chip(SST,x.status)}</td>
+    <td style="white-space:nowrap"><button class="btn o sm" data-a="sch-view" data-id="${x.id}">View / print</button> ${ed&&(x.status==='draft'||x.status==='released')?`<button class="btn o sm" data-a="sch-edit" data-id="${x.id}">Edit</button> `:''}${ed&&x.status==='draft'?`<button class="btn sm" data-a="sch-rel" data-id="${x.id}">Release</button> <button class="btn o sm" data-a="sch-del" data-id="${x.id}">Delete</button>`:''}${ed&&x.status==='released'?`<button class="btn o sm" data-a="sch-close" data-id="${x.id}">Close</button> ${x.lines.some(l=>Number(l.delivered_qty)>0)?'':`<button class="btn o sm" data-a="sch-cancel" data-id="${x.id}">Cancel</button>`}`:''}</td></tr>`}).join('');
+  const blanket=S.d.pos.filter(p=>p.po_type&&p.po_type!=='regular'&&(p.status==='open'||p.status==='part_received'));
+  $('#sched').innerHTML=`<div class="row noprint">${ed?'<button class="btn" data-a="sch-new">+ New monthly schedule</button>':''}</div>
+  <p class="note">When a PO is a <b>rate contract, yearly PO or bulk quantity PO</b>, release the quantity month by month here. The supplier gets the schedule (print it), and the GRN is made against the released schedule so you can see what is delivered and what is still pending each month. A schedule cannot take more than what is left in the PO.</p>
+  ${blanket.length?`<div class="sc" style="margin-bottom:10px"><table class="lt" data-nofilter><thead><tr><th>Contract PO</th><th>Supplier</th><th>Type</th><th>Valid till</th><th class="n">PO quantity</th><th class="n">Scheduled</th><th class="n">Still to schedule</th><th class="n">Received</th></tr></thead><tbody>${blanket.map(p=>{const q=p.lines.reduce((a,l)=>a+Number(l.qty),0),b=p.lines.reduce((a,l)=>a+booked(l.id),0),r=p.lines.reduce((a,l)=>a+Number(l.received_qty),0);return `<tr><td><b>${esc(p.po_no)}</b></td><td>${esc(p.supplier_name)}</td><td>${esc(POT[p.po_type])}</td><td>${p.valid_to?fmt(p.valid_to):'—'}</td><td class="num">${n3(q)}</td><td class="num">${n3(b)}</td><td class="num">${n3(Math.max(0,q-b))}</td><td class="num">${n3(r)}</td></tr>`}).join('')}</tbody></table></div>`:''}
+  <div class="sc"><table class="lt"><thead><tr><th>Schedule no.</th><th>Month</th><th>PO</th><th>Supplier</th><th class="n">Items</th><th class="n">Scheduled</th><th class="n">Delivered</th><th class="n">Pending</th><th>Status</th><th class="noprint">Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="10" class="mut">No schedules yet.</td></tr>'}</tbody></table></div>`;
+}
+function newSched(poId){const d=new Date(),m=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');return {id:null,po_id:poId||'',month:m,remarks:'',qty:{},due:{}}}
+function editSched(){
+  const e=S.sch,po=e.po_id?poOf(e.po_id):null;
+  const open=S.d.pos.filter(p=>p.status==='open'||p.status==='part_received').sort((a,b)=>(b.po_type!=='regular')-(a.po_type!=='regular'));
+  const lines=po?po.lines.map((l,i)=>{const bk=booked(l.id,e.id),left=Math.max(0,Number(l.qty)-bk);
+    return `<tr><td>${i+1}</td><td>${esc(l.item_code?l.item_code+' — ':'')}${esc(l.description)}</td><td>${esc(l.uom)}</td><td class="num">${n3(l.qty)}</td><td class="num">${n3(bk)}</td><td class="num">${n3(left)}</td><td><input data-o="sch" data-q="${l.id}" type="number" step="any" min="0" inputmode="decimal" value="${esc(e.qty[l.id]||'')}"></td><td><input data-o="sch" data-d="${l.id}" type="date" value="${esc(e.due[l.id]||'')}"></td></tr>`}).join(''):'';
+  $('#sched').innerHTML=`<h3 style="margin:0 0 6px">${e.id?'Schedule '+esc(e.sched_no||''):'New monthly schedule'}</h3>
+  <div class="dg"><div style="grid-column:span 2"><label>Purchase order</label><select data-a="sch-pickpo" ${e.id?'disabled':''}><option value="">Choose the PO…</option>${open.map(p=>`<option value="${p.id}" ${p.id===e.po_id?'selected':''}>${esc(p.po_no)} — ${esc(p.supplier_name)} (${esc(POT[p.po_type]||'Regular PO')})</option>`).join('')}</select></div>
+  <div><label>Schedule month</label><input data-o="sch" data-h="month" type="month" value="${esc(e.month)}"></div><div style="grid-column:span 2"><label>Remarks to supplier</label><input data-o="sch" data-h="remarks" value="${esc(e.remarks)}"></div></div>
+  ${po?`<div class="sc"><table class="lt" data-nofilter><thead><tr><th>S.No</th><th>Item</th><th>Unit</th><th class="n">PO quantity</th><th class="n">Already scheduled</th><th class="n">Left to schedule</th><th>Quantity this month</th><th>Delivery by</th></tr></thead><tbody>${lines}</tbody></table></div>`:'<p class="note">Choose the PO to see its items.</p>'}
+  <div class="row noprint"><button class="btn o" data-a="sch-closeed">Close</button><span class="grow"></span><button class="btn o" data-a="sch-save">Save as draft</button><button class="btn" data-a="sch-saverel">Save and release to supplier</button></div>`;
+}
+async function saveSched(rel){
+  const e=S.sch,po=poOf(e.po_id);if(!po)throw new Error('Choose the purchase order.');
+  const lines=po.lines.filter(l=>num(e.qty[l.id])>0).map(l=>({po_line_id:l.id,qty:num(e.qty[l.id]),due_date:e.due[l.id]||null}));
+  if(!lines.length)throw new Error('Enter the quantity for at least one item.');
+  const r=await call('kmr_dcg_sched_save',{p:{id:e.id,po_id:e.po_id,month:e.month,remarks:e.remarks,release:!!rel,lines}});
+  S.sch=null;await reload();say(r.sched_no+(rel?' released.':' saved as draft.'),true);
+}
+function docSched(id){
+  const x=schOf(id);if(!x){S.sview=null;return drawSched()}
+  const p=poOf(x.po_id),co=QP.ctx.company;
+  $('#sched').innerHTML=`<div class="row noprint"><button class="btn o" data-a="back">← All schedules</button><span class="grow"></span><button class="btn" data-a="print">Print / save PDF</button></div>
+  <div class="docv">${x.status==='cancelled'?'<div class="wm">CANCELLED</div>':''}<h2>DELIVERY SCHEDULE</h2><div class="sub">${esc(co)}</div>
+   <div class="two"><div><b>Schedule no.:</b> ${esc(x.sched_no)}<br><b>Month:</b> ${monthName(x.month)}<br><b>Supplier:</b> ${p?esc(p.supplier_name):''}</div><div><b>Against:</b> ${p?esc(POT[p.po_type]||'Purchase order')+' '+esc(p.po_no)+(p.po_date?' dt '+fmt(p.po_date):''):''}${p&&p.valid_to?'<br><b>Valid till:</b> '+fmt(p.valid_to):''}<br><b>Status:</b> ${esc((SST[x.status]||[x.status])[0])}</div></div>
+   <table><thead><tr><th>S.No</th><th>Item</th><th>Unit</th><th class="n">Scheduled qty</th><th>Deliver by</th><th class="n">Delivered</th><th class="n">Pending</th></tr></thead><tbody>${x.lines.map((l,i)=>{const pl=p?p.lines.find(y=>y.id===l.po_line_id):null;return `<tr><td>${i+1}</td><td>${pl?esc((pl.item_code?pl.item_code+' — ':'')+pl.description):''}</td><td>${pl?esc(pl.uom):''}</td><td class="n">${n3(l.qty)}</td><td>${l.due_date?fmt(l.due_date):'—'}</td><td class="n">${n3(l.delivered_qty)}</td><td class="n">${n3(Math.max(0,Number(l.qty)-Number(l.delivered_qty)))}</td></tr>`}).join('')}</tbody></table>
+   ${x.remarks?`<div><b>Remarks:</b> ${esc(x.remarks)}</div>`:''}<div style="margin-top:4px">Please deliver the above quantities by the dates shown, quoting the PO number and this schedule number on your invoice / delivery challan.</div>
+   <div class="sg"><div>Prepared by${x.created_by?': '+esc(x.created_by):''}</div><div>Authorised signatory</div><div>Supplier acknowledgement</div></div></div>`;
+  rep('Delivery Schedule',x.sched_no,'04');
 }
 
 /* ===================== PENDING RETURNS ===================== */
@@ -365,12 +421,22 @@ document.addEventListener('click',(e)=>{
       case 'dc-view':S.view={k:'dc',id,copy:'all'};drawDc();break;
       case 'dc-recv':S.pg={t:'dc_return',id};goTo('grn');break;
       case 'dc-print':rep('Delivery challan register','','04');window.print();break;
+      case 'sch-new':S.sch=newSched(id||'');editSched();break;
+      case 'sch-edit':{const x=schOf(id),p=poOf(x.po_id);S.sch={id:x.id,sched_no:x.sched_no,po_id:x.po_id,month:x.month,remarks:x.remarks||'',qty:Object.fromEntries(x.lines.map(l=>[l.po_line_id,String(l.qty)])),due:Object.fromEntries(x.lines.map(l=>[l.po_line_id,l.due_date||'']))};editSched();break}
+      case 'sch-view':S.sview=id;drawSched();break;
+      case 'sch-closeed':S.sch=null;drawSched();break;
+      case 'sch-save':await saveSched(false);break;
+      case 'sch-saverel':await saveSched(true);break;
+      case 'sch-rel':await call('kmr_dcg_sched_status',{p_id:id,p_status:'released'});await reload();say('Schedule released.',true);break;
+      case 'sch-close':if(await yes('Mark this schedule as completed? Pending quantity will no longer be expected.')){await call('kmr_dcg_sched_status',{p_id:id,p_status:'closed'});await reload()}break;
+      case 'sch-cancel':if(await yes('Cancel this schedule?')){await call('kmr_dcg_sched_status',{p_id:id,p_status:'cancelled'});await reload()}break;
+      case 'sch-del':if(await yes('Delete this draft schedule?')){await call('kmr_dcg_sched_status',{p_id:id,p_status:'delete'});await reload()}break;
       case 'po-new':S.po=newPo();editPo();break;
-      case 'po-edit':{const p=poOf(id);S.po={...p,po_date:p.po_date||'',supplier_gstin:p.supplier_gstin||'',supplier_addr:p.supplier_addr||'',remarks:p.remarks||'',lines:p.lines.map(l=>({id:l.id,item_code:l.item_code||'',description:l.description,uom:l.uom,qty:String(l.qty),rate:l.rate==null?'':String(l.rate),received_qty:l.received_qty}))};editPo();break}
+      case 'po-edit':{const p=poOf(id);S.po={...p,po_type:p.po_type||'regular',valid_from:p.valid_from||'',valid_to:p.valid_to||'',po_date:p.po_date||'',supplier_gstin:p.supplier_gstin||'',supplier_addr:p.supplier_addr||'',remarks:p.remarks||'',lines:p.lines.map(l=>({id:l.id,item_code:l.item_code||'',description:l.description,uom:l.uom,qty:String(l.qty),rate:l.rate==null?'':String(l.rate),received_qty:l.received_qty}))};editPo();break}
       case 'po-addl':S.po.lines.push({item_code:'',description:'',uom:'Nos',qty:'',rate:'',received_qty:0});editPo();break;
       case 'po-rm':S.po.lines.splice(i,1);editPo();break;
       case 'po-closeed':S.po=null;drawPo();break;
-      case 'po-save':{const e=S.po;await call('kmr_dcg_po_save',{p:{id:e.id||null,po_no:e.po_no,po_date:e.po_date,supplier_name:e.supplier_name,supplier_gstin:e.supplier_gstin,supplier_addr:e.supplier_addr,remarks:e.remarks,lines:e.lines.map(l=>({id:l.id||null,item_code:l.item_code,description:l.description,uom:l.uom,qty:l.qty,rate:l.rate}))}});await reload();say('Purchase order saved.',true);break}
+      case 'po-save':{const e=S.po;const pid=await call('kmr_dcg_po_save',{p:{id:e.id||null,po_no:e.po_no,po_date:e.po_date,supplier_name:e.supplier_name,supplier_gstin:e.supplier_gstin,supplier_addr:e.supplier_addr,remarks:e.remarks,lines:e.lines.map(l=>({id:l.id||null,item_code:l.item_code,description:l.description,uom:l.uom,qty:l.qty,rate:l.rate}))}});await call('kmr_dcg_po_type_save',{p_id:pid,p_type:e.po_type||'regular',p_from:e.valid_from||null,p_to:e.valid_to||null});await reload();say('Purchase order saved.',true);break}
       case 'po-recv':S.pg={t:'po_receipt',id};goTo('grn');break;
       case 'po-close':if(await yes('Close this PO? Nothing more can be received against it.')){await call('kmr_dcg_po_close',{p_id:id,p_status:'closed'});await reload()}break;
       case 'po-cancel':if(await yes('Cancel this PO?')){await call('kmr_dcg_po_close',{p_id:id,p_status:'cancelled'});await reload()}break;
@@ -383,7 +449,7 @@ document.addEventListener('click',(e)=>{
       case 'grn-save':await saveGrn();break;
       case 'grn-view':S.view={k:'grn',id};drawGrn();break;
       case 'grn-cancel':{const r=await ask('Reason for cancelling this GRN? The challan / PO balance and the raw material stock will be put back.','');if(!r)return;const x=await call('kmr_dcg_grn_cancel',{p_id:id,p_reason:r});await reload();say('GRN cancelled.'+(x&&x.cal_records_kept?' The calibration record it made is still in Calibration Hub; delete it there if it is wrong.':''),true);break}
-      case 'back':S.view=null;paint();break;
+      case 'back':S.view=null;S.sview=null;paint();break;
       case 'print':window.print();break;
       case 'print-list':rep('Goods receipt register','','04');window.print();break;
     }
@@ -396,7 +462,9 @@ document.addEventListener('change',(e)=>{
   if(a==='dc-kind'){S.edit.kind=t.value;if(t.value==='non_returnable')S.edit.expected_return='';editDc()}
   if(a==='dc-purpose')editDc();
   if(a==='grn-pickdc'){const d=dcOf(t.value);S.grn.dc_id=t.value;S.grn.lines=grnLinesFromDc(t.value);editGrn()}
-  if(a==='grn-pickpo'){S.grn.po_id=t.value;S.grn.lines=grnLinesFromPo(t.value);editGrn()}
+  if(a==='grn-pickpo'){S.grn.po_id=t.value;S.grn.sched_id='';S.grn.lines=grnLinesFromPo(t.value);editGrn()}
+  if(a==='sch-pickpo'){S.sch.po_id=t.value;S.sch.qty={};S.sch.due={};editSched()}
+  if(a==='grn-picksch'){S.grn.sched_id=t.value;S.grn.lines=t.value?grnLinesFromSched(t.value):grnLinesFromPo(S.grn.po_id);editGrn()}
 });
 
 (async()=>{try{await QP.init('dcg','kmr_dcg_context');if(!QP.ctx)return;await route()}catch(e){say(e.message)}})();
