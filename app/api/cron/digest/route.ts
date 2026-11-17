@@ -22,7 +22,9 @@ export async function GET(req: Request) {
     if (error) throw new Error(error.message);
     const scans = (data ?? []) as Scan[];
     let mails = 0, skipped = 0, failed = 0;
+    const fail = async (slug: string, msg: string) => { failed++; await createAdminClient().from("email_log").insert({ app: "console", kind: "mgmt-digest", to_addr: slug.slice(0, 200), subject: "Daily management mail could not be built", status: "failed", error: msg.slice(0, 500), ref: slug }); };
     for (const s of scans) {
+     try {
       const d = buildDigest({ slug: s.slug, company: s.company, brand: s.brand, sections: s.sections, targets: s.targets, kpis: s.kpis as never, platformUrl: env.platformUrl });
       if (d.sections === 0) { skipped += s.recipients.length; continue; }   // no app of this plant has data yet: nothing to report
       const res = await Promise.all(s.recipients.map((to) => sendMail({
@@ -32,7 +34,11 @@ export async function GET(req: Request) {
       const sent = res.filter((r) => r === "sent").length;
       mails += sent; skipped += res.filter((r) => r === "skipped").length; failed += res.filter((r) => r === "failed").length;
       if (sent > 0) await db.rpc("kmr_digest_mark", { p_cid: s.customer_id });
+     } catch (e) { await fail(s.slug, (e as Error).message); }
     }
     return NextResponse.json({ ok: true, plants: scans.length, mails, skipped, failed });
-  } catch (e) { return NextResponse.json({ error: (e as Error).message }, { status: 500 }); }
+  } catch (e) {
+    await createAdminClient().from("email_log").insert({ app: "console", kind: "mgmt-digest", to_addr: "cron", subject: "Daily management mail job failed", status: "failed", error: (e as Error).message.slice(0, 500) });
+    return NextResponse.json({ error: (e as Error).message }, { status: 500 });
+  }
 }
