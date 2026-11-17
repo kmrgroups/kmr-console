@@ -1,0 +1,3 @@
+-- Daily management mail: the Calibration section now carries the same list as the Calibration Hub due-date mail
+-- (gauges due within the alert window that are not already on a challan: tag, name, due date, days left, class, location, supplier).
+-- Applied via the connector: console.digest_kpis(uuid,jsonb) gets a 'due_list' key in its calibration block (first 40 gauges).

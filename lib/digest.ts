@@ -160,6 +160,12 @@ function calibration(k: K): Section {
     { label: "Out for calibration", value: nf(k.on_dc), sub: `${nf(k.oot_open)} out-of-tolerance cases open`, st: k.oot_open > 0 ? "act" : undefined },
   ];
   let html = tiles(tl);
+  // the same list the Calibration Hub due-date mail carries: gauges going overdue within the alert window (gauges already on a challan are left out)
+  const due = (k.due_list || []) as any[];
+  html += mini(`Gauges going to overdue within ${k.due_days} days${k.due_soon > due.length ? ` (first ${nf(due.length)} of ${nf(k.due_soon)})` : ""}`, due.map((x) => [
+    `${x.tag} · ${x.name}`,
+    `Due ${dmy(x.next_due)} (${nf(x.days_left)} day${x.days_left === 1 ? "" : "s"}) · ${x.gauge_class ?? "Variable"}${x.location ? " · " + x.location : x.department ? " · " + x.department : ""}${x.supplier ? " · Supplier: " + x.supplier : ""}`]));
+  if (k.due_soon > 0 && !due.length) html += `<div style="font-size:12px;color:#344054;margin-top:6px">Open Calibration Hub for the list of gauges due in ${k.due_days} days.</div>`;
   html += mini("Longest overdue gauges (not yet sent for calibration)", (k.top || []).map((x: any) => [`${x.tag} · ${x.name}`, `${nf(x.days)} days overdue`]));
   if (k.no_due_date) html += `<div style="font-size:12px;color:#344054;margin-top:6px"><b>${nf(k.no_due_date)}</b> gauges have no due date entered.</div>`;
   const mgmt: string[] = [], team: Section["team"] = [], good: string[] = [];
