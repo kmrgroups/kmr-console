@@ -1,0 +1,3 @@
+-- Part drawings follow the Operations Master role (console.ops_role), the same as the Parts screen:
+-- admin/editor may add, rename, delete; any other app role may open. Applied through the Supabase tool.
+-- Replaces: console.draw_role, console.draw_edit (new), kmr_part_draw_list/add/save/delete, storage policies kmr_draw_write / kmr_draw_delete.
