@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type Kind = { kind: string; at: string; ok: boolean; rows: number; error: string | null; last_ok: string | null; fails_24h: number };
 type Dev = { name: string; last_seen: string | null; last_punch: string | null };
-type Plant = { slug: string; name: string; now: string; pc_last_seen: string | null; kinds: Kind[]; devices: Dev[] };
+type Plant = { unit: string | null; code: string | null; city: string | null; incharge: string | null; phone: string | null; status: string | null; slug: string; name: string; now: string; pc_last_seen: string | null; kinds: Kind[]; devices: Dev[] };
 type Tone = "ok" | "warn" | "danger" | "info";
 
 // what each kind of data is called on the plant floor
@@ -32,7 +32,7 @@ export async function BridgeHealth() {
   const plants = (data ?? []) as Plant[];
   if (!plants.length) return null;
   // Esbee units first
-  plants.sort((a, b) => Number(/esbee/i.test(b.name)) - Number(/esbee/i.test(a.name)) || a.name.localeCompare(b.name));
+  plants.sort((a, b) => Number(/esbee/i.test(b.name)) - Number(/esbee/i.test(a.name)) || (a.unit || a.name).localeCompare(b.unit || b.name));
   const bad = plants.filter((pl) => pcTone(pl.pc_last_seen, new Date(pl.now).getTime()) === "danger" || pl.kinds.some((k) => !k.ok)).length;
 
   return (
@@ -45,7 +45,8 @@ export async function BridgeHealth() {
           const kinds = LABELS.map(([k, label]) => ({ label, r: pl.kinds.find((x) => x.kind === k) }));
           return (
             <div key={pl.slug} className="card" style={{ background: "var(--bg, #fff)" }}>
-              <div style={{ display: "flex", alignItems: "center", fontWeight: 700 }}><Dot t={pc} />{pl.name.replace(/^ESBEE PRECISION INDUSTRIES – /i, "")} <small className="mono muted" style={{ marginLeft: 8 }}>{pl.slug.split("-").pop()}</small></div>
+              <div style={{ display: "flex", alignItems: "center", fontWeight: 700, fontSize: 16 }}><Dot t={pc} />{pl.unit || pl.name} <small className="mono muted" style={{ marginLeft: 8 }}>{pl.code}</small>{pl.status && <span className="badge info" style={{ marginLeft: 8 }}>{pl.status}</span>}</div>
+              <div className="muted">{[pl.city, pl.incharge && `In-charge: ${pl.incharge}`, pl.phone].filter(Boolean).join(" · ")}</div>
               <div className="muted" style={{ marginBottom: 8 }}>Bridge PC last called in: <b>{ago(pl.pc_last_seen, now)}</b></div>
               <table><tbody>
                 {kinds.map(({ label, r }) => {
