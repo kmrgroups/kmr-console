@@ -1,0 +1,3 @@
+-- Names enrolled on the machine fill the auto-added employees (only blank / "New employee" names are replaced).
+-- Applied live 18 Nov 2026. Functions: console.hrms_apply_names(cid, users jsonb); console.hrms_ingest_users(mode, id, users jsonb).
+-- The bridge program sends { "users": [ { "bio_id": "...", "name": "..." } ] } to /api/hrm/punch.
