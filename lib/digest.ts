@@ -83,7 +83,9 @@ function production(k: K, T: Required<Targets>, today: string): Section {
     { label: "Output · month to date", value: nf(sc.qty), sub: `${nf(mtd.days)} production days · ${nf(mtd.machines)} machines` },
     { label: "Rejection · month to date", value: rejPct === null ? "–" : pct(rejPct, 2), sub: `${nf(sc.scrap)} pcs scrap`, st: rejSt },
   ];
-  const dayRows = days.map((x) => bar(x.eff, 100, effSt(x.eff), dshort(x.d), x.eff === null ? "no entry" : pct(x.eff, 1)));
+  // today and yesterday are keyed in the ERP during the next day: do not show them as "no entry"
+  const shownDays = days.filter((x) => !(x.eff === null && (!k.last_date || x.d > k.last_date) && (ago(x.d, today) ?? 9) <= 1));
+  const dayRows = shownDays.map((x) => bar(x.eff, 100, effSt(x.eff), dshort(x.d), x.eff === null ? "no entry" : pct(x.eff, 1)));
   const worstM = machines.slice(0, 8), bestM = machines.length > 8 ? machines.slice(-3) : [];
   const mRows = [...worstM, ...bestM.filter((b) => !worstM.includes(b))].map((x) => bar(x.eff, 100, effSt(x.eff), x.m, pct(x.eff, 1)));
   let html = tiles(tl);
