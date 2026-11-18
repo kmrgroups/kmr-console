@@ -69,7 +69,8 @@ function production(k: K, T: Required<Targets>, today: string): Section {
   const lagDays = ago(k.last_date, today);
   const eff: number | null = mtd.eff ?? null, effLast: number | null = last.eff ?? null;
   const effSt = (v: number | null): St => (v === null ? "watch" : v >= T.eff_target ? "ok" : v >= T.eff_target - 15 ? "watch" : "act");
-  const stale: St = lagDays === null ? "act" : lagDays >= 3 ? "act" : lagDays >= 2 ? "watch" : "ok";
+  // Entries for a day are keyed in the ERP during the next day, so at the morning mail a 2-day gap is normal; flag from 3 days (watch) and 4 days (act)
+  const stale: St = lagDays === null ? "act" : lagDays >= 4 ? "act" : lagDays >= 3 ? "watch" : "ok";
   const rejPct = sc.qty + sc.scrap > 0 ? (100 * sc.scrap) / (sc.qty + sc.scrap) : null;
   const rejSt: St = rejPct === null || sc.scrap === 0 ? "ok" : rejPct <= 1 ? "ok" : rejPct <= 3 ? "watch" : "act";
   const machines: { m: string; eff: number; hours: number }[] = k.machines || [];
@@ -92,7 +93,7 @@ function production(k: K, T: Required<Targets>, today: string): Section {
   if (k.live) html += mini("Live route-sheet entries this month", [["OK pieces", nf(k.live.ok)], ["Rejected", nf(k.live.rej)], ["Rework", nf(k.live.rew)]]);
   html += `<div style="font-size:11px;color:#5e6778;margin-top:6px">Efficiency = hours-weighted average of the ERP production entries that have an efficiency. Days with no entry are shown empty.</div>`;
   const mgmt: string[] = [], team: Section["team"] = [], good: string[] = [];
-  if (stale !== "ok") { mgmt.push(`No production entry since ${dmy(k.last_date)} (${lagDays ?? "many"} days). Find out whether the ERP link or the entry discipline has stopped.`); team.push({ who: "Production", text: "Complete the missing production entries today so the efficiency is real." }); }
+  if (stale !== "ok") { mgmt.push(`Latest production entry is for ${dmy(k.last_date)} (${lagDays ?? "many"} days ago); nothing has been keyed for the days after it. Find out whether the ERP link or the entry discipline has stopped.`); team.push({ who: "Production", text: "Complete the missing production entries today so the efficiency is real." }); }
   if (eff !== null && effSt(eff) !== "ok") {
     mgmt.push(`Efficiency this month is ${pct(eff, 1)} against the ${T.eff_target}% target${machines.length ? `; ${below} of ${machines.length} machines are below target` : ""}. Review the biggest losses with the plant head.`);
     const w = worstM.slice(0, 3).map((x) => `${x.m} (${pct(x.eff, 0)})`).join(", ");
