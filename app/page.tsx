@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import { Empty, fmtDate, one } from "@/components/ui";
 import { p } from "@/lib/base-path";
 import { AutoBackup } from "@/components/AutoBackup";
+import { BridgeHealth } from "@/components/BridgeHealth";
 import { isManager } from "@/lib/auth";
 import { LICENCE_TONE, addDays, effectiveStatus, today } from "@/lib/view";
 
@@ -48,6 +49,8 @@ export default async function Dashboard() {
         <a className="card stat" href={p("/tickets")}><div className="label">Open support tickets</div><div className="value" style={{ color: openTickets ? "var(--warn)" : undefined }}>{openTickets ?? 0}</div><div className="hint">Open or in progress</div></a>
         <a className="card stat" href={p("/leads")}><div className="label">New pilot requests</div><div className="value">{newLeads ?? 0}</div><div className="hint">From www.kmr-groups.com/it</div></a>
       </div>
+
+      <BridgeHealth />
 
       <div className="card" style={{ marginTop: 16 }}>
         <h2>Licences by product</h2>
