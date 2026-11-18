@@ -5,7 +5,7 @@ create or replace function public.kmr_bridge_health() returns jsonb language sql
   select case when not coalesce(console.is_staff(), false) then '[]'::jsonb else coalesce((
     select jsonb_agg(p order by p->>'name') from (
       select jsonb_build_object(
-        'slug', c.slug, 'name', c.name, 'now', now(),
+        'slug', c.slug, 'name', c.name, 'now', now(), 'unit', c.plant_code, 'code', c.code, 'city', c.city, 'incharge', c.incharge_name, 'phone', c.incharge_phone, 'status', c.status,
         'pc_last_seen', (select max(k.last_seen_at) from console.sf_erp_keys k where k.customer_id = c.id and k.active),
         'kinds', coalesce((select jsonb_agg(jsonb_build_object('kind', x.kind, 'at', x.at, 'ok', x.ok, 'rows', x.rows, 'error', x.summary->>'error',
                    'last_ok', (select max(b2.at) from console.bridge_runs b2 where b2.customer_id = c.id and b2.kind = x.kind and b2.ok),
