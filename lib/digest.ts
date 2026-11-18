@@ -327,11 +327,11 @@ export function buildDigest(inp: DigestInput) {
   if (on("invoicing")) S.push(invoicing(kp.invoicing!, today));
   if (on("rmp")) S.push(rmp(kp.rmp!, today));
   const missing = SECTION_KEYS.filter((k) => inp.sections?.[k] !== false && !kp[k]).map((m) => ({ production: "Production", delivery: "Delivery", dcg: "DC &amp; GRN", calibration: "Calibration", maintenance: "Maintenance", hrm: "HRM", actions: "Actions", meetings: "Meetings", audit: "Audit", invoicing: "Invoicing", rmp: "Raw material planning" }[m]));
-  return compose({ S, slug: inp.slug, company: inp.company, today, test: inp.test, platformUrl: inp.platformUrl, refPrefix: "DMR", format: FORMAT, title: "Daily management report", missing,
+  return compose({ S, slug: inp.slug, company: inp.company, unit: inp.brand?.plant || undefined, today, test: inp.test, platformUrl: inp.platformUrl, refPrefix: "DMR", format: FORMAT, title: "Daily management report", missing,
     mgmtTitle: "Management: where to concentrate today", teamTitle: "Teams: what to do today", settingsPath: "Administration › Daily management mail", openLabel: "Open the app" });
 }
 
-export type ComposeIn = { S: Section[]; slug: string; company: string; today: string; test?: boolean; platformUrl: string; refPrefix: string; format: string; title: string; missing: string[];
+export type ComposeIn = { S: Section[]; slug: string; company: string; unit?: string; today: string; test?: boolean; platformUrl: string; refPrefix: string; format: string; title: string; missing: string[];
   mgmtTitle: string; teamTitle: string; settingsPath: string; openLabel: string; allClear?: string; noTeam?: string };
 /** The common layout of both mails: scoreboard, management list, team list, what is OK, one block per area (worst first), reading guide. */
 export function compose(inp: ComposeIn) {
@@ -375,6 +375,6 @@ export function compose(inp: ComposeIn) {
   if (inp.missing.length) h += `<div style="font-size:11px;color:#5e6778;margin:0 0 8px">Not shown (not in use, switched off or no data yet): ${inp.missing.join(", ")}.</div>`;
   h += `<div style="font-size:11px;color:#5e6778;border-top:1px solid #e6dfd1;padding-top:8px">How to read: <b style="color:${COL.act.fg}">ACTION</b> = outside target, needs someone today · <b style="color:${COL.watch.fg}">WATCH</b> = drifting, keep an eye · <b style="color:${COL.ok.fg}">ON TRACK</b> = within target. Targets and sections can be changed by your administrator (${esc(inp.settingsPath)}).</div>`;
 
-  const subject = `${inp.test ? "TEST — " : ""}${inp.title} ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""} · ${inp.company}`;
+  const subject = `${inp.test ? "TEST — " : ""}${inp.title} ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""} · ${inp.unit || inp.company}`;
   return { subject, html: h, refNo, revision: inp.format, counts: { act, watch, ok }, sections: S.length };
 }
