@@ -31,7 +31,7 @@ async function backupApp(cid: string, dir: string, app: string, tables: Plan[num
   for (const t of tables) {
     const parts: string[] = [];
     for (let off = 0; off < t.rows; off += PAGE) {
-      const { data, error } = await db.rpc("kmr_bk_page", { p_cid: cid, p_app: app, p_table: t.t, p_offset: off, p_limit: PAGE });
+      const { data, error } = await db.schema("public").rpc("kmr_bk_page", { p_cid: cid, p_app: app, p_table: t.t, p_offset: off, p_limit: PAGE });
       if (error) throw new Error(`${label(app)} › ${t.t}: ${error.message}`);
       const arr = Array.isArray(data) ? data : []; if (!arr.length) break;
       rows += arr.length; parts.push(arr.map((r) => JSON.stringify(r)).join("\n"));
@@ -78,7 +78,7 @@ async function mailIt(c: Scan, m: Manifest, date: string, dir: string) {
 /** One pass: works through the companies until the time budget is used. Returns what is still open (for the failure alert). */
 export async function runDailyBackup(budgetMs: number) {
   const t0 = Date.now(), db = createAdminClient(), date = today(), open: string[] = [], done: string[] = [];
-  const { data: scan, error } = await db.rpc("kmr_bk_scan");
+  const { data: scan, error } = await db.schema("public").rpc("kmr_bk_scan");
   if (error) throw new Error(`Company list failed: ${error.message}`);
   for (const c of (scan as Scan[]) ?? []) {
     if (!c.enabled) continue;
@@ -87,7 +87,7 @@ export async function runDailyBackup(budgetMs: number) {
     if (m.complete && m.mailed) { done.push(c.slug); continue; }
     try {
       if (!m.complete) {
-        const { data: plan, error: pe } = await db.rpc("kmr_bk_plan", { p_cid: c.customer_id });
+        const { data: plan, error: pe } = await db.schema("public").rpc("kmr_bk_plan", { p_cid: c.customer_id });
         if (pe) throw new Error(`Plan: ${pe.message}`);
         const have = new Set(m.items.map((i) => i.app)); m.issues = [];
         for (const g of (plan as Plan) ?? []) {
@@ -102,7 +102,7 @@ export async function runDailyBackup(budgetMs: number) {
       }
       if (m.complete) {
         await mailIt(c, m, date, dir); m.mailed = true; await saveManifest(mp, m);
-        await db.rpc("kmr_bk_mark", { p_cid: c.customer_id, p_status: m.issues.length ? "issues" : "ok", p_detail: { date, groups: m.items.length, records: m.items.reduce((a, i) => a + i.rows, 0), bytes: m.items.reduce((a, i) => a + i.bytes, 0), issues: m.issues } });
+        await db.schema("public").rpc("kmr_bk_mark", { p_cid: c.customer_id, p_status: m.issues.length ? "issues" : "ok", p_detail: { date, groups: m.items.length, records: m.items.reduce((a, i) => a + i.rows, 0), bytes: m.items.reduce((a, i) => a + i.bytes, 0), issues: m.issues } });
         await prune(c.slug, c.keep_days, date); done.push(c.slug);
       } else open.push(`${c.name}${m.issues.length ? ` (${m.issues[0]})` : ""}`);
     } catch (e) { open.push(`${c.name}: ${(e as Error).message}`); }
