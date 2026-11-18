@@ -1,0 +1,3 @@
+-- Unknown biometric IDs in incoming punches become employees automatically ("New employee <ID>"), and the punch is linked.
+-- Applied live 18 Nov 2026. Functions: console.hrms_auto_emp(cid, bio, sample); console.hrms_punch_add now returns new_employees.
+-- Backfill linked 10,009 earlier punches of Esbee Unit-2 and added 61 employees (biometric ID "1" is left alone: test/admin entry).
