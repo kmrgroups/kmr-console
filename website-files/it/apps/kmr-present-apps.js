@@ -228,6 +228,7 @@
   /* ---------- MMD: material movement, OEE, rejection ---------- */
   KMRPA.mmd = { name: "Material Movement (MMD)", code: "mmd", std: "mmd", deps: ["/it/apps/mmd-dash.js"], controls: function () { return [{ id: "days", label: "Period", type: "select", value: 30, options: [[7, "Last 7 days"], [30, "Last 30 days"], [90, "Last 90 days"]] }]; }, load: async function (call, v) {
     var days_ = +v.days || 30, m = await call("kmr_mmd_load"), x = await call("kmr_mmd_data", { p_days: Math.max(days_, 30) }), D = window.MMDDash, P = D.plant(m), S = std, td = m.today || todayIso();
+    try { x = D.mergeErp(m, x, await call("kmr_mmd_erp", { p_days: days_ }), days_); } catch (e) { }
     var since = Date.parse(td + "T00:00:00") - (days_ - 1) * 864e5, inWin = function (iso) { return Date.parse(String(iso).slice(0, 10) + "T00:00:00") >= since; }, wd = 0;
     for (var i = 0; i < days_; i++) { var dow = new Date(since + i * 864e5).getDay(), off = P.off === "Sunday" ? dow === 0 : P.off === "Saturday & Sunday" ? dow === 0 || dow === 6 : P.off === "Friday" ? dow === 5 : false; if (!off) wd++; }
     var lc = {}; (m.loss_codes || []).forEach(function (l) { lc[l.code] = l; });
@@ -242,6 +243,9 @@
     var byL = {}; loss.forEach(function (l) { var k = (l.d_code || "") + " " + (l.d_name || ""); byL[k] = (byL[k] || 0) + +l.minutes / 60; });
     var day = {}; pe.forEach(function (e) { var d = String(e.entry_at).slice(0, 10), r = (day[d] = day[d] || { ok: 0, rej: 0, rew: 0 }); r.ok += +e.ok_qty; r.rej += +e.rej_qty; r.rew += +e.rew_qty; });
     var dk = Object.keys(day).sort().slice(-30), stuck = 0; try { stuck = D.stuck(m, x); } catch (e) { stuck = null; }
+    var K = {}; try { K = (await call("kmr_mmd_kpi", { p_days: days_ })) || {}; } catch (e) { K = {}; }
+    var RD = D.ready(m), TL = K.tools || {}, EN = K.entries || {}, DK = K.dc || {}, CN = K.cons || {}, MT = K.machine_time || [], runH = 0, allH = 0;
+    MT.forEach(function (r) { runH += +r.run || 0; allH += (+r.run || 0) + (+r.idle || 0) + (+r.alarm || 0); });
     return { period: "Last " + days_ + " days · " + wd + " working days", kpis: [
       { id: "oee", name: "OEE", value: TO != null ? TO * 100 : null, unit: "%", target: tg * 100, tol: 15, dir: "high", std: S("IATF 9.1.1.1", "IATF 8.5.2.1", "VDA P6"), why: "Availability × Performance × Quality, from the stage entries and loss hours." },
       { id: "av", name: "Availability", value: TA != null ? TA * 100 : null, unit: "%", target: 90, tol: 8, dir: "high", std: S("IATF 9.1.1.1", "ISO 8.5.2"), why: "(Available hours − unplanned loss hours) ÷ available hours." },
@@ -250,9 +254,21 @@
       { id: "rej", name: "Rejection %", value: tot ? T.rej / tot * 100 : null, unit: "%", target: 2, tol: 50, dir: "low", std: S("ISO 8.7", "IATF 8.7.1", "IATF 9.1.1.1"), why: "Rejected pieces ÷ all pieces produced." },
       { id: "rew", name: "Rework %", value: tot ? T.rew / tot * 100 : null, unit: "%", target: 2, tol: 50, dir: "low", std: S("ISO 8.7", "IATF 8.7.1"), why: "Pieces sent for rework ÷ all pieces produced." },
       { id: "loss", name: "Unplanned loss hours", value: T.loss, unit: "h", std: S("IATF 9.1.1.1", "VDA P6"), why: "Machine hours lost to unplanned D codes." },
-      { id: "stuck", name: "Lots not moving", value: stuck, target: 0, amber: 2, dir: "low", std: S("ISO 8.5.2", "IATF 8.5.2.1", "ISO 8.4"), why: "Lots waiting longer than the transfer time plus the run time at the OEE target." }],
+      { id: "stuck", name: "Lots not moving", value: stuck, target: 0, amber: 2, dir: "low", std: S("ISO 8.5.2", "IATF 8.5.2.1", "ISO 8.4"), why: "Lots waiting longer than the transfer time plus the run time at the OEE target." }].concat([
+      { id: "rdy", name: "Parts ready for production", value: RD.parts ? RD.ok / RD.parts * 100 : null, unit: "%", target: 100, tol: 20, dir: "high", std: S("ISO 8.1", "IATF 8.5.1.1", "IATF 9.1.1.1"), why: "Parts with a process route, every cycle time, every machine, real BOM weights and a drawing — the base of OEE and planning." },
+      { id: "mrun", name: "Machine running share (measured)", value: allH ? runH / allH * 100 : null, unit: "%", std: S("IATF 9.1.1.1", "IATF 8.5.1.5"), why: "Running hours ÷ reported hours, read from the machines over the network." },
+      { id: "mcap", name: "Entries from machine counts", value: EN.total ? EN.machine / EN.total * 100 : null, unit: "%", std: S("IATF 9.1.1.1", "IATF 8.5.2.1"), why: "Production entries that took their quantity from the machine counter instead of typing." },
+      { id: "tchg", name: "Idle time from tool changes", value: TL.change_min != null ? TL.change_min / 60 : null, unit: "h", std: S("IATF 8.5.1.6", "IATF 8.5.1.5"), why: "Planned and breakage tool-change time booked as loss hours (D10, D09)." },
+      { id: "tlife", name: "Tool life achieved vs standard", value: TL.life_pct != null ? +TL.life_pct : null, unit: "%", std: S("IATF 8.5.1.6", "IATF 9.1.1.1"), why: "Average pieces made per tool before change ÷ the standard tool life." },
+      { id: "tdue", name: "Tools due for change", value: TL.due != null ? TL.due : null, target: 0, amber: 2, dir: "low", std: S("IATF 8.5.1.6", "VDA P6"), why: "Tools on machines at 80% or more of their standard life." },
+      { id: "tlow", name: "Tools below safety stock", value: TL.low_stock != null ? TL.low_stock : null, target: 0, amber: 3, dir: "low", std: S("IATF 8.5.1.6", "ISO 8.1"), why: "Tools whose stock is below the safety stock set in the Tools plan." },
+      { id: "clow", name: "Consumables below safety stock", value: CN.low_stock != null ? CN.low_stock : null, target: 0, amber: 3, dir: "low", std: S("ISO 7.1.3", "ISO 8.1"), why: "Consumables whose stock is below the safety stock set in the Consumables plan." },
+      { id: "dcot", name: "Outsourced lots back on time", value: DK.closed ? DK.on_time / DK.closed * 100 : null, unit: "%", target: 95, tol: 10, dir: "high", std: S("ISO 8.4", "IATF 8.4.2.4"), why: "Delivery challans completed by the expected return date ÷ completed challans." },
+      { id: "dcod", name: "Challans overdue at suppliers", value: DK.overdue != null ? DK.overdue : null, target: 0, amber: 2, dir: "low", std: S("ISO 8.4", "IATF 8.4.2.4"), why: "Open delivery challans past the expected return date." }]),
       charts: [{ title: "OEE by machine (%)", kind: "bar", kpi: "oee", labels: R.map(function (r) { return r.c; }), series: [{ name: "OEE %", values: R.map(function (r) { return r.oee != null ? r.oee * 100 : null; }) }] },
         barOf("Rejection by defect (pcs)", byR, "Pieces", "rej"), barOf("Loss hours by D code", byL, "Hours", "loss"),
+        { title: "Machine time by state (hours)", kind: "bar", kpi: "mrun", labels: MT.map(function (r) { return r.machine; }), series: [{ name: "Running", values: MT.map(function (r) { return +r.run || 0; }) }, { name: "Idle", values: MT.map(function (r) { return +r.idle || 0; }) }, { name: "Alarm", values: MT.map(function (r) { return +r.alarm || 0; }) }] },
+        { title: "Tool-change time by machine (minutes)", kind: "bar", kpi: "tchg", labels: (TL.by_machine || []).map(function (r) { return r.machine; }), series: [{ name: "Minutes", values: (TL.by_machine || []).map(function (r) { return +r.minutes || 0; }) }] },
         { title: "Daily rejection and rework rate (%)", kind: "line", kpi: "rej", labels: dk.map(function (d) { return d.slice(5); }), series: [{ name: "Rejection %", values: dk.map(function (d) { var r = day[d], t = r.ok + r.rej + r.rew; return t ? r.rej / t * 100 : null; }) }, { name: "Rework %", values: dk.map(function (d) { var r = day[d], t = r.ok + r.rej + r.rew; return t ? r.rew / t * 100 : null; }) }] }] };
   } };
 
