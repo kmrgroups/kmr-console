@@ -274,7 +274,7 @@ export type DigestInput = {
 };
 
 const FORMAT = "Format F-DMR-01 · Rev 00 · 16-11-2026";
-const HOME: Record<string, string> = { mmd: "mmd.html", sales: "sales.html", dcg: "dcg.html", calib: "calibration.html", inv: "inv.html", rmp: "rmp.html", pnl: "pnl.html", bud: "bud.html" };
+const HOME: Record<string, string> = { mmd: "mmd.html", sales: "sales.html", dcg: "dcg.html", calib: "calibration.html", inv: "inv.html", rmp: "rmp.html", pnl: "pnl.html", bud: "bud.html", ppl: "ppl.html" };
 
 function rmp(k: K, today: string): Section {
   const pd = k.plan_qty_td > 0 ? Math.round((100 * k.recv_qty_td) / k.plan_qty_td) : null;   // received against what was planned in weeks already over

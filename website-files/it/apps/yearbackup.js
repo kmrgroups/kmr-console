@@ -6,7 +6,7 @@
 (function () {
   "use strict";
   const NAME = { ops: "Operations Master", hrm: "HRM Suite", hrms: "HRM & Payroll", balloon: "Balloon Inspector", pd: "Process Documents", capacity: "Capacity Planner",
-    sales: "Sales Flow", calib: "Calibration Hub", dcg: "Delivery Challan & GRN", inv: "Sales Invoicing", pnl: "Profit & Loss", bud: "Budget", rmp: "Raw Material Planning", mmd: "Material Movement",
+    sales: "Sales Flow", calib: "Calibration Hub", dcg: "Delivery Challan & GRN", inv: "Sales Invoicing", pnl: "Profit & Loss", bud: "Budget", ppl: "Production plan", rmp: "Raw Material Planning", mmd: "Material Movement",
     mnt: "Maintenance", apqp: "APQP Planner", ppap: "PPAP Submissions", msa: "MSA Studies", spc: "SPC Charts", crm: "CRM & RFQ", d8: "8D Problem Solving",
     aud: "Internal Audit", tsk: "ActionTrack", mom: "Minutes Of Meetings", cad: "KMR CAD Draft", layout: "Factory & Office Layout", dwm: "Daily Work Management",
     off: "KMR Office Suite", connect: "KMR Connect" };

@@ -59,6 +59,17 @@ sales:[
 ['ISO','9.1.3','Analysis and evaluation - sales loss by reason','Loss by reason, plant and customer with a cumulative % shows which few causes make most of the loss.'],
 ['IATF','10.2.4','Error-proofing','Each action in the conclusion screen ends with a permanent fix and a check in the next review; the permanent action is where error-proofing is decided.'],
 ['ISO','10.3','Continual improvement','The same loss figures are compared month after month; an action is closed only when the loss from its reason falls.']],
+ppl:[
+['IATF','8.1','Operational planning and control','Customer schedule, supermarket quantity and stage stock are netted into the quantity to make at every process, so production is planned from demand and not from habit.'],
+['IATF','8.5.1.1','Control plan','Each stage of the plan follows the route and cycle times held for the part; parts without a route or cycle time are listed as gaps on the Dashboard.'],
+['IATF','8.5.2.1','Identification and traceability','Stage stock is counted per part and per process, from the ERP / Material Movement records or typed in, so work in progress is visible by stage.'],
+['IATF','8.5.6.1.1','Temporary change of process controls','A published plan is versioned; any later change is a new version, so what was planned and when stays on record.'],
+['ISO','7.1.3','Infrastructure','Machine hours needed are compared with hours available (hours per day, efficiency, working days) and overloaded machines are flagged.'],
+['ISO','9.1.1','Monitoring, measurement, analysis and evaluation','Parts in plan, pieces to make, machine hours and machines over 100% load are the review figures of the Dashboard and Presentation.'],
+['ISO','6.1','Actions to address risks and opportunities','Missing routes, missing cycle times and unassigned machines are shown as gaps; the Presentation gives an action plan for each.'],
+['VDA','6.3 P7.2','Production planning','Material and capacity needs are derived from the customer schedule and passed to Raw material plan, Machine loading plan and Capacity.'],
+['APQP','Phase 4','Product and process validation: production trial and planning','Quantities per process and machine come from the validated route and cycle times.']
+],
 bud:[
 ['ISO','7.1.1','Resources','A monthly budget is kept for raw material, tooling, consumables, manpower, electricity, outside processing and maintenance; actual spend is shown against it, so resource use is controlled and overspending is seen early.'],
 ['ISO','9.1.1','Monitoring, measurement, analysis and evaluation','Actual spend is pulled from the apps that hold it (Raw Material Planning, DC & GRN, Material Movement, HRM payroll, Maintenance), so the budget is checked against real figures, not typed ones.'],
