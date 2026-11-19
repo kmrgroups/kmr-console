@@ -59,6 +59,16 @@ sales:[
 ['ISO','9.1.3','Analysis and evaluation - sales loss by reason','Loss by reason, plant and customer with a cumulative % shows which few causes make most of the loss.'],
 ['IATF','10.2.4','Error-proofing','Each action in the conclusion screen ends with a permanent fix and a check in the next review; the permanent action is where error-proofing is decided.'],
 ['ISO','10.3','Continual improvement','The same loss figures are compared month after month; an action is closed only when the loss from its reason falls.']],
+mlp:[
+['IATF','8.1','Operational planning and control','The customer due date is worked back through every process using the cycle times, so the date each operation must start is known and not guessed.'],
+['IATF','8.5.1.1','Control plan','Start and finish follow the route, machines and cycle times held for the part; parts without a route are listed as gaps.'],
+['IATF','8.5.6.1.1','Temporary change of process controls','A published schedule is versioned, so a later change in dates or machines is a new version on record.'],
+['ISO','7.1.3','Infrastructure','Hours placed on each machine in each week are compared with the hours available; overloaded machine-weeks are flagged red.'],
+['ISO','9.1.1','Monitoring, measurement, analysis and evaluation','Throughput time, parts that should already have started and machines over 100% are the review figures of the Dashboard and Presentation.'],
+['ISO','6.1','Actions to address risks and opportunities','Late-start parts and overloaded machines are shown as gaps; the Presentation gives an action plan for each.'],
+['VDA','6.3 P7.2','Production planning','Delivery dates drive the start dates and machine loading; the published plan feeds Capacity, manpower, overtime and the budget plans.'],
+['APQP','Phase 4','Product and process validation: production trial and planning','Throughput time is built from the validated cycle times of the control plan routes.']
+],
 ppl:[
 ['IATF','8.1','Operational planning and control','Customer schedule, supermarket quantity and stage stock are netted into the quantity to make at every process, so production is planned from demand and not from habit.'],
 ['IATF','8.5.1.1','Control plan','Each stage of the plan follows the route and cycle times held for the part; parts without a route or cycle time are listed as gaps on the Dashboard.'],
