@@ -1,5 +1,10 @@
 /* KMR shared UI helpers (all apps): 1) PDFs open in a viewer first, download on request  2) right-click / long-press "Open in new tab / window" on menus and buttons. */
 (function () {
+  /* number boxes ignore the mouse wheel; spell-check + synonyms in every text box */
+  if (!window.__kmrText && !document.querySelector('script[src*="kmr-text.js"]')) { const t = document.createElement("script"); t.src = "/it/apps/kmr-text.js"; document.head.appendChild(t); }
+  if (!window.__kmrSticky && !document.querySelector('script[src*="kmr-sticky.js"]')) { const t = document.createElement("script"); t.src = "/it/apps/kmr-sticky.js"; document.head.appendChild(t); }
+  if (!window.KMRGuide && !document.querySelector('script[src*="kmr-guide.js"]')) { const t = document.createElement("script"); t.src = "/it/apps/kmr-guide.js"; document.head.appendChild(t); }
+  if (!window.__kmrSelect && !document.querySelector('script[src*="kmr-select.js"]')) { const t = document.createElement("script"); t.src = "/it/apps/kmr-select.js"; document.head.appendChild(t); }
   /* ---------- PDF viewer ---------- */
   function view(blob, name) {
     const url = URL.createObjectURL(blob), v = document.createElement("div");
@@ -26,7 +31,7 @@
   const hide = () => { menu.style.display = "none"; };
   function target(el) {                      // what does this element open?
     const b = el.closest("[data-go],[data-t],[data-view],a[href]"); if (!b) return null;
-    if (b.matches("a[href]") && !/^javascript:|^#/.test(b.getAttribute("href"))) return { url: b.href };
+    if (b.matches("a[href]")) return null;       // a real link: the browser's own menu offers Open in new tab / new window / copy link
     const key = b.dataset.go || b.dataset.t || b.dataset.view; if (!key) return null;
     const prj = window.PDApp && window.PDApp.S && window.PDApp.S.prj && window.PDApp.S.prj.id;
     return { url: location.href.split("#")[0] + "#go=" + encodeURIComponent(key) + (prj ? "&prj=" + prj : "") };
