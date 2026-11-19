@@ -59,6 +59,16 @@ sales:[
 ['ISO','9.1.3','Analysis and evaluation - sales loss by reason','Loss by reason, plant and customer with a cumulative % shows which few causes make most of the loss.'],
 ['IATF','10.2.4','Error-proofing','Each action in the conclusion screen ends with a permanent fix and a check in the next review; the permanent action is where error-proofing is decided.'],
 ['ISO','10.3','Continual improvement','The same loss figures are compared month after month; an action is closed only when the loss from its reason falls.']],
+bud:[
+['ISO','7.1.1','Resources','A monthly budget is kept for raw material, tooling, consumables, manpower, electricity, outside processing and maintenance; actual spend is shown against it, so resource use is controlled and overspending is seen early.'],
+['ISO','9.1.1','Monitoring, measurement, analysis and evaluation','Actual spend is pulled from the apps that hold it (Raw Material Planning, DC & GRN, Material Movement, HRM payroll, Maintenance), so the budget is checked against real figures, not typed ones.'],
+['ISO','9.3.2','Management review inputs - performance and adequacy of resources','Budget used %, heads over budget and heads with spend but no budget are the review figures of the Presentation screen.'],
+['ISO','8.4.1','Control of externally provided products and services','Intake and outward show what was bought (GRN, raw material received) against what went to the shop floor, so material and service purchases are controlled.'],
+['ISO','7.1.3','Infrastructure','Tooling, consumables and electricity are valued from tool changes, consumable issues and machine run hours, with the rates kept on one screen.'],
+['ISO','6.1','Actions to address risks and opportunities','Heads over budget are flagged; the Presentation gives an action plan for each gap.'],
+['IATF','8.5.1.6','Management of production tooling','Tool cost per change is built from the actual tool changes recorded in Material Movement against the rate of each tool.'],
+['IATF','9.3.2.1','Management review inputs','Cost figures by head (material, tooling, consumables, manpower, power) are available month by month for the management review.']
+],
 pnl:[
 ['ISO','9.1.1','Monitoring, measurement, analysis and evaluation','The profit and loss is worked out for any month or period straight from the KMR apps and Tally / ERP: sales, every direct and indirect cost head, gross and net profit, each cost as % of sales and against the previous period.'],
 ['ISO','9.3.2','Management review inputs - performance and adequacy of resources','Gross profit, net profit, material cost % and heads over budget are shown for the review, with a 6-month trend, and are the figures of the Presentation screen and the Finance mail to top management.'],
