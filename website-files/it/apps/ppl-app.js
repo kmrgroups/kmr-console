@@ -27,24 +27,28 @@
     apply();
   })();
 
-  /* ---- the netting: stock after each stage is taken off, last stage first ---- */
+  /* ---- the netting. Same stage stocks as the Raw Material Plan work sheet (minimum stock, supermarket, FG, FI, WIP, WIP stage 2, incoming, supplier).
+     Final need = schedule still to deliver + minimum stock + supermarket - (FG + FI + WIP + WIP2 + incoming + supplier); then worked back process by process,
+     taking off the stock held after each process (typed in, or from ERP production when no WIP is entered). ---- */
+  const nk = (c) => String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
   function calc(d) {
     const cfg = d.cfg || {}, hpd = +cfg.hpd || 16, eff = (+cfg.eff || 85) / 100, days = +cfg.days || 26;
     const man = {}; (d.stock || []).forEach((s) => { man[s.part + "|" + s.seq] = +s.qty; });
     const rows = [], parts = [];
     (d.parts || []).forEach((p) => {
-      const net = Math.max(0, (+p.demand || 0) - (+p.despatched || 0));
-      const sup = d.super && d.super[p.part] != null ? +d.super[p.part] : (d.rmp_super && d.rmp_super[p.part]) || 0;
-      const supSrc = d.super && d.super[p.part] != null ? "Entered" : d.rmp_super && d.rmp_super[p.part] ? "RMP" : "none";
+      const net = Math.max(0, (+p.demand || 0) - (+p.despatched || 0)), b = (d.ps || {})[nk(p.part)] || {}, v = (k) => +b[k] || 0;
+      const held = v("fg") + v("fi") + v("wip") + v("wip2") + v("inc") + v("sup"), want = net + v("safety") + v("rrs");
+      const final = Math.max(0, want - held), bucketWip = v("wip") + v("wip2") > 0;
       const rt = p.route || [], erp = p.erp || {};
       const stock = rt.map((o, i) => {
         const k = p.part + "|" + o.seq;
+        if (i === rt.length - 1) return { q: 0, src: "none" };
         if (man[k] != null) return { q: man[k], src: "Entered" };
-        const a = erp[(o.name || "").toUpperCase()], b = i < rt.length - 1 ? erp[(rt[i + 1].name || "").toUpperCase()] : null;
-        if (i < rt.length - 1 && a != null) return { q: Math.max(0, a - (b || 0)), src: "ERP" };
+        const a = erp[(o.name || "").toUpperCase()], c = erp[(rt[i + 1].name || "").toUpperCase()];
+        if (!bucketWip && a != null) return { q: Math.max(0, a - (c || 0)), src: "ERP" };
         return { q: 0, src: "none" };
       });
-      let need = net + sup; const out = [];
+      let need = final; const out = [];
       for (let i = rt.length - 1; i >= 0; i--) {
         const have = stock[i].q, mk = Math.max(0, need - have), o = rt[i], ct = +o.ct_sec || 0;
         out[i] = { part: p.part, name: p.name, seq: o.seq, stage: o.name, type: o.type, ct, req: need, stock: have, ssrc: stock[i].src, make: mk,
@@ -52,11 +56,13 @@
         need = mk;
       }
       out.forEach((r) => rows.push(r));
-      parts.push({ part: p.part, name: p.name, demand: +p.demand || 0, despatched: +p.despatched || 0, net, sup, supSrc, src: p.src, due: p.due, stages: out.length, noRoute: !rt.length, noCt: rt.some((o) => o.type !== "supplier" && !(+o.ct_sec > 0)), first: out[0], last: out[out.length - 1] });
+      const blanks = out.length ? Math.max(0, out[0].make - v("inc")) : 0;
+      parts.push({ part: p.part, name: p.name, demand: +p.demand || 0, despatched: +p.despatched || 0, net, safety: v("safety"), sup: v("rrs"), fg: v("fg"), fi: v("fi"), wip: v("wip"), wip2: v("wip2"), inc: v("inc"), supl: v("sup"), held, want, final, blanks,
+        src: p.src, due: p.due, stages: out.length, noRoute: !rt.length, noCt: rt.some((o) => o.type !== "supplier" && !(+o.ct_sec > 0)), first: out[0], last: out[out.length - 1] });
     });
     const mc = {};
     rows.forEach((r) => { if (r.type === "supplier") return; const m = mc[r.machine] || (mc[r.machine] = { machine: r.machine, qty: 0, hrs: 0, items: [] }); m.qty += r.make; m.hrs += r.hrs; if (r.make > 0) m.items.push(r); });
-    const mach = Object.values(mc).sort((a, b) => b.hrs - a.hrs).map((m) => ({ ...m, days: m.hrs / (hpd * eff), cap: hpd * eff * days, load: 100 * m.hrs / (hpd * eff * days) }));
+    const mach = Object.values(mc).filter((m) => m.hrs > 0 || m.items.length).sort((a, b) => b.hrs - a.hrs).map((m) => ({ ...m, days: m.hrs / (hpd * eff), cap: hpd * eff * days, load: 100 * m.hrs / (hpd * eff * days) }));
     return { cfg: { hpd, eff: eff * 100, days }, rows, parts, mach };
   }
   const nm = (r) => '<b>' + esc(r.part) + "</b><br><small class='mut'>" + esc(r.name || "") + "</small>";
@@ -101,7 +107,7 @@
     $("#dash").innerHTML = monthBar() +
       '<h3 style="margin:4px 0">' + mlong(S.month) + ' production plan</h3><div class="tiles">' +
       tile("Parts in the plan", P.length, "#2563eb", "from Sales Flow and manual lines") + tile("Schedule still to deliver", n0(tot("net")), "#7c3aed", "pieces, after despatched") +
-      tile("Supermarket quantity", n0(tot("sup")), "#0d9488", "pieces to keep ready") + tile("Pieces to make (all stages)", n0(make), "#ea580c", "sum over every process") + tile("Machine hours needed", n1(hrs), "#eab308", C.mach.length + " machines") +
+      tile("Stock held (FG, FI, WIP, incoming, supplier)", n0(tot("held")), "#0d9488", "from the Raw Material Plan work sheet") + tile("Final need (pieces)", n0(tot("final")), "#ea580c", "after all stock and buffers") + tile("Pieces to make (all processes)", n0(make), "#f97316", "sum over every process") + tile("Machine hours needed", n1(hrs), "#eab308", C.mach.length + " machines") +
       tile("Machines over 100% load", over.length, over.length ? "#dc2626" : "#16a34a", "load = hours needed / hours available") + "</div>" +
       '<div class="cd wide"><h3>Machine load this month (% of available hours)</h3>' + (top.length ? top.map((m) => '<div class="bl"><span>' + esc(m.machine) + '</span><div class="bt"><i style="width:' + Math.min(100, 100 * m.load / Math.max(100, mx)) + "%;background:" + (m.load > 100 ? "var(--r)" : m.load > 85 ? "var(--a)" : "var(--g)") + '"></i></div><b>' + m.load.toFixed(0) + "%</b></div>").join("") : '<p class="mut">No quantity to make.</p>') +
       '<p class="note">Available hours = hours per day × efficiency × working days (' + C.cfg.hpd + " h × " + C.cfg.eff.toFixed(0) + "% × " + C.cfg.days + " days). Change them on the Entry screen.</p></div>" +
@@ -116,13 +122,14 @@
 
   /* ---------- Part & process wise ---------- */
   function drawPlan() {
-    const C = S.c, body = C.parts.map((p, i) => {
-      const rs = C.rows.filter((r) => r.part === p.part);
-      return '<tr style="background:var(--bg)"><td>' + (i + 1) + "</td><td colspan=2>" + nm(p) + '</td><td class="num">' + n0(p.demand) + '</td><td class="num">' + n0(p.despatched) + '</td><td class="num">' + n0(p.net) + '</td><td class="num">' + n0(p.sup) + " <small class='mut'>" + p.supSrc + "</small></td><td colspan=3>" + chip(esc(p.src), "b") + (p.noRoute ? " " + chip("no route", "r") : "") + (p.noCt ? " " + chip("cycle time missing", "a") : "") + "</td></tr>" +
-        rs.map((r) => "<tr><td></td><td>" + r.seq + "</td><td>" + esc(r.stage) + '</td><td class="num">' + n0(r.req) + '</td><td class="num">' + n0(r.stock) + " <small class='mut'>" + (r.ssrc === "none" ? "" : r.ssrc) + '</small></td><td class="num"><b>' + n0(r.make) + '</b></td><td class="num">' + (r.ct || "–") + '</td><td class="num">' + (r.type === "supplier" ? "–" : n1(r.hrs)) + "</td><td>" + esc(r.machine) + "</td><td>" + (r.due ? esc(String(r.due)) : "") + "</td></tr>").join("");
-    }).join("");
-    $("#plan").innerHTML = monthBar() + '<p class="note">For each part: schedule still to deliver + supermarket quantity, less the stock already in each stage, worked back from the last process to the first. "Need" is what the next stage requires; "Make" is what this stage must produce.</p>' +
-      T('<table><thead><tr><th>S.No</th><th>Seq</th><th>Part / process</th><th class="num">Schedule / need</th><th class="num">Despatched / stock</th><th class="num">Still to deliver / make</th><th class="num">Supermarket / cycle (sec)</th><th class="num">Hours</th><th>Machine</th><th>Due</th></tr></thead><tbody>' + (body || '<tr><td colspan=10 class="mut">No schedule for this month. Load the schedule in Sales Flow, or add lines on the Entry screen.</td></tr>') + "</tbody></table>");
+    const C = S.c, P = C.parts, nz = (v) => (v ? n0(v) : '<span class="mut">0</span>');
+    const t1 = P.map((p, i) => "<tr><td>" + (i + 1) + "</td><td>" + nm(p) + '</td><td class="num">' + n0(p.demand) + '</td><td class="num">' + n0(p.despatched) + '</td><td class="num">' + n0(p.net) + '</td><td class="num">' + nz(p.safety) + '</td><td class="num">' + nz(p.sup) + '</td><td class="num">' + nz(p.fg) + '</td><td class="num">' + nz(p.fi) + '</td><td class="num">' + nz(p.wip) + '</td><td class="num">' + nz(p.wip2) + '</td><td class="num">' + nz(p.inc) + '</td><td class="num">' + nz(p.supl) + '</td><td class="num"><b>' + n0(p.final) + "</b></td><td>" + (p.noRoute ? chip("no route", "r") : p.noCt ? chip("cycle time missing", "a") : p.final > 0 ? chip("to make", "b") : chip("enough stock", "g")) + "</td></tr>").join("");
+    const rs = C.rows.filter((r) => r.req > 0 || r.make > 0), t2 = rs.map((r, i) => "<tr><td>" + (i + 1) + "</td><td>" + nm(r) + "</td><td>" + r.seq + ". " + esc(r.stage) + "</td><td>" + esc(r.machine) + '</td><td class="num">' + n0(r.req) + '</td><td class="num">' + (r.ssrc === "none" ? '<span class="mut">0</span>' : n0(r.stock) + " <small class='mut'>" + r.ssrc + "</small>") + '</td><td class="num"><b>' + n0(r.make) + '</b></td><td class="num">' + (r.ct || "–") + '</td><td class="num">' + (r.type === "supplier" ? "–" : n1(r.hrs)) + "</td><td>" + (r.due ? esc(String(r.due)) : "") + "</td></tr>").join("");
+    $("#plan").innerHTML = monthBar() + '<p class="note">Only parts with a customer schedule for the month are planned (' + P.length + '). Stocks are the same numbers as the Raw Material Plan work sheet; change them on the Entry screen. Final need = still to deliver + minimum stock + supermarket - all stock held.</p>' +
+      '<h3 style="margin:8px 0 4px">1. Part wise: schedule, stocks and quantity to make</h3>' +
+      T('<table><thead><tr><th>S.No</th><th>Part</th><th class="num">Schedule</th><th class="num">Despatched</th><th class="num">Still to deliver</th><th class="num">Min. stock</th><th class="num">Super-market</th><th class="num">FG</th><th class="num">FI</th><th class="num">WIP</th><th class="num">WIP-2</th><th class="num">Incom-ing</th><th class="num">Supp-lier</th><th class="num">Final need</th><th>Status</th></tr></thead><tbody>' + (t1 || '<tr><td colspan=15 class="mut">No part has a schedule for this month. Load the schedule in Sales Flow, or add a line on the Entry screen.</td></tr>') + "</tbody></table>") +
+      '<h3 style="margin:14px 0 4px">2. Process wise: what each process must make</h3>' +
+      T('<table><thead><tr><th>S.No</th><th>Part</th><th>Process</th><th>Machine</th><th class="num">Need</th><th class="num">Stock after process</th><th class="num">Make</th><th class="num">Cycle (sec)</th><th class="num">Hours</th><th>Due</th></tr></thead><tbody>' + (t2 || '<tr><td colspan=10 class="mut">Nothing to make.</td></tr>') + "</tbody></table>");
     bindBar("Production plan - part and process wise", 2);
   }
 
@@ -135,19 +142,19 @@
     bindBar("Production plan - machine wise", 3);
   }
 
-  /* ---------- Entry (manual): supermarket, stage stock, extra demand lines, working time ---------- */
+  /* ---------- Entry (manual): stage stocks (shared with Raw Material Plan), extra demand lines, process stock, working time ---------- */
+  const PSF = [["safety", "Minimum stock"], ["rrs", "Supermarket"], ["fg", "FG"], ["fi", "FI"], ["wip", "WIP"], ["wip2", "WIP stage 2"], ["inc", "Incoming"], ["sup", "Supplier"]];
   function drawEntry() {
     const d = S.d, ed = canEdit() ? "" : "disabled", C = S.c, cfg = C.cfg, stk = {}; (d.stock || []).forEach((s) => { stk[s.part + "|" + s.seq] = s.qty; });
-    const sup = (p) => (d.super && d.super[p.part] != null ? d.super[p.part] : "");
-    const prows = C.parts.map((p, i) => '<tr data-p="' + esc(p.part) + '"><td>' + (i + 1) + "</td><td>" + nm(p) + '</td><td><input class="n sp" type="number" min="0" value="' + sup(p) + '" placeholder="' + (d.rmp_super && d.rmp_super[p.part] ? d.rmp_super[p.part] + " (RMP)" : "0") + '" ' + ed + "></td></tr>").join("");
+    const prows = C.parts.map((p, i) => { const b = (d.ps || {})[nk(p.part)] || {}; return '<tr data-p="' + esc(p.part) + '"><td>' + (i + 1) + "</td><td>" + nm(p) + "</td>" + PSF.map((f) => '<td><input class="n ps" data-f="' + f[0] + '" type="number" min="0" value="' + (b[f[0]] ? b[f[0]] : "") + '" placeholder="0" ' + ed + "></td>").join("") + "</tr>"; }).join("");
     const srows = C.rows.filter((r) => r.type !== "supplier").map((r, i) => '<tr data-p="' + esc(r.part) + '" data-s="' + r.seq + '"><td>' + (i + 1) + "</td><td>" + nm(r) + "</td><td>" + r.seq + ". " + esc(r.stage) + '</td><td><input class="n st" type="number" min="0" value="' + (stk[r.part + "|" + r.seq] != null ? stk[r.part + "|" + r.seq] : "") + '" placeholder="' + (r.ssrc === "ERP" ? Math.round(r.stock) + " (ERP)" : "0") + '" ' + ed + "></td></tr>").join("");
     const mrows = (d.manual || []).map((m, i) => manualRow(m, i)).join("");
     $("#entry").innerHTML = '<div class="row"><label>Month <input type="month" id="pm" value="' + S.month + '" style="width:auto"></label><button class="btn sm" id="pgo">Show</button></div><div id="pmsg"></div>' +
-      '<p class="note">Everything here is optional. Leave a box empty and the plan uses what the other apps hold (shown in grey: ERP = stage stock from Material Movement / ERP production, RMP = supermarket quantity from Raw Material Plan). Type a number to override.</p>' +
+      '<p class="note">The stock boxes are the same numbers as the Raw Material Plan work sheet: a change here shows there, and the other way round. Process stock is optional and used only when no WIP is entered (then the ERP production history fills it).</p>' +
       '<div class="box"><h3>Working time (used for machine hours available)</h3><div class="frm"><div><label>Hours per machine per day</label><input class="n" id="chpd" type="number" min="1" max="24" value="' + cfg.hpd + '" ' + ed + '></div><div><label>Efficiency %</label><input class="n" id="ceff" type="number" min="1" max="100" value="' + cfg.eff + '" ' + ed + '></div><div><label>Working days in the month</label><input class="n" id="cdays" type="number" min="1" max="31" value="' + cfg.days + '" ' + ed + "></div></div></div>" +
-      '<div class="box"><h3>Extra demand lines (not in Sales Flow)</h3>' + T('<table id="mt"><thead><tr><th>S.No</th><th>Part code</th><th>Part name</th><th class="num">Quantity</th><th>Due date</th><th>Note</th><th></th></tr></thead><tbody>' + mrows + "</tbody></table>") + (canEdit() ? '<button class="btn o sm" id="madd">+ Add line</button>' : "") + "</div>" +
-      '<div class="box"><h3>Supermarket quantity per part (pieces to keep ready)</h3>' + T('<table id="spt"><thead><tr><th>S.No</th><th>Part</th><th class="num">Supermarket qty</th></tr></thead><tbody>' + (prows || '<tr><td colspan=3 class="mut">No parts.</td></tr>') + "</tbody></table>") + "</div>" +
-      '<div class="box"><h3>Stock after each process (pieces waiting for the next process; last process = finished goods)</h3>' + T('<table id="stt"><thead><tr><th>S.No</th><th>Part</th><th>Process</th><th class="num">Stock</th></tr></thead><tbody>' + (srows || '<tr><td colspan=4 class="mut">No routes.</td></tr>') + "</tbody></table>") + "</div>" +
+      '<div class="box"><h3>Extra demand lines (parts not in Sales Flow)</h3>' + T('<table id="mt"><thead><tr><th>S.No</th><th>Part code</th><th>Part name</th><th class="num">Quantity</th><th>Due date</th><th>Note</th><th></th></tr></thead><tbody>' + mrows + "</tbody></table>") + (canEdit() ? '<button class="btn o sm" id="madd">+ Add line</button>' : "") + "</div>" +
+      '<div class="box"><h3>Stage stocks per part (pieces)</h3>' + T('<table id="spt"><thead><tr><th>S.No</th><th>Part</th>' + PSF.map((f) => '<th class="num">' + f[1] + "</th>").join("") + "</tr></thead><tbody>" + (prows || '<tr><td colspan=10 class="mut">No parts have a schedule.</td></tr>') + "</tbody></table>") + "</div>" +
+      '<div class="box"><h3>Stock after each process (pieces waiting for the next process)</h3>' + T('<table id="stt"><thead><tr><th>S.No</th><th>Part</th><th>Process</th><th class="num">Stock</th></tr></thead><tbody>' + (srows || '<tr><td colspan=4 class="mut">No routes.</td></tr>') + "</tbody></table>") + "</div>" +
       (canEdit() ? '<div class="row"><button class="btn" id="psv">Save</button><span id="pmsg2" class="mut"></span></div>' : "");
     const R = $("#entry"); R.querySelector("#pgo").onclick = () => { const v = R.querySelector("#pm").value; if (v) { S.month = v; route(); } };
     if (!canEdit()) return;
@@ -155,11 +162,11 @@
     R.querySelector("#mt").addEventListener("click", (e) => { const b = e.target.closest(".mdel"); if (b) b.closest("tr").remove(); });
     R.querySelector("#psv").onclick = async () => {
       const v = (el) => el.value.trim();
-      const p_super = [...R.querySelectorAll("#spt tbody tr[data-p]")].filter((tr) => v(tr.querySelector("input")) !== "").map((tr) => ({ part: tr.dataset.p, qty: v(tr.querySelector("input")) }));
+      const p_ps = [...R.querySelectorAll("#spt tbody tr[data-p]")].map((tr) => { const o = { part: tr.dataset.p }; tr.querySelectorAll("input.ps").forEach((i) => { o[i.dataset.f] = v(i) === "" ? "0" : v(i); }); return o; });
       const p_stock = [...R.querySelectorAll("#stt tbody tr[data-p]")].filter((tr) => v(tr.querySelector("input")) !== "").map((tr) => ({ part: tr.dataset.p, seq: tr.dataset.s, qty: v(tr.querySelector("input")) }));
       const p_demand = [...R.querySelectorAll("#mt tbody tr")].map((tr) => { const i = tr.querySelectorAll("input"); return { part: v(i[0]), name: v(i[1]), qty: v(i[2]), due: v(i[3]), note: v(i[4]) }; }).filter((x) => x.part);
       const p_cfg = { hpd: R.querySelector("#chpd").value, eff: R.querySelector("#ceff").value, days: R.querySelector("#cdays").value };
-      try { await call("kmr_ppl_save", { p_month: S.month, p_super, p_stock, p_demand, p_cfg }); R.querySelector("#pmsg2").textContent = "Saved."; setTimeout(route, 400); } catch (e) { say(e.message); }
+      try { await call("kmr_ppl_save", { p_month: S.month, p_ps, p_stock, p_demand, p_cfg }); R.querySelector("#pmsg2").textContent = "Saved."; setTimeout(route, 400); } catch (e) { say(e.message); }
     };
   }
   function manualRow(m, i) {

@@ -472,11 +472,11 @@
   KMRPA.ppl = { name: "Production plan", code: "ppl", ctxFn: "kmr_ppl_context", std: "ppl", load: async function (call) {
     var mo = new Date(Date.now() + 19800000).toISOString().slice(0, 7), S = std;
     var d = await call("kmr_ppl_data", { p_month: mo }), P = d.parts || [], lab = [], dv = [], nv = [], noR = 0, net = 0, sup = 0;
-    P.forEach(function (p) { var n = Math.max(0, (+p.demand || 0) - (+p.despatched || 0)); net += n; sup += +((d.super || {})[p.part] != null ? d.super[p.part] : (d.rmp_super || {})[p.part]) || 0; if (!(p.route || []).length) noR++; lab.push(p.part); dv.push(Math.round(+p.demand || 0)); nv.push(Math.round(n)); });
+    P.forEach(function (p) { var n = Math.max(0, (+p.demand || 0) - (+p.despatched || 0)); net += n; var b = (d.ps || {})[String(p.part).toUpperCase().replace(/[^A-Z0-9]/g, "")] || {}; sup += (+b.fg || 0) + (+b.fi || 0) + (+b.wip || 0) + (+b.wip2 || 0) + (+b.inc || 0) + (+b.sup || 0); if (!(p.route || []).length) noR++; lab.push(p.part); dv.push(Math.round(+p.demand || 0)); nv.push(Math.round(n)); });
     var L = await call("kmr_ppl_latest", { p_month: mo }), sm = (L && L.summary) || null, kp = [];
     kp.push({ id: "parts", name: "Parts in the plan", value: P.length, std: S("IATF 8.1", "ISO 9.1.1"), why: "Parts with a customer schedule (Sales Flow) or a manual demand line this month." });
     kp.push({ id: "net", name: "Schedule still to deliver (pieces)", value: Math.round(net), std: S("IATF 8.1", "VDA 6.3 P7.2"), why: "Customer schedule less despatched, before stock and supermarket quantity are netted." });
-    kp.push({ id: "sup", name: "Supermarket quantity (pieces)", value: Math.round(sup), std: S("IATF 8.1"), why: "Pieces to keep ready, entered or taken from Raw Material Plan." });
+    kp.push({ id: "sup", name: "Stock held at all stages (pieces)", value: Math.round(sup), std: S("IATF 8.5.2.1"), why: "FG, FI, WIP, incoming and supplier stock of the scheduled parts, from the Raw Material Plan work sheet." });
     kp.push({ id: "noroute", name: "Parts without a route", value: noR, target: 0, amber: 3, dir: "low", std: S("IATF 8.5.1.1", "ISO 6.1"), why: "Parts that cannot be netted stage by stage because no route or cycle time is held." });
     if (sm) kp.push({ id: "hrs", name: "Machine hours in the published plan", value: sm.make_hours, unit: "h", std: S("ISO 7.1.3"), why: "Machine hours needed by the last published version of this month's plan." });
     return { period: "Month " + mo, kpis: kp, charts: [{ title: "Schedule and still to deliver by part (pieces)", kind: "bar", kpi: "net", labels: lab, series: [{ name: "Schedule", values: dv }, { name: "Still to deliver", values: nv }] }] };
