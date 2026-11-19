@@ -73,6 +73,13 @@
     document.body.append(v);
   }
 
+  // Digital records notice: shown once after each sign-in; can be reopened from the menu
+  function digitalNotice() {
+    dialog("Digital records and documents",
+      "Documents and records in KMR Apps are kept as controlled electronic records. ISO 9001:2015 (7.5.2, 7.5.3) and IATF 16949:2016 do not require paper or handwritten shopfloor records when the documented-information controls, retention rules and customer-specific requirements are met; VDA 6.3 assesses process evidence, not the medium.<br><br><small>Interpretive briefing, not a certification-body ruling. Please check your customers' specific requirements before retiring any paper record.</small>",
+      '<a class="btn" href="/it/digital-records.html" target="_blank" rel="noopener">Open full details</a>');
+  }
+
   function loginView(note) {
     $("#root").innerHTML = `<div class="split">
       <section class="vis" id="vis" aria-hidden="true"><div class="aur"><i></i><i></i><i></i><i></i></div><canvas></canvas>
@@ -171,6 +178,7 @@
         ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("finance")}" data-admin="finance"><i style="background:#F3C55A"></i>Finance mail (top management)</a><a href="${viewHref("backup")}" data-admin="backup"><i style="background:#F3C55A"></i>Daily backup mail</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
         <h4>More KMR apps</h4>${others.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}<span class="lock">Try</span></a>`).join("")}
         ${SOON.map(([k, n]) => `<button data-soon="${k}" data-name="${esc(n)}"><i style="background:#64748b"></i>${esc(n)}<span class="lock">Soon</span></button>`).join("")}
+        <a href="/it/digital-records.html" id="drn" target="_blank" rel="noopener"><i style="background:#14B8A6"></i>Digital records notice</a>
         <button id="pw">Change password</button>
         <button class="out" id="out">Sign out</button>
       </aside>
@@ -201,6 +209,7 @@
     if ($("#plantSel")) $("#plantSel").onchange = (e) => { if (e.target.value === "__all") plantsView(); else location.href = "/it/app/" + encodeURIComponent(e.target.value); };
     document.querySelectorAll("[data-soon]").forEach((b) => b.addEventListener("click", () => dialog(`${b.dataset.name} — coming soon`, "This module of the KMR Intelligent Digital Manufacturing platform is on its way. Register your interest and we'll invite you to the pilot.", `<a class="btn" href="${buyUrl(b.dataset.soon)}">Register interest</a>`)));
     $("#out").onclick = async () => { await sb.auth.signOut(); try { localStorage.removeItem("kmr-portal"); } catch (e) {} loginView(); };
+    $("#drn").onclick = (e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button) return; e.preventDefault(); digitalNotice(); };
     $("#pw").onclick = () => {
       dialog("Change password", `<label class="f">New password<div class="in"><input id="np1" type="password" minlength="8" autocomplete="new-password"></div></label><label class="f">Repeat new password<div class="in"><input id="np2" type="password" minlength="8" autocomplete="new-password"></div></label><span class="msg" id="npm"></span>`,
         `<button class="btn" id="npSave">Save password</button>`);
@@ -623,6 +632,7 @@
     const ar = await sb.rpc("kmr_admin_role", { p_slug: SLUG }); isAdmin = !ar.error && ar.data === "admin";
     const oc = await sb.rpc("kmr_ops_context", { p_slug: SLUG }); ops = !oc.error && oc.data ? oc.data : null;
     appView();
+    try { const k = "kmr-drn-" + user.id; if (!OPEN && !HASH && !sessionStorage.getItem(k)) { sessionStorage.setItem(k, "1"); digitalNotice(); } } catch (e) {}
     if (OPEN && rows.some((r) => r.product_code === OPEN)) { setView(""); open(OPEN); }
     else if ((HASH === "users" || HASH === "admin") && isAdmin) usersView();
     else if (HASH === "company" && isAdmin) companyView();
