@@ -450,7 +450,7 @@
   KMRPA.bud = { name: "Budget", code: "bud", ctxFn: "kmr_bud_context", std: "bud", load: async function (call) {
     var td = new Date(Date.now() + 19800000).toISOString().slice(0, 7), S = std;
     var r = await call("kmr_bud_data", { p_from: td, p_to: td }), R = r.rows || [];
-    var N = { rm: "Raw material", tool: "Tooling", cons: "Consumables", man: "Manpower", pwr: "Electricity", out: "Outside processing", mnt: "Maintenance" };
+    var N = { rm: "Raw material", tool: "Tooling", cons: "Consumables", man: "Manpower", pwr: "Electricity", out: "Outside processing", mnt: "Maintenance", oth: "Gauges, fixtures & other" };
     var tb = 0, ta = 0, over = 0, nob = 0, lab = [], bv = [], av = [], ints = 0, outs = 0;
     R.forEach(function (x) { tb += +x.budget || 0; ta += +x.actual || 0; ints += +x.intake || 0; outs += +x.outward || 0; if (x.budget > 0 && x.actual > x.budget) over++; if (!(x.budget > 0) && x.actual > 0) nob++; lab.push(N[x.head] || x.head); bv.push(Math.round(x.budget || 0)); av.push(Math.round(x.actual || 0)); });
     var pct = tb > 0 ? +(100 * ta / tb).toFixed(1) : null;
