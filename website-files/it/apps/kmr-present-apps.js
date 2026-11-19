@@ -481,4 +481,15 @@
     if (sm) kp.push({ id: "hrs", name: "Machine hours in the published plan", value: sm.make_hours, unit: "h", std: S("ISO 7.1.3"), why: "Machine hours needed by the last published version of this month's plan." });
     return { period: "Month " + mo, kpis: kp, charts: [{ title: "Schedule and still to deliver by part (pieces)", kind: "bar", kpi: "net", labels: lab, series: [{ name: "Schedule", values: dv }, { name: "Still to deliver", values: nv }] }] };
   } };
+  KMRPA.mlp = { name: "Machine loading plan", code: "mlp", ctxFn: "kmr_mlp_context", std: "mlp", load: async function (call) {
+    var mo = new Date(Date.now() + 19800000).toISOString().slice(0, 7), S = std;
+    var L = await call("kmr_mlp_latest", { p_month: mo }), sm = (L && L.summary) || null, rows = (L && L.rows) || [], kp = [], lab = [], hv = [], byM = {};
+    if (!sm) { var d = await call("kmr_mlp_data", { p_month: mo }); return { period: "Month " + mo, kpis: [{ id: "np", name: "Parts with a schedule", value: (d.parts || []).length, std: S("IATF 8.1"), why: "Parts scheduled this month. Publish the plan in Machine loading plan to see throughput time and machine load here." }], charts: [] }; }
+    kp.push({ id: "tpt", name: "Average throughput time (days)", value: sm.avg_tpt_days, unit: "days", target: 10, amber: 15, dir: "low", std: S("IATF 8.1", "VDA 6.3 P7.2"), why: "Days a part takes from the first operation start to the last finish, from cycle times, waits and outside processes." });
+    kp.push({ id: "maxtpt", name: "Longest throughput time (days)", value: sm.max_tpt_days, unit: "days", std: S("IATF 8.1"), why: "The part with the longest path through the plant." });
+    kp.push({ id: "late", name: "Parts that should already have started", value: sm.late_parts, target: 0, amber: 2, dir: "low", std: S("ISO 6.1", "IATF 8.1"), why: "Parts whose first operation start date, worked back from the due date, has already passed." });
+    rows.forEach(function (r) { if (r.type !== "supplier" && r.machine) byM[r.machine] = (byM[r.machine] || 0) + (+r.hours || 0); });
+    Object.keys(byM).sort(function (a, b) { return byM[b] - byM[a]; }).slice(0, 12).forEach(function (m) { lab.push(m); hv.push(Math.round(byM[m])); });
+    return { period: "Month " + mo + " (version " + L.version + ")", kpis: kp, charts: [{ title: "Hours placed on the busiest machines", kind: "bar", kpi: "tpt", labels: lab, series: [{ name: "Hours", values: hv }] }] };
+  } };
 })();
