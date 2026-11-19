@@ -49,8 +49,9 @@
     return '<div class="row"><label>From <input type="month" id="mf" value="' + f + '" style="width:auto"></label><label>To <input type="month" id="mt" value="' + t + '" style="width:auto"></label><button class="btn sm" id="mgo">Show</button><span class="grow"></span><button class="btn o sm" id="mpr">Print report</button></div>';
   }
   function bindBar(title, no) {
-    $("#mgo").onclick = () => { const f = $("#mf").value, t = $("#mt").value; if (!f || !t || f > t) { say("Choose the From month and a To month that is not earlier."); return; } S.from = f; S.to = t; route(); };
-    $("#mpr").onclick = () => { rep(title, no); window.print(); };
+    const R = $("#" + S.go) || document, q = (id) => R.querySelector(id);   // every screen has its own From / To boxes: use the ones on this screen
+    q("#mgo").onclick = () => { const f = q("#mf").value, t = q("#mt").value; if (!f || !t || f > t) { say("Choose the From month and a To month that is not earlier."); return; } S.from = f; S.to = t; route(); };
+    q("#mpr").onclick = () => { rep(title, no); window.print(); };
   }
   function pbar(used, bud) { if (!bud) return '<span class="mut">no budget</span>'; const p = 100 * used / bud; return '<div class="pb"><i class="' + (p > 100 ? "r" : p > 85 ? "a" : "") + '" style="width:' + Math.min(100, p) + '%"></i></div><small class="mut">' + p.toFixed(0) + "% used</small>"; }
 
