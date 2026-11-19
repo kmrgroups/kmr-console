@@ -231,6 +231,7 @@
     try { x = D.mergeErp(m, x, await call("kmr_mmd_erp", { p_days: days_ }), days_); } catch (e) { }
     var since = Date.parse(td + "T00:00:00") - (days_ - 1) * 864e5, inWin = function (iso) { return Date.parse(String(iso).slice(0, 10) + "T00:00:00") >= since; }, wd = 0;
     for (var i = 0; i < days_; i++) { var dow = new Date(since + i * 864e5).getDay(), off = P.off === "Sunday" ? dow === 0 : P.off === "Saturday & Sunday" ? dow === 0 || dow === 6 : P.off === "Friday" ? dow === 5 : false; if (!off) wd++; }
+    if (x._wd != null) wd = x._wd;
     var lc = {}; (m.loss_codes || []).forEach(function (l) { lc[l.code] = l; });
     var pe = (x.entries || []).filter(function (e) { return e.status === "ok" && e.kind === "process" && inWin(e.entry_at) && e.machine; }), loss = (x.loss || []).filter(function (l) { return inWin(l.loss_date); }), mach = {};
     var M = function (c) { return (mach[c] = mach[c] || { c: c, ok: 0, rej: 0, rew: 0, std: 0, std_ok: 0, loss: 0, plan: 0 }); };
