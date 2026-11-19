@@ -78,12 +78,16 @@ body.ah #top.show~#pill{display:none}
 .sc table{font-size:12.5px;width:100%}.sc th,.sc td{padding:6px 6px}.sc th.kmr-th{white-space:normal;vertical-align:bottom;line-height:1.2}
 .sc th.num{padding-left:26px}.sc th.num .kmr-ctl{position:absolute;left:1px;top:50%;transform:translateY(-50%);margin:0}.sc td:nth-child(2){min-width:120px}.sc td:first-child{white-space:nowrap}
 .sc{max-height:calc(100vh - 340px)!important;min-height:160px}
+.cal{border-collapse:separate;border-spacing:0;font-size:11px;width:100%;table-layout:fixed;min-width:0}.cal th,.cal td{padding:3px 2px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:center;overflow:hidden;white-space:nowrap}.cal th{font-size:10px}.cal td.t,.cal th.t{text-align:left;padding:3px 6px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;line-height:1.2}
+.cal .off{background:#e5e7eb55}.cal .due{box-shadow:inset 0 0 0 2px var(--r)}.cal .bar{color:#fff;font-weight:700;font-size:10px}.cal td.dy{padding:0;height:22px}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}.seg2 button{border:0;background:var(--card);padding:7px 12px;font-weight:600;cursor:pointer;color:var(--mut)}.seg2 button.on{background:var(--b1);color:#fff}
+.verdict{border-radius:12px;padding:12px 14px;margin:10px 0;border:1px solid var(--line);border-left:6px solid var(--c,var(--b1));background:var(--card)}.verdict b{font-size:16px}
 </style>
 </head><body>
 <div id="rev"></div><button id="pill" title="Show the menu">☰ Menu</button>
 <div id="top"><header><span class="clogo" id="clogo" hidden></span><div><h1>Machine loading plan</h1><small id="co">Loading…</small></div><div style="flex:1"></div><label style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer"><input type="checkbox" id="ahc" style="width:auto"> Auto-hide menu</label><span class="chip x" id="role"></span></header>
-<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Dashboard</a><a class="tab" data-t="sched" href="#go=sched">Schedule: start &amp; finish</a><a class="tab" data-t="load" href="#go=load">Machine load by week</a><a class="tab" data-t="entry" href="#go=entry">Entry: planning parameters</a></div></div>
-<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="sched" class="hide"></section><section id="load" class="hide"></section><section id="entry" class="hide"></section></div></main>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Dashboard</a><a class="tab" data-t="cal" href="#go=cal">Part &amp; process calendar</a><a class="tab" data-t="mach" href="#go=mach">Machine calendar</a><a class="tab" data-t="bal" href="#go=bal">Balance the load</a><a class="tab" data-t="entry" href="#go=entry">Entry: planning parameters</a></div></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="cal" class="hide"></section><section id="mach" class="hide"></section><section id="bal" class="hide"></section><section id="entry" class="hide"></section></div></main>
 <script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-mobile.js"></script><script src="/it/apps/kmr-select.js"></script>
 <script>if(new URLSearchParams(location.search).has("demo")){document.write('<script src="/it/apps/mlp-demo.js"><\/script>')}</script>
 <script src="/it/apps/ppl-calc.js"></script><script src="/it/apps/mlp-app.js"></script>

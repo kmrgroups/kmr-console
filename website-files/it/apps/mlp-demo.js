@@ -16,7 +16,7 @@
     kmr_ppl_publish() { return { version: 1 }; },
     kmr_ppl_latest() { return null; },
     kmr_mlp_context() { return { role: "admin", company: "Demo Engineering (sample data)" }; },
-    kmr_mlp_data(a) { const d = data(a); d.mlast = null; d.today = new Date(Date.now() + 19800000).toISOString().slice(0, 10); d.parts.forEach((p, i) => { p.due = a.p_month + "-" + (i === 0 ? "20" : "25"); }); return d; },
+    kmr_mlp_data(a) { const d = data(a); d.mlast = null; d.std = { hoursPerDay: 16, oee: 85, weeklyOff: "Sunday" }; d.holidays = []; d.alts = []; d.cand = { TURNING: ["CNC-01","CNC-02","CNC-03"], MILLING: ["VMC-01","VMC-02"] }; d.today = new Date(Date.now() + 19800000).toISOString().slice(0, 10); d.parts.forEach((p, i) => { p.due = a.p_month + "-" + (i === 0 ? "20" : "25"); }); return d; },
     kmr_mlp_save(a) { Object.keys(a.p_cfg || {}).forEach((k) => (st.cfg[k] = +a.p_cfg[k])); return window.QP_DEMO.kmr_mlp_data(a); },
     kmr_mlp_publish() { return { version: 1 }; },
     kmr_mlp_latest() { return null; }
