@@ -75,6 +75,9 @@ body.ah #top.show~#pill{display:none}
 .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.sp{display:block;margin-top:4px}
 @media(max-width:640px){.bl{grid-template-columns:96px 1fr 70px}}
 @media print{#top,#pill,#rev,.back{display:none!important}.sc{max-height:none;overflow:visible}}
+.sc table{font-size:12.5px;width:100%}.sc th,.sc td{padding:6px 6px}.sc th.kmr-th{white-space:normal;vertical-align:bottom;line-height:1.2}
+.sc th.num{padding-left:26px}.sc th.num .kmr-ctl{position:absolute;left:1px;top:50%;transform:translateY(-50%);margin:0}.sc td:nth-child(2){min-width:120px}.sc td:first-child{white-space:nowrap}
+.sc{max-height:calc(100vh - 340px)!important;min-height:160px}
 </style>
 </head><body>
 <div id="rev"></div><button id="pill" title="Show the menu">☰ Menu</button>

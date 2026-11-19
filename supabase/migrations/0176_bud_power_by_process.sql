@@ -1,0 +1,2 @@
+-- 0176: Budget electricity estimate by process type (see the applied migration) — CNC turning 6 kW, VMC 7, grinding 5, thread rolling 4, sawing/drilling 2, inspection/packing 0.5, other 2.
+-- Applied through apply_migration (text replace on console.bud_month). A typed kW still wins; a typed bill still wins over the estimate.
