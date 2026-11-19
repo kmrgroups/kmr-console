@@ -87,11 +87,11 @@
     E = Object.assign({}, E, { prod: E.prod.filter((r) => okDay(r[0])), idle: E.idle.filter((r) => okDay(r[0])) }); wd = wdL;
     const entries = (x.entries || []).slice(), loss = (x.loss || []).slice(), mc = {};
     const M = (c) => (mc[c] = mc[c] || { op: 0, idle: 0, plan: 0 });
-    E.prod.forEach((r) => { const q = +r[2], sh = +r[4]; M(r[1]).op += +r[5]; entries.push({ id: "erp", kind: "process", status: "ok", machine: r[1], ok_qty: q, rej_qty: +r[3], rew_qty: 0, ct_sec: q ? sh * 3600 / q : 0, entry_at: r[0] + "T12:00:00", src: "erp", part_code: "", rs_no: "ERP history" }); });
+    E.prod.forEach((r) => { const q = +r[2], sh = +r[4]; M(r[1]).op += +r[5]; entries.push({ id: "erp", kind: "process", status: "ok", machine: r[1], ok_qty: q, rej_qty: +r[3], rew_qty: 0, ct_sec: q ? sh * 3600 / q : 0, hrs: +r[5], operator: r[6] || "", entry_at: r[0] + "T12:00:00", src: "erp", part_code: "", rs_no: "ERP history" }); });
     E.idle.forEach((r) => { const pl = PLANNED.test(r[2]), h = +r[3]; if (pl) M(r[1]).plan += h; else M(r[1]).idle += h; loss.push({ machine_code: r[1], d_code: pl ? "ERP-P" : "ERP", d_name: r[2], minutes: h * 60, loss_date: r[0], status: "ok", src: "erp" }); });
     Object.keys(mc).forEach((c) => { const a = mc[c], ns = P.H * wd - Math.min(a.plan, P.H * wd) - a.op - a.idle; if (ns > 0.5) loss.push({ machine_code: c, d_code: "ERP", d_name: "NOT SCHEDULED / NO ENTRY", minutes: ns * 60, loss_date: x.today, status: "ok", src: "erp" }); });
     const lcs = (m.loss_codes || []).concat([{ code: "ERP-P", name: "ERP planned stop", planned: "Yes" }]);
-    return Object.assign({}, x, { entries, loss, erp_rows: E.rows || 0, erp_last: E.last, _lc: lcs, _wd: wdL, _erpdays: { loaded, total: days } });
+    return Object.assign({}, x, { entries, loss, erp_rows: E.rows || 0, erp_last: E.last, _lc: lcs, _wd: wdL, _erpdays: { loaded, total: days }, _okdays: Object.keys(cnt).filter(okDay) });
   }
   function dash(m, x, days, kind) {
     const P = plant(m), since = new Date(x.today + "T00:00:00").getTime() - (days - 1) * 864e5, inWin = (iso) => new Date(String(iso).slice(0, 10) + "T00:00:00").getTime() >= since;
@@ -123,6 +123,53 @@
     <div class="row" style="margin-top:14px"><b class="grow">Pareto — ${kind === "rej" ? "rejection" : "rework"}</b><select id="dpK" style="width:auto"><option value="rej"${kind === "rej" ? " selected" : ""}>Rejection (pcs)</option><option value="rew"${kind === "rew" ? " selected" : ""}>Rework (pcs)</option></select></div>
     <div class="pg">${pareto("Part wise", q((d) => d.part_code), "pcs")}${pareto("Defect wise", q((d) => d.reason), "pcs")}${pareto("Process wise", q((d) => d.op_name), "pcs")}${pareto("Machine wise", q((d) => d.machine), "pcs")}${pareto("Operator wise", q((d) => d.operator), "pcs")}${pareto("Loss hours by D code", lossBy((l) => l.d_code + " — " + l.d_name), "h", "All machines")}</div>
     <div class="card"><h3>Daily rejection + rework rate</h3>${dk.length ? `<div style="display:flex;gap:3px;align-items:flex-end;height:90px">${dk.map((d) => { const r = day[d], t = r.ok + r.rej + r.rew, a = r.rej / Math.max(1, t), b = r.rew / Math.max(1, t); return `<div title="${d}: rejection ${(a * 100).toFixed(1)}%, rework ${(b * 100).toFixed(1)}%" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;min-width:6px;max-width:30px"><div style="height:${b / mxr * 80}px;background:var(--a)"></div><div style="height:${a / mxr * 80}px;background:var(--r)"></div></div>`; }).join("")}</div><div class="mut" style="font-size:11px">${esc(dk[0])} → ${esc(dk[dk.length - 1])} · red = rejection, amber = rework (share of pieces made that day)</div>` : '<p class="note">No entries in this period.</p>'}</div>`;
+  }
+
+
+  /* ---------- KPI views: overall, machine wise, month wise, operator wise — OEE, availability, performance, quality, utilisation, efficiency ---------- */
+  const KV = [["oee", "OEE", "oee"], ["A", "Availability", 0.9], ["Pf", "Performance", 0.9], ["Q", "Quality", 0.97], ["util", "Machine utilisation", 0.7], ["eff", "Efficiency", 0.85]];
+  function kpiData(m, x, days) {
+    const P = plant(m), lc = {}; (x._lc || m.loss_codes || []).forEach((l) => (lc[l.code] = l));
+    const since = new Date(x.today + "T00:00:00").getTime() - (days - 1) * 864e5, okd = x._okdays ? new Set(x._okdays) : null, wdm = {};
+    for (let i = 0; i < days; i++) { const dt = new Date(since + i * 864e5), iso = dt.toISOString().slice(0, 10), dow = dt.getDay(); const off = P.off === "Sunday" ? dow === 0 : P.off === "Saturday & Sunday" ? dow === 0 || dow === 6 : P.off === "Friday" ? dow === 5 : false; if (iso <= x.today && (!okd || okd.has(iso)) && !off) wdm[iso.slice(0, 7)] = (wdm[iso.slice(0, 7)] || 0) + 1; }
+    const inWin = (iso) => new Date(String(iso).slice(0, 10) + "T00:00:00").getTime() >= since;
+    const C = {}, O = {}, c = (mc, mo) => ((C[mc] = C[mc] || {})[mo] = C[mc][mo] || { ok: 0, rej: 0, rew: 0, std: 0, std_ok: 0, hrs: 0, loss: 0, plan: 0 });
+    x.entries.filter((e) => e.status === "ok" && e.kind === "process" && e.machine && inWin(e.entry_at)).forEach((e) => {
+      const mo = String(e.entry_at).slice(0, 7), g = c(e.machine, mo), q = (+e.ok_qty) + (+e.rej_qty) + (+e.rew_qty), ct = +e.ct_sec || 0;
+      g.ok += +e.ok_qty; g.rej += +e.rej_qty; g.rew += +e.rew_qty; g.std += ct * q / 3600; g.std_ok += ct * (+e.ok_qty) / 3600; g.hrs += +e.hrs || 0;
+      const on = String(e.operator || "").trim().toUpperCase(); if (on && on !== "NOT GIVEN") { const o = (O[on] = O[on] || { ok: 0, rej: 0, rew: 0, std_ok: 0, hrs: 0, mc: new Set() }); o.ok += +e.ok_qty; o.rej += +e.rej_qty; o.rew += +e.rew_qty; o.mc.add(e.machine); if (+e.hrs > 0) { o.hrs += +e.hrs; o.std_ok += ct * (+e.ok_qty) / 3600; } }
+    });
+    x.loss.filter((l) => inWin(l.loss_date) && l.d_name !== "NOT SCHEDULED / NO ENTRY").forEach((l) => { const g = c(l.machine_code, String(l.loss_date).slice(0, 7)), pl = (lc[l.d_code] || {}).planned === "Yes"; if (pl) g.plan += +l.minutes / 60; else g.loss += +l.minutes / 60; });
+    const cells = []; Object.keys(C).forEach((mc) => Object.keys(C[mc]).forEach((mo) => {
+      const g = C[mc][mo], gross = P.H * (wdm[mo] || 0), avail = Math.max(0, gross - g.plan), ns = g.hrs > 0 ? Math.max(0, avail - g.hrs - g.loss) : 0, op = Math.max(0, avail - g.loss - ns);
+      if (!(g.ok + g.rej + g.rew) && !g.loss && !g.plan) return; cells.push(Object.assign({ mc, mo, avail, op }, g));
+    }));
+    return { P, cells, O, wdm };
+  }
+  const kvSum = (a) => a.reduce((t, g) => { ["ok", "rej", "rew", "std", "std_ok", "avail", "op"].forEach((k) => (t[k] += g[k])); return t; }, { ok: 0, rej: 0, rew: 0, std: 0, std_ok: 0, avail: 0, op: 0 });
+  function kvMet(t) {
+    const tot = t.ok + t.rej + t.rew, A = t.avail > 0 ? t.op / t.avail : null, Pf = t.std && t.op > 0.01 ? Math.min(1, t.std / t.op) : null, Q = tot ? t.ok / tot : null;
+    return { A, Pf, Q, oee: A != null && Pf != null && Q != null ? A * Pf * Q : null, util: t.avail > 0 && t.std ? t.std / t.avail : null, eff: t.std_ok && t.op > 0.01 ? t.std_ok / t.op : null, tot, ok: t.ok, rej: t.rej, rew: t.rew, avail: t.avail, op: t.op };
+  }
+  function kvCell(v, tg) { const bg = v == null ? "" : v >= tg ? "#dcfce7" : v >= tg * 0.85 ? "#fef3c7" : "#fee2e2"; return `<td class="n" style="background:${bg};font-weight:600">${pc(v)}</td>`; }
+  function kpiViews(m, x, days) {
+    const D = kpiData(m, x, days), P = D.P, tgt = (t) => (t === "oee" ? P.oee : t), months = [...new Set(D.cells.map((c) => c.mo))].sort(), macs = [...new Set(D.cells.map((c) => c.mc))].sort();
+    const head = `<th>${KV.map(([, n]) => n).join('</th><th class="n">')}</th>`.replace("<th>", '<th class="n">');
+    const row = (name, mt) => `<tr><td><b>${esc(name)}</b></td>${KV.map(([k, , t]) => kvCell(mt[k], tgt(t))).join("")}<td class="n">${N(mt.ok)}</td><td class="n">${N(mt.rej + mt.rew)}</td></tr>`;
+    const th = (first) => `<thead><tr><th>${first}</th>${KV.map(([, n]) => `<th class="n">${n}</th>`).join("")}<th class="n">OK pcs</th><th class="n">Rej + rework pcs</th></tr></thead>`;
+    const all = kvMet(kvSum(D.cells)), mrows = months.map((mo) => row(mo, kvMet(kvSum(D.cells.filter((c) => c.mo === mo))))).join(""), crows = macs.map((mc) => row(mc, kvMet(kvSum(D.cells.filter((c) => c.mc === mc))))).join("");
+    const mat = (k) => `<div class="kvmat" data-k="${k}" style="display:${k === "oee" ? "block" : "none"}"><table style="min-width:0"><thead><tr><th>Machine</th>${months.map((mo) => `<th class="n">${mo}</th>`).join("")}<th class="n">All</th></tr></thead><tbody>${macs.map((mc) => `<tr><td><b>${esc(mc)}</b></td>${months.map((mo) => { const g = D.cells.filter((c) => c.mc === mc && c.mo === mo); return g.length ? kvCell(kvMet(kvSum(g))[k], tgt((KV.find((z) => z[0] === k) || [])[2])) : '<td class="n mut">—</td>'; }).join("")}${kvCell(kvMet(kvSum(D.cells.filter((c) => c.mc === mc)))[k], tgt((KV.find((z) => z[0] === k) || [])[2]))}</tr>`).join("")}</tbody></table></div>`;
+    const ops = Object.keys(D.O).map((n) => { const o = D.O[n], q = o.ok + o.rej + o.rew; return { n, q, ok: o.ok, bad: o.rej + o.rew, Q: q ? o.ok / q : null, eff: o.hrs > 0 ? o.std_ok / o.hrs : null, hrs: o.hrs, mc: o.mc.size }; }).filter((o) => o.q > 0).sort((a, b) => b.q - a.q).slice(0, 40);
+    const orows = ops.map((o) => `<tr><td><b>${esc(o.n)}</b></td>${kvCell(o.eff, 0.85)}${kvCell(o.Q, 0.97)}<td class="n">${N(o.hrs, 1)}</td><td class="n">${N(o.ok)}</td><td class="n">${N(o.bad)}</td><td class="n">${o.mc}</td></tr>`).join("");
+    const bar = (mt, k) => { const v = mt[k]; return `<div style="flex:1;min-width:110px"><div class="mut" style="font-size:11px">${esc(KV.find((z) => z[0] === k)[1])}</div><div style="background:#e5e9f2;border-radius:6px;height:10px"><div style="width:${v == null ? 0 : Math.min(100, v * 100)}%;height:10px;border-radius:6px;background:${v == null ? "#cbd5e1" : v >= tgt(KV.find((z) => z[0] === k)[2]) ? "#16a34a" : v >= tgt(KV.find((z) => z[0] === k)[2]) * 0.85 ? "#d97706" : "#dc2626"}"></div></div><b>${pc(v)}</b></div>`; };
+    return `<div class="card" id="kvs" style="margin-top:14px"><h3>KPI views — overall, machine wise, month wise, operator wise</h3>
+    <p class="note">Green = at or above target, amber = within 15% below, red = further below. Targets: OEE from Plant standards (${N(P.oee * 100)}%), availability 90%, performance 90%, quality 97%, utilisation 70%, efficiency 85%. Months show only days the ERP was loaded. <b>Efficiency</b> = standard hours of OK pieces ÷ operating hours. <b>Utilisation</b> = standard hours of everything made ÷ available hours. Operator figures come from ERP rows that name the operator.</p>
+    <div class="row noprint" id="kvt">${["Overall", "Machine wise", "Month wise", "Operator wise"].map((t, i) => `<button class="btn ${i ? "o" : ""} s" data-kv="${i}">${t}</button>`).join("")}</div>
+    <div data-kvp="0"><div style="display:flex;gap:14px;flex-wrap:wrap;margin:10px 0">${KV.map(([k]) => bar(all, k)).join("")}</div><div class="mut">${N(all.ok)} OK pcs · ${N(all.rej)} rejected · ${N(all.rew)} rework · ${N(all.avail)} h available · ${N(all.op)} h operating</div></div>
+    <div data-kvp="1" style="display:none"><div class="sc"><table><colgroup></colgroup>${th("Machine")}<tbody>${crows || '<tr><td colspan="9" class="mut">No machine data in this period.</td></tr>'}</tbody></table></div>
+      <div class="row" style="margin-top:12px"><b class="grow">Machine × month</b><select id="kvM" style="width:auto">${KV.map(([k, n]) => `<option value="${k}">${n}</option>`).join("")}</select></div><div class="sc">${KV.map(([k]) => mat(k)).join("")}</div></div>
+    <div data-kvp="2" style="display:none"><div class="sc"><table>${th("Month")}<tbody>${mrows || '<tr><td colspan="9" class="mut">No data.</td></tr>'}</tbody></table></div></div>
+    <div data-kvp="3" style="display:none"><div class="sc"><table><thead><tr><th>Operator</th><th class="n">Efficiency</th><th class="n">Quality</th><th class="n">Operating h</th><th class="n">OK pcs</th><th class="n">Rej + rework pcs</th><th class="n">Machines</th></tr></thead><tbody>${orows || '<tr><td colspan="7" class="mut">No operator names in this period.</td></tr>'}</tbody></table></div><div class="mut" style="font-size:11px">Top 40 operators by pieces. Efficiency needs the operating hours the ERP records.</div></div></div>`;
   }
 
   /* ---------- data readiness: how many parts have route, cycle time, machine, BOM weight and drawing ---------- */
@@ -167,5 +214,5 @@
     <div class="kpis">${k(p(E.machine || 0, E.total || 0), "production entries made from machine counts", "b", (E.machine || 0) + " of " + (E.total || 0) + " entries")}${k(N(T.changes || 0), "tool changes", "a", (T.breakages || 0) + " breakages")}${k(N(Math.round(T.change_min || 0)) + " min", "idle time from tool changes", "a")}${k(T.life_pct != null ? N(T.life_pct, 0) + "%" : "—", "tool life achieved vs standard", "b")}${k(N(T.due || 0), "tools due for change now", (T.due || 0) ? "r" : "g", (T.on_machines || 0) + " on machines")}${k(N(T.low_stock || 0), "tools below safety stock", (T.low_stock || 0) ? "r" : "g", (T.listed || 0) + " in the plan")}${k(N(C.low_stock || 0), "consumables below safety stock", (C.low_stock || 0) ? "r" : "g", (C.listed || 0) + " in the plan")}${k(p(DC.on_time || 0, DC.closed || 0), "outsourced lots back on time", "b", (DC.closed || 0) + " completed")}${k(N(DC.overdue || 0), "challans overdue at suppliers", (DC.overdue || 0) ? "r" : "g", (DC.sent || 0) + " sent in the period")}</div>
     ${tm ? `<div class="card"><h3>Tool changes by machine</h3><table class="lt" style="min-width:0"><thead><tr><th>Machine</th><th class="n">Changes</th><th class="n">Change time (min)</th></tr></thead><tbody>${tm}</tbody></table></div>` : ""}`;
   }
-  window.MMDDash = { plan, planStats, mergeErp, wip: wipHtml, dash, extra, ready, plant, stuck: (m, x) => wip(m, x).items.filter((i) => i.st === "stuck").length };
+  window.MMDDash = { kpiViews, kpiData, kvMet, kvSum, plan, planStats, mergeErp, wip: wipHtml, dash, extra, ready, plant, stuck: (m, x) => wip(m, x).items.filter((i) => i.st === "stuck").length };
 })();
