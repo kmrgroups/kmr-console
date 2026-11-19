@@ -244,7 +244,7 @@
     var day = {}; pe.forEach(function (e) { var d = String(e.entry_at).slice(0, 10), r = (day[d] = day[d] || { ok: 0, rej: 0, rew: 0 }); r.ok += +e.ok_qty; r.rej += +e.rej_qty; r.rew += +e.rew_qty; });
     var dk = Object.keys(day).sort().slice(-30), stuck = 0; try { stuck = D.stuck(m, x); } catch (e) { stuck = null; }
     var K = {}; try { K = (await call("kmr_mmd_kpi", { p_days: days_ })) || {}; } catch (e) { K = {}; }
-    var RD = D.ready(m), TL = K.tools || {}, EN = K.entries || {}, DK = K.dc || {}, CN = K.cons || {}, MT = K.machine_time || [], runH = 0, allH = 0;
+    var PL = null; try { PL = await call("kmr_mmd_plan", {}); } catch (e) { PL = null; } var PS = D.planStats(PL), RD = D.ready(m), TL = K.tools || {}, EN = K.entries || {}, DK = K.dc || {}, CN = K.cons || {}, MT = K.machine_time || [], runH = 0, allH = 0;
     MT.forEach(function (r) { runH += +r.run || 0; allH += (+r.run || 0) + (+r.idle || 0) + (+r.alarm || 0); });
     return { period: "Last " + days_ + " days · " + wd + " working days", kpis: [
       { id: "oee", name: "OEE", value: TO != null ? TO * 100 : null, unit: "%", target: tg * 100, tol: 15, dir: "high", std: S("IATF 9.1.1.1", "IATF 8.5.2.1", "VDA P6"), why: "Availability × Performance × Quality, from the stage entries and loss hours." },
@@ -255,6 +255,9 @@
       { id: "rew", name: "Rework %", value: tot ? T.rew / tot * 100 : null, unit: "%", target: 2, tol: 50, dir: "low", std: S("ISO 8.7", "IATF 8.7.1"), why: "Pieces sent for rework ÷ all pieces produced." },
       { id: "loss", name: "Unplanned loss hours", value: T.loss, unit: "h", std: S("IATF 9.1.1.1", "VDA P6"), why: "Machine hours lost to unplanned D codes." },
       { id: "stuck", name: "Lots not moving", value: stuck, target: 0, amber: 2, dir: "low", std: S("ISO 8.5.2", "IATF 8.5.2.1", "ISO 8.4"), why: "Lots waiting longer than the transfer time plus the run time at the OEE target." }].concat([
+      { id: "takt", name: "Parts whose slowest step meets takt time", value: PS.okPct, unit: "%", target: 90, tol: 20, dir: "high", std: S("ISO 8.1", "IATF 8.5.1.1", "IATF 9.1.1.1"), why: "Takt time = available time per day ÷ demand per day (Sales Flow plan); the slowest step's cycle time ÷ OEE must not exceed it." },
+      { id: "tt", name: "Average throughput time", value: PS.tt, unit: "days", std: S("ISO 8.5.1", "IATF 9.1.1.1"), why: "Days from raw material issue to the last entry of a closed lot." },
+      { id: "pce", name: "Process cycle efficiency", value: PS.pce, unit: "%", std: S("IATF 9.1.1.1", "VDA P6"), why: "Machine time ÷ throughput time of the lot." },
       { id: "rdy", name: "Parts ready for production", value: RD.parts ? RD.ok / RD.parts * 100 : null, unit: "%", target: 100, tol: 20, dir: "high", std: S("ISO 8.1", "IATF 8.5.1.1", "IATF 9.1.1.1"), why: "Parts with a process route, every cycle time, every machine, real BOM weights and a drawing — the base of OEE and planning." },
       { id: "mrun", name: "Machine running share (measured)", value: allH ? runH / allH * 100 : null, unit: "%", std: S("IATF 9.1.1.1", "IATF 8.5.1.5"), why: "Running hours ÷ reported hours, read from the machines over the network." },
       { id: "mcap", name: "Entries from machine counts", value: EN.total ? EN.machine / EN.total * 100 : null, unit: "%", std: S("IATF 9.1.1.1", "IATF 8.5.2.1"), why: "Production entries that took their quantity from the machine counter instead of typing." },

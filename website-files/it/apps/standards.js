@@ -190,7 +190,11 @@ mmd:[
 ['IATF','9.1.1.1','Monitoring and measurement of manufacturing processes','Dashboards and the Presentation show parts ready for production (route, cycle time, machine, BOM weight, drawing), machine running, idle and alarm hours measured from the machines, and the share of entries taken from machine counts.'],
 ['IATF','8.5.1.6','Management of production tooling','Tool changes, breakages, tool life achieved against the standard, tools due for change and tools below safety stock are shown as KPIs, with the idle time of tool changes booked as loss hours.'],
 ['ISO','7.1.3','Infrastructure','Consumables below safety stock are shown as a KPI from the Consumables plan.'],
-['ISO','8.4','Externally provided processes','Outsourced lots returned on time and delivery challans overdue at suppliers are shown as KPIs, each with its target.']]],
+['ISO','8.4','Externally provided processes','Outsourced lots returned on time and delivery challans overdue at suppliers are shown as KPIs, each with its target.']],
+['ISO','8.5.2','Identification and traceability','Traceability matrix: search by part, process, heat code, lot (route sheet), tag, machine, operator, DC or GRN and see every part × process × lot × heat code with quantities, rejections and supplier processes, and the ERP history for what ran where.'],
+['IATF','8.5.2.1','Identification and traceability (supplemental)','Heat code and mill certificate are recorded when material is issued and carried through every stage entry, rejection and DC / GRN, so a heat can be traced forward to the lots made and a lot back to its heat.'],
+['ISO','8.1','Operational planning and control','Takt time (available time ÷ demand per day from the Sales Flow plan), bottleneck cycle time, machines needed and throughput time are shown per part, so the plan is checked against what the routes can deliver.'],
+['IATF','8.5.1.1','Control plan (production planning link)','Cycle times from the routes are compared with takt time and the OEE target; parts above takt are flagged before production starts.']],
 mnt:[
 ['IATF','8.5.1.5','Total productive maintenance','Breakdowns, preventive maintenance plan, MTBF and MTTR are tracked.'],
 ['ISO','7.1.3','Infrastructure','Machine history cards show the condition and upkeep of equipment.'],
