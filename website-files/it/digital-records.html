@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Digital Records · Customer &amp; Auditor Screen · KMR Apps</title>
+<meta name="theme-color" content="#0B1B3A">
+<style>
+:root{--navy:#0B1B3A;--amb:#F5A623;--teal:#0f9d8f;--ink:#1B2437;--mut:#5B6780;--line:#DDE3EE;--bg:#F4F6FB}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,Segoe UI,Arial,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--navy);color:#fff;padding:18px 22px;border-bottom:3px solid var(--amb)}
+header h1{margin:0;font-size:21px}header p{margin:4px 0 0;color:#AAB4CC;font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:10px 22px 0;background:#fff;border-bottom:1px solid var(--line)}
+nav button{border:0;background:none;padding:10px 14px;font:inherit;font-weight:600;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent}
+nav button.on{color:var(--navy);border-color:var(--amb)}
+main{max-width:1100px;margin:0 auto;padding:18px 22px 40px}
+.tab{display:none}.tab.on{display:block}
+.card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:14px}
+.ok{background:#E8F7F1;border-color:#9ADBC3}.warn{background:#FFF7E6;border-color:#F5D590}
+h2{font-size:17px;margin:0 0 8px;color:var(--navy)}h3{font-size:14px;margin:14px 0 6px;color:var(--navy)}
+.wrap{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:8px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{position:sticky;top:0;background:var(--navy);color:#fff;text-align:left;padding:8px 10px;z-index:1}
+td{padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+tr:nth-child(even) td{background:#FAFBFE}
+.tag{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:700;background:var(--bg);border:1px solid var(--line);margin:1px}
+.y{background:#E8F7F1;color:#0a7a5c}.p{background:#FFF1D6;color:#8A5A00}.n{background:#FDE8EA;color:#B4213A}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;width:100%}
+button.b{background:var(--navy);color:#fff;border:0;border-radius:6px;padding:7px 14px;font:inherit;font-weight:600;cursor:pointer}
+button.x{background:#fff;color:#B4213A;border:1px solid #F0B8C0;border-radius:6px;padding:4px 9px;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.note{font-size:12px;color:var(--mut)}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:14px}footer a{color:var(--navy);font-weight:700;text-decoration:none}
+.stmt{border-left:4px solid var(--amb);padding:4px 14px;background:#fff;font-size:14px}
+</style></head><body>
+<header><a href="/it/" onclick="if(history.length>1){history.back();return false}" style="float:right;color:#0B1B3A;background:#F5A623;border-radius:99px;padding:6px 14px;font-weight:700;text-decoration:none;font-size:13px">← KMR Apps</a><h1>Digital Records &amp; Documents – Customer and Auditor Screen</h1>
+<p>Confirmation that documents and records can be kept on a controlled digital platform: ISO 9001:2015 · IATF 16949:2016 · VDA 6.3 (process audit)</p></header>
+<nav id="nav"></nav>
+<main>
+<section class="tab on" id="t1"><div class="card ok"><h2>Standards alignment – the position</h2>
+<p><b>Confirmed:</b> none of the three standards requires shopfloor documents or records to be handwritten or kept on paper. Electronic media is acceptable when the documented-information controls, retention rules, traceability and any customer-specific requirement (CSR) are met.</p>
+<p class="note">Interpretive briefing, not a certification-body determination. Before any paper record is retired, review the customer's CSRs and contract.</p></div>
+<div class="wrap"><table><thead><tr><th>S.No</th><th>Standard</th><th>Clause</th><th>What it says (in short)</th><th>Digital records OK?</th></tr></thead><tbody>
+<tr><td>1</td><td>ISO 9001:2015</td><td>7.5.2 (b)</td><td>When creating and updating documented information, the format and media (including electronic) are considered.</td><td><span class="tag y">Yes – electronic media named</span></td></tr>
+<tr><td>2</td><td>ISO 9001:2015</td><td>7.5.3</td><td>Documented information must be available, suitable for use and protected: access, storage, change control, retention and disposition.</td><td><span class="tag y">Yes – with controls</span></td></tr>
+<tr><td>3</td><td>IATF 16949:2016</td><td>7.5.1.1 / 7.5.3.2.1</td><td>QMS documentation may be in any medium; a record-retention policy must reflect customer, statutory and regulatory requirements.</td><td><span class="tag y">Yes – define retention</span></td></tr>
+<tr><td>4</td><td>IATF 16949:2016</td><td>8.5.1.2</td><td>Standardized work / operator instructions are communicated, understood and accessible at the work area.</td><td><span class="tag y">Yes – on-screen at point of use</span></td></tr>
+<tr><td>5</td><td>IATF 16949:2016</td><td>8.5.1.3</td><td>Job set-up verification, first-off / last-off validation where applicable.</td><td><span class="tag y">Yes – digital set-up record</span></td></tr>
+<tr><td>6</td><td>VDA 6.3 (2016)</td><td>Process audit questions (P5 production, P6 and others)</td><td>An audit standard: it rates whether the process is effective and evidence exists. It does not set the medium of records.</td><td><span class="tag p">Yes – auditor must see evidence; confirm with the customer's auditor</span></td></tr>
+<tr><td>7</td><td>Customer-specific requirements</td><td>Per customer (see tab 5)</td><td>A customer may demand a specific record, signature or retention period.</td><td><span class="tag p">Check each customer</span></td></tr>
+</tbody></table></div>
+<p class="note">VDA 6.3 row: the standard text was not available to check clause by clause here, so confirm the exact question numbers against your licensed copy.</p></section>
+
+<section class="tab" id="t2"><div class="card"><h2>Records that can be kept digitally, and where in KMR Apps</h2></div>
+<div class="wrap"><table><thead><tr><th>S.No</th><th>Record / document</th><th>Group</th><th>KMR app</th></tr></thead><tbody>
+<tr><td>1</td><td>Daily production, shift handover</td><td>Production</td><td>MMD Material Movement, Production Plan</td></tr>
+<tr><td>2</td><td>Machine set-up and parameter logs, first-off / last-off</td><td>Production</td><td>Process Documents (Control Plan), MMD</td></tr>
+<tr><td>3</td><td>Material and batch traceability</td><td>Production</td><td>MMD, Raw Material Planning, Delivery Challan &amp; GRN</td></tr>
+<tr><td>4</td><td>In-process and final inspection, dimensional report</td><td>Quality</td><td>Balloon Inspector</td></tr>
+<tr><td>5</td><td>SPC and control charts</td><td>Quality</td><td>SPC Charts</td></tr>
+<tr><td>6</td><td>Rejection, rework, NCR, corrective action</td><td>Quality</td><td>8D Problem Solving, Internal Audit</td></tr>
+<tr><td>7</td><td>PFD, PFMEA, Control Plan, APQP, PPAP</td><td>Quality</td><td>Process Documents, APQP, PPAP</td></tr>
+<tr><td>8</td><td>Gauge calibration, MSA</td><td>Equipment</td><td>Calibration Hub, MSA Studies</td></tr>
+<tr><td>9</td><td>Preventive maintenance, breakdown and repair</td><td>Equipment</td><td>Maintenance</td></tr>
+<tr><td>10</td><td>Training, attendance, operator checklists</td><td>Support</td><td>HRM &amp; Payroll, ActionTrack</td></tr>
+<tr><td>11</td><td>Meeting minutes and actions</td><td>Support</td><td>Minutes Of Meetings, ActionTrack</td></tr>
+<tr><td>12</td><td>Internal audit programme and findings (VDA 6.3 process audits)</td><td>Quality</td><td>Internal Audit</td></tr>
+</tbody></table></div></section>
+
+<section class="tab" id="t3"><div class="card"><h2>Digital-system controls to demonstrate</h2><p class="note">Tick what is in place at your plant; the list is saved in this browser only.</p></div>
+<div class="grid" id="ctl"></div></section>
+
+<section class="tab" id="t4"><div class="card"><h2>Formal statement for customer or auditor</h2>
+<div class="stmt" id="stmt"></div><p><button class="b" onclick="cp()">Copy statement</button> <span class="note" id="cpm"></span></p></div></section>
+
+<section class="tab" id="t5"><div class="card warn"><h2>Customer review – before paper is retired</h2>
+<p class="note">One row per customer. Record the customer-specific requirement (CSR) on records, signature and retention, and the decision. Edit, add or delete rows freely.</p></div>
+<div class="card"><div class="grid"><input id="cc" placeholder="Customer"><input id="cr" placeholder="CSR clause / contract reference"><input id="cn" placeholder="Requirement on records (paper, signature, retention years)"><select id="cs"><option>Digital accepted</option><option>Under review</option><option>Paper required</option></select></div><p><button class="b" onclick="addc()">Add customer</button></p></div>
+<div class="wrap"><table><thead><tr><th>S.No</th><th>Customer</th><th>CSR reference</th><th>Requirement on records</th><th>Decision</th><th></th></tr></thead><tbody id="cb"></tbody></table></div></section>
+</main>
+<footer>Powered By : <a href="https://www.kmr-groups.com">KMR Group of Companies</a></footer>
+<script>
+const T=['Standards alignment','Records and KMR apps','System controls','Formal statement','Customer review'];
+const nav=document.getElementById('nav');T.forEach((t,i)=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>show(i);nav.appendChild(b)});
+function show(i){document.querySelectorAll('.tab').forEach((e,j)=>e.classList.toggle('on',i==j));[...nav.children].forEach((e,j)=>e.classList.toggle('on',i==j))}show(0);
+const C=['Unique user identity and role-based permissions','Record identification: part, lot, machine, operator','Accurate automatic timestamps','Approval and revision control','Protection from unauthorized change','Change history / audit trail (proportionate to risk)','Backup and tested restore','Defined retention and disposition','Quick retrieval and export for audits','Availability at point of use','Outage contingency (offline or paper fall-back)','Validation against the Control Plan and customer requirements'];
+let st={};try{st=JSON.parse(localStorage.kmrc||'{}')}catch(e){}
+const ctl=document.getElementById('ctl');C.forEach((c,i)=>{const l=document.createElement('label');l.className='card';l.style.cursor='pointer';l.innerHTML='<input type="checkbox" style="width:auto;margin-right:8px"> '+(i+1)+'. '+c;const k=l.firstChild;k.checked=!!st[i];k.onchange=()=>{st[i]=k.checked;try{localStorage.kmrc=JSON.stringify(st)}catch(e){}};ctl.appendChild(l)});
+const S='Our organization proposes controlled electronic reporting for shopfloor production, inspection, set-up, maintenance, traceability and process monitoring. ISO 9001:2015 clause 7.5.2(b) recognizes electronic media, and clause 7.5.3 governs control of documented information. IATF 16949:2016 adds controls and retention requirements but no universal paper-only rule for these records, and VDA 6.3 assesses process evidence, not the medium. The system is validated against the Control Plan, applicable customer-specific requirements and legal obligations before paper records are retired. If a handwritten or physical record is required, please identify the specific clause, customer-specific requirement or contractual obligation.';
+document.getElementById('stmt').textContent=S;
+function cp(){navigator.clipboard.writeText(S).then(()=>cpm.textContent='Copied',()=>cpm.textContent='Select the text and copy')}
+let R=[];try{R=JSON.parse(localStorage.kmrr||'[]')}catch(e){}
+function sv(){try{localStorage.kmrr=JSON.stringify(R)}catch(e){}}
+function rend(){cb.innerHTML=R.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.c)}</td><td>${esc(r.r)}</td><td>${esc(r.n)}</td><td><span class="tag ${r.s=='Digital accepted'?'y':r.s=='Paper required'?'n':'p'}">${r.s}</span></td><td><button class="x" onclick="R.splice(${i},1);sv();rend()">Delete</button></td></tr>`).join('')||'<tr><td colspan="6" class="note">No customers yet.</td></tr>'}
+function esc(s){return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]))}
+function addc(){if(!cc.value.trim())return;R.push({c:cc.value,r:cr.value,n:cn.value,s:cs.value});cc.value=cr.value=cn.value='';sv();rend()}
+rend();
+</script></body></html>
