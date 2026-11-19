@@ -1,0 +1,152 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><script src="/it/apps/sso.js"></script><script src="/it/apps/kmr-ui.js"></script><script src="/it/apps/standards.js"></script><script src="/it/company-config.js"></script>
+<title>Budget · KMR Apps</title>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#e5e9f2;--b1:#0891b2;--b2:#7c3aed;--g:#16a34a;--a:#f59e0b;--r:#dc2626}
+@media(prefers-color-scheme:dark){:root{--bg:#0b1020;--card:#141a2e;--ink:#e8ecf8;--mut:#93a0bd;--line:#26304d}}
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 system-ui,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:70px}
+.clogo{width:40px;height:40px;border-radius:10px;background:#fff;display:grid;place-items:center;overflow:hidden;color:#130a3a;font-weight:800;font-size:14px;flex:none}.clogo img{max-width:34px;max-height:34px;object-fit:contain}.clogo[hidden]{display:none}
+header{display:flex;gap:12px;align-items:center;padding:12px 18px;background:#0c1a3a;color:#fff;flex-wrap:wrap}header h1{font-size:17px;margin:0}header small{opacity:.7;display:block}
+.tabs{display:flex;gap:4px;padding:10px 14px 0;flex-wrap:wrap}.tab{text-decoration:none;display:inline-block;border:0;background:none;padding:9px 14px;font-weight:600;color:var(--mut);border-radius:10px 10px 0 0;white-space:nowrap;flex:none}.tab.on{background:var(--card);color:var(--b1);box-shadow:0 -2px 0 var(--b1) inset}
+main{padding:0 14px}.panel{background:var(--card);border:1px solid var(--line);border-radius:0 12px 12px 12px;padding:16px;overflow-x:auto}
+input,select,textarea,button{font:inherit;color:inherit}input,select,textarea{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);width:100%;min-width:0}
+.btn{border:0;border-radius:9px;padding:8px 14px;font-weight:700;color:#fff;background:linear-gradient(90deg,var(--b1),var(--b2));cursor:pointer;text-decoration:none;display:inline-block}.btn.o{background:none;color:var(--b1);border:1px solid var(--b1)}.sm{padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}.row>.grow{flex:1}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}.kpi{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,var(--b1))}.kpi b{display:block;font-size:22px}.kpi span{color:var(--mut);font-size:12px}
+table{width:100%;border-collapse:collapse;min-width:700px}th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:var(--mut)}
+.chip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8)}.g{--c:var(--g)}.a{--c:var(--a)}.r{--c:var(--r)}.x{--c:#94a3b8}.b{--c:var(--b1)}
+.mut{color:var(--mut)}.hide{display:none}.msg{padding:9px 12px;border-radius:10px;margin-bottom:10px;background:#fee2e2;color:#991b1b}.msg.ok{background:#dcfce7;color:#166534}
+a{color:var(--b1)}
+.bar{display:flex;gap:2px;min-width:120px}.bar i{flex:1;height:8px;border-radius:3px;background:var(--line);position:relative;overflow:hidden}.bar i b{position:absolute;inset:0 auto 0 0;background:var(--g)}
+.ph{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.ph>h3{margin:0;padding:10px 12px;background:var(--bg);display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px}.ph>h3 .grow{flex:1}
+.ph table{min-width:820px}.ph input,.ph select{padding:4px 6px;font-size:13px}
+tr.done td:nth-child(3) b{color:var(--mut);text-decoration:line-through}tr.na{opacity:.55}
+.src{font-size:12px;margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.src.missing a,.src.na{color:var(--mut)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}.tile{border:1px solid var(--line);border-radius:12px;padding:10px;border-top:3px solid var(--c,var(--b1))}.tile b{font-size:20px}.tile small{display:block;color:var(--mut)}
+.links{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.links a{border:1px solid var(--line);border-radius:99px;padding:4px 11px;font-size:12px;text-decoration:none;color:var(--ink)}.links a:hover{border-color:var(--b1)}
+.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:9;padding:10px}.modal.on{display:flex}.in{background:var(--card);border-radius:14px;width:min(720px,100%);max-height:92vh;overflow:auto;padding:16px}
+.frm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}.frm label{font-size:12px;color:var(--mut);font-weight:600;display:block;margin-bottom:2px}
+.note{font-size:12px;color:var(--mut);margin:8px 0}
+.back{position:fixed;left:12px;bottom:12px;z-index:6;background:linear-gradient(90deg,var(--b1),var(--b2));color:#fff;border-radius:99px;padding:10px 16px;font-weight:700;font-size:13px;text-decoration:none}
+.rep h2{margin:0 0 4px}.rep table{min-width:0}
+@media print{body{background:#fff;color:#000;padding:0}header,.tabs,.noprint,.kmr-foot,.kmr-demo,.back{display:none!important}.panel{border:0;padding:0}main{padding:0}.ph{break-inside:avoid}}
+.num{text-align:right;font-variant-numeric:tabular-nums}.ph table{min-width:0}.late{color:var(--r);font-weight:700}.tabs .tab.on{}
+.sup{border:1px solid var(--line);border-radius:12px;margin:0 0 14px;overflow:hidden}.sup>h3{margin:0;padding:10px 12px;background:var(--bg);font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sup>h3 .grow{flex:1}
+.rmp-sc{overflow:auto;max-height:72vh;border:1px solid var(--line);border-radius:10px;background:var(--card);margin:6px 0}.rmp-sc::-webkit-scrollbar{height:14px;width:14px}.rmp-sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px;border:3px solid #eef1f6}.rmp-sc thead th{position:sticky;top:0;z-index:3;background:#EEF2F8}.rmp-sc table{margin:0}.bars{display:flex;flex-direction:column;gap:3px}.bars i{display:block;height:7px;border-radius:4px;min-width:2px}.sum{display:flex;gap:18px;flex-wrap:wrap;padding:2px 14px 12px}.sum span{color:var(--mut)}.sum b{color:var(--ink)}
+.cp{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;color:#fff;background:var(--c,#94a3b8);white-space:nowrap}.cp.cg{--c:#16a34a}.cp.ca{--c:#d97706}.cp.cr{--c:#dc2626}.cp.cb{--c:#174b80}.cp.cm{--c:#64748b}
+.kp{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0 14px}.kp div{border:1px solid var(--line);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c,#174b80)}.kp b{display:block;font-size:22px}.kp span{color:var(--mut);font-size:12px}
+.dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:8px 0}.dg label{display:block;font-size:12px;color:var(--mut);margin-bottom:2px}
+.lt{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}.lt th,.lt td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:middle}.lt th{background:var(--bg);position:sticky;top:0;z-index:2;white-space:nowrap}.lt td input,.lt td select{padding:5px 6px;min-width:70px}.lt td.n,.lt th.n{text-align:right}.lt td.w input{min-width:160px}
+.sc{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--card)}.sc::-webkit-scrollbar{height:14px;width:14px}.sc::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:8px}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:var(--card)}.box h3{margin:0 0 6px;font-size:15px}
+.seg{display:flex;gap:8px;flex-wrap:wrap}.seg label{display:flex;gap:6px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:600}.seg label.on{border-color:var(--b1);background:#174b8014}.seg input{width:auto}
+.late{color:var(--r);font-weight:700}.num{text-align:right;font-variant-numeric:tabular-nums}.grow{flex:1}.note{font-size:12px;color:var(--mut);margin:6px 0}
+.docv{background:#fff;color:#000;border:1px solid #444;padding:14px 16px;margin:10px 0;font:12px/1.4 Arial,Helvetica,sans-serif;position:relative;overflow:hidden}.docv h2{margin:0;text-align:center;font-size:17px;letter-spacing:.5px}.docv .sub{text-align:center;font-size:11px;margin-bottom:6px}
+.docv table{border-collapse:collapse;width:100%;margin:8px 0}.docv th,.docv td{border:1px solid #444;padding:4px 6px;text-align:left;vertical-align:top}.docv th{background:#e7e6e6}.docv td.n,.docv th.n{text-align:right}
+.docv .two{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid #444;margin-top:6px}.docv .two>div{padding:6px 8px}.docv .two>div+div{border-left:1px solid #444}.docv .cl{font-weight:700;text-align:right;font-size:11px}
+.docv .sg{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid #444;margin-top:10px}.docv .sg div{height:62px;padding:4px 8px;font-size:11px;display:flex;align-items:flex-end}.docv .sg div+div{border-left:1px solid #444}
+.docv .wm{position:absolute;inset:0;display:grid;place-items:center;font-size:70px;font-weight:800;color:#dc262622;transform:rotate(-20deg);pointer-events:none}
+.pgb{page-break-after:always}
+@media print{.docv{border:1px solid #000;margin:0}.docv.pgb:last-child{page-break-after:auto}.sc{max-height:none;overflow:visible;border:0}.lt{min-width:0}}
+@media(max-width:640px){.docv .two,.docv .sg{grid-template-columns:1fr}.docv .two>div+div,.docv .sg div+div{border-left:0;border-top:1px solid #444}}
+
+.tt td{border:0!important;padding:2px 6px}.tt{width:100%;margin:0;min-width:0}.tot{margin-left:auto;width:min(340px,100%)}.tot div{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted var(--line)}.tot .big{font-weight:800;font-size:16px;border-bottom:0}
+.docv .tot div{border-bottom:1px dotted #888}
+.docv .big2{font-size:12px;font-weight:700;margin:4px 0}
+</style>
+<style>.num{text-align:right;font-variant-numeric:tabular-nums}.over{color:var(--r);font-weight:700}.ok2{color:var(--g);font-weight:700}
+.pb{height:8px;border-radius:4px;background:var(--line);overflow:hidden;min-width:90px}.pb i{display:block;height:100%;background:var(--g)}.pb i.a{background:var(--a)}.pb i.r{background:var(--r)}
+td input.n{text-align:right;width:110px}.sticky th:first-child,.sticky td:first-child{position:sticky;left:0;background:var(--card)}
+.docv .num{text-align:right}</style>
+</head><body>
+<header><span class="clogo" id="clogo" hidden></span><div><h1>Budget</h1><small id="co">Loading…</small></div><div style="flex:1"></div><span class="chip x" id="role"></span></header>
+<div class="tabs"><a class="tab on" data-t="std" href="#go=std">Standards alignment</a><a class="tab" data-t="dash" href="#go=dash">Budget vs actual</a><a class="tab" data-t="plan" href="#go=plan">Set budget</a><a class="tab" data-t="flow" href="#go=flow">Intake &amp; outward</a><a class="tab" data-t="rate" href="#go=rate">Rates</a></div>
+<main><div class="panel"><div id="msg"></div><section id="std"></section><section id="dash" class="hide"></section><section id="plan" class="hide"></section><section id="flow" class="hide"></section><section id="rate" class="hide"></section></div></main>
+<script src="/it/apps/qp-core.js"></script><script src="/it/apps/kmr-mobile.js"></script><script src="/it/apps/kmr-select.js"></script>
+<script>if(new URLSearchParams(location.search).has("demo")){document.write('<script src="/it/apps/bud-demo.js"><\/script>')}</script>
+<script>
+const {$,esc,say,call}=QP;
+const HEADS=[['rm','Raw material','rmp','Raw Material Planning (bought) and Material Movement route sheets (issued)'],['tool','Tooling','dcg','DC & GRN (bought) and Material Movement tool changes (used)'],['cons','Consumables','dcg','DC & GRN (bought) and Material Movement consumable issues (used)'],['man','Manpower','hrms','HRM payroll (final runs)'],['pwr','Electricity','mmd','Machine run hours from Material Movement and ERP history x kW x tariff'],['out','Outside processing','dcg','DC & GRN job work'],['mnt','Maintenance','mnt','Maintenance repair cost']];
+const HN=Object.fromEntries(HEADS.map(h=>[h[0],h[1]]));
+const S={go:null,from:'',to:'',d:null,rates:null};
+const td=()=>new Date(Date.now()+19800000).toISOString().slice(0,10);
+const inr=(v)=>(v==null?'–':(v<0?'−':'')+'₹'+Math.abs(Math.round(v)).toLocaleString('en-IN'));
+const lk=(v)=>Math.abs(v)>=1e7?(v/1e7).toFixed(2)+' Cr':Math.abs(v)>=1e5?(v/1e5).toFixed(2)+' L':Math.round(v).toLocaleString('en-IN');
+const mAdd=(ym,n)=>{let y=+ym.slice(0,4),m=+ym.slice(5,7)-1+n;y+=Math.floor(m/12);m=((m%12)+12)%12;return y+'-'+String(m+1).padStart(2,'0')};
+const MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const mlab=(ym)=>MON[+ym.slice(5,7)-1]+' '+ym.slice(0,4);
+const canEdit=()=>QP.canEdit;
+const hashGo=()=>{const m=location.hash.match(/go=([a-z]+)/);return m?m[1]:'std'};
+const rep=(title,no)=>{if(window.KMRReport)window.KMRReport.set({title,doc:'',format:'KMR/BUD/F-'+no,rev:'01',date:'2026-11-19'})};
+const co=()=>new URLSearchParams(location.search);
+const appUrl=(p)=>p+'?'+co().toString();
+function months(){if(!S.from){const cur=td().slice(0,7);S.to=cur;S.from=mAdd(cur,-2)}return [S.from,S.to]}
+async function load(){const [f,t]=months();S.d=await call('kmr_bud_data',{p_from:f,p_to:t})}
+function pickBar(){const [f,t]=months();return '<div class="row"><label>From <input type="month" id="mf" value="'+f+'" style="width:auto"></label><label>To <input type="month" id="mt" value="'+t+'" style="width:auto"></label><button class="btn sm" id="mgo">Show</button><span class="grow"></span><button class="btn o sm" id="mpr">Print report</button></div>'}
+function bindBar(fn){$('#mgo').onclick=()=>{const f=$('#mf').value,t=$('#mt').value;if(!f||!t||f>t){say('Choose the From month and a To month that is not earlier.');return}S.from=f;S.to=t;route()};$('#mpr').onclick=()=>{rep(fn,fn==='Intake and outward'?2:1);window.print()}}
+function sum(rows,k){return rows.reduce((a,r)=>a+(+r[k]||0),0)}
+function pbar(used,bud){if(!bud)return '<span class="mut">no budget</span>';const p=100*used/bud;return '<div class="pb"><i class="'+(p>100?'r':p>85?'a':'')+'" style="width:'+Math.min(100,p)+'%"></i></div><small class="mut">'+p.toFixed(0)+'% used</small>'}
+async function route(){const go=hashGo();S.go=go;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===go));
+  ['std','dash','plan','flow','rate'].forEach(s=>$('#'+s).classList.toggle('hide',s!==go));
+  if(go==='std'){KMRStd.draw($('#std'),'bud');return}
+  try{if(go==='rate'){S.rates=await call('kmr_bud_rates',{});drawRate();return}
+    await load();({dash:drawDash,plan:drawPlan,flow:drawFlow})[go]()}catch(e){say(e.message)}}
+document.addEventListener('click',e=>{const a=e.target.closest('a[href^="#go="]');if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;e.preventDefault();history.replaceState(null,'',location.pathname+location.search+a.getAttribute('href'));route()});
+window.addEventListener('hashchange',route);
+
+/* ---------- Budget vs actual ---------- */
+function drawDash(){const R=S.d.rows,ms=S.d.months,tb=sum(R,'budget'),ta=sum(R,'actual');
+  const by=HEADS.map(h=>{const r=R.filter(x=>x.head===h[0]);return {k:h[0],n:h[1],b:sum(r,'budget'),a:sum(r,'actual'),basis:[...new Set(r.map(x=>x.basis).filter(x=>x!=='none'))].join(', ')||'no data yet',ass:r.some(x=>(x.assumed||[]).length),miss:r.reduce((a,x)=>a+(+x.missing_rate||0),0)}});
+  const over=by.filter(x=>x.b&&x.a>x.b);
+  const per=ms.length>1?mlab(ms[0])+' to '+mlab(ms[ms.length-1]):mlab(ms[0]);
+  $('#dash').innerHTML=pickBar()+'<div class="kpis">'
+   +'<div class="kpi"><span>Budget for '+esc(per)+'</span><b>'+inr(tb)+'</b></div>'
+   +'<div class="kpi" style="--c:'+(tb&&ta>tb?'var(--r)':'var(--g)')+'"><span>Actual spend</span><b>'+inr(ta)+'</b></div>'
+   +'<div class="kpi" style="--c:'+(tb&&ta>tb?'var(--r)':'var(--g)')+'"><span>'+(!tb?'Budget not set':ta>tb?'Over budget by':'Left in budget')+'</span><b>'+(tb?inr(Math.abs(tb-ta)):'–')+'</b></div>'
+   +'<div class="kpi" style="--c:'+(over.length?'var(--a)':'var(--g)')+'"><span>Heads over budget</span><b>'+over.length+'</b></div></div>'
+   +'<table class="sticky"><thead><tr><th>Head</th><th class="num">Budget</th><th class="num">Actual</th><th class="num">Difference</th><th>Used</th><th>Where the actual comes from</th></tr></thead><tbody>'
+   +by.map(x=>{const d=x.b-x.a;return '<tr><td><b>'+esc(x.n)+'</b></td><td class="num">'+inr(x.b)+'</td><td class="num">'+inr(x.a)+'</td><td class="num '+(x.b&&d<0?'over':'')+'">'+(x.b?(d<0?'over ':'under ')+inr(Math.abs(d)):'–')+'</td><td>'+pbar(x.a,x.b)+'</td><td class="mut" style="font-size:12px">'+esc(x.basis)+(x.ass?' <span class="chip a" title="Set the real kW and tariff on the Rates screen">assumed rates</span>':'')+(x.miss?' <span class="chip a" title="Enter the rate on the Rates screen">'+x.miss+' without a rate</span>':'')+'</td></tr>'}).join('')
+   +'<tr style="font-weight:700;background:var(--bg)"><td>Total</td><td class="num">'+inr(tb)+'</td><td class="num">'+inr(ta)+'</td><td class="num '+(tb&&ta>tb?'over':'')+'">'+(tb?(ta>tb?'over ':'under ')+inr(Math.abs(tb-ta)):'–')+'</td><td>'+pbar(ta,tb)+'</td><td></td></tr></tbody></table>'
+   +(ms.length>1?'<h3 style="margin:16px 0 6px">Month by month</h3><table><thead><tr><th>Month</th><th class="num">Budget</th><th class="num">Actual</th><th class="num">Difference</th></tr></thead><tbody>'+ms.map(m=>{const r=R.filter(x=>x.month===m),b=sum(r,'budget'),a=sum(r,'actual');return '<tr><td>'+mlab(m)+'</td><td class="num">'+inr(b)+'</td><td class="num">'+inr(a)+'</td><td class="num '+(b&&a>b?'over':'')+'">'+(b?(a>b?'over ':'under ')+inr(Math.abs(b-a)):'–')+'</td></tr>'}).join('')+'</tbody></table>':'')
+   +(tb?'':'<p class="note">No budget has been set for these months. Open <b>Set budget</b> to enter it.</p>')
+   +'<p class="note">Actual = what was bought (GRN, raw material received). Where nothing was bought through GRN, the value used (issued, fitted, run hours) is shown instead, and the last column says which.</p>';
+  bindBar('Budget vs actual')}
+
+/* ---------- Set budget ---------- */
+function drawPlan(){const R=S.d.rows,ms=S.d.months;
+  const cell=(h,m)=>{const r=R.find(x=>x.head===h&&x.month===m)||{};return '<td><input class="n" data-h="'+h+'" data-m="'+m+'" type="number" min="0" step="1000" value="'+(r.budget||'')+'" placeholder="0" '+(canEdit()?'':'disabled')+'><div class="mut" style="font-size:11px;text-align:right">actual '+lk(r.actual||0)+'</div></td>'};
+  $('#plan').innerHTML=pickBar()+'<p class="note">Type the rupee budget for each head and month, then press Save. The small grey figure is what was actually spent, so you can plan with it in front of you.</p>'
+   +'<table class="sticky"><thead><tr><th>Head</th>'+ms.map(m=>'<th class="num">'+mlab(m)+'</th>').join('')+'</tr></thead><tbody>'+HEADS.map(h=>'<tr><td><b>'+h[1]+'</b></td>'+ms.map(m=>cell(h[0],m)).join('')+'</tr>').join('')+'</tbody></table>'
+   +(canEdit()?'<div class="row" style="margin-top:12px"><button class="btn" id="bsv">Save budget</button><button class="btn o" id="bavg">Fill empty cells with the average of the 3 months before</button><span id="bmsg" class="mut"></span></div>':'<p class="note">You can view the budget but not change it.</p>');
+  bindBar('Set budget');
+  if(!canEdit())return;
+  $('#bsv').onclick=async()=>{const rows=[...document.querySelectorAll('#plan input.n')].map(i=>({month:i.dataset.m,head:i.dataset.h,amount:i.value===''?0:+i.value}));
+    try{await call('kmr_bud_save',{p_rows:rows});$('#bmsg').textContent='Saved.';await load()}catch(e){say(e.message)}};
+  $('#bavg').onclick=async()=>{try{const f=mAdd(S.from,-3),t=mAdd(S.from,-1),p=await call('kmr_bud_data',{p_from:f,p_to:t});let n=0;
+    document.querySelectorAll('#plan input.n').forEach(i=>{if(i.value!=='')return;const v=p.rows.filter(x=>x.head===i.dataset.h&&x.actual>0).map(x=>x.actual);if(v.length){i.value=Math.round(v.reduce((a,b)=>a+b,0)/v.length);n++}});
+    $('#bmsg').textContent=n?n+' cells filled. Check them, then press Save.':'There was no actual spend in the 3 months before to average.'}catch(e){say(e.message)}}}
+
+/* ---------- Intake & outward ---------- */
+function drawFlow(){const R=S.d.rows,ms=S.d.months;
+  const rows=HEADS.map(h=>{const r=R.filter(x=>x.head===h[0]);return {k:h[0],n:h[1],app:h[2],src:h[3],i:sum(r,'intake'),o:sum(r,'outward'),q:sum(r,'qty'),u:(r.find(x=>x.unit)||{}).unit||''}});
+  const per=ms.length>1?mlab(ms[0])+' to '+mlab(ms[ms.length-1]):mlab(ms[0]);
+  $('#flow').innerHTML=pickBar()+'<p class="note"><b>Intake</b> is what came in (bought or received). <b>Outward</b> is what went out to the shop floor or was used. The difference is what is being stocked up (or run down). Period: '+esc(per)+'.</p>'
+   +'<table><thead><tr><th>Head</th><th class="num">Intake</th><th class="num">Outward</th><th class="num">Stocked up / (run down)</th><th class="num">Quantity</th><th>Comes from</th></tr></thead><tbody>'
+   +rows.map(x=>{const d=x.i-x.o;return '<tr><td><b>'+x.n+'</b></td><td class="num">'+inr(x.i)+'</td><td class="num">'+inr(x.o)+'</td><td class="num '+(d<0?'over':'')+'">'+(x.i||x.o?(d<0?'('+inr(-d)+')':inr(d)):'–')+'</td><td class="num">'+(x.q?Math.round(x.q).toLocaleString('en-IN')+' <small class="mut">'+esc(x.u)+'</small>':'–')+'</td><td style="font-size:12px">'+esc(x.src)+' · <a href="'+appUrl('/it/'+({rmp:'rmp',dcg:'dcg',hrms:'hrm',mmd:'mmd',mnt:'mnt'})[x.app]+'.html')+'">open</a></td></tr>'}).join('')
+   +'<tr style="font-weight:700;background:var(--bg)"><td>Total</td><td class="num">'+inr(sum(rows,'i'))+'</td><td class="num">'+inr(sum(rows,'o'))+'</td><td class="num">'+inr(sum(rows,'i')-sum(rows,'o'))+'</td><td></td><td></td></tr></tbody></table>'
+   +'<p class="note">Manpower, electricity, outside processing and maintenance are used as they are paid or run, so their intake and outward are the same figure. For the part-wise, lot-wise and heat-code-wise movement of material, open Material Movement and use Traceability.</p>';
+  bindBar('Intake and outward')}
+
+/* ---------- Rates ---------- */
+function drawRate(){const R=S.rates,P=R.power||{},D=R.dflt||{},ed=canEdit()?'':'disabled';
+  const tbl=(kind,list,title)=>'<div class="box"><h3>'+title+'</h3>'+(list.length?'<table style="min-width:0"><thead><tr><th>Code</th><th class="num">Rate (₹ per piece / unit)</th></tr></thead><tbody>'+list.map(x=>'<tr><td>'+esc(x.code)+'</td><td class="num"><input class="n rt" data-k="'+kind+'" data-c="'+esc(x.code)+'" type="number" min="0" step="0.01" value="'+(x.rate==null?'':x.rate)+'" '+ed+'></td></tr>').join('')+'</tbody></table>':'<p class="note">Nothing here yet. Add items in Material Movement (tools / consumables) and they will appear.</p>')+'</div>';
+  $('#rate').innerHTML='<p class="note">These rates turn tool changes, consumable issues and machine run hours into rupees. Leave a rate empty if you do not know it; the Budget vs actual screen then says which rates are missing.</p>'
+   +'<div class="box"><h3>Electricity</h3><div class="frm"><div><label>Average load per running machine (kW = kilowatt)</label><input id="pkw" class="rt" data-k="power" data-c="kw" type="number" min="0" step="0.1" value="'+(P.kw==null?'':P.kw)+'" placeholder="15 (assumed)" '+ed+'></div><div><label>Tariff (₹ per kWh = kilowatt-hour)</label><input id="ptar" class="rt" data-k="power" data-c="tariff" type="number" min="0" step="0.01" value="'+(P.tariff==null?'':P.tariff)+'" placeholder="8 (assumed)" '+ed+'></div></div></div>'
+   +'<div class="box"><h3>Rate when a tool or consumable has no rate of its own</h3><div class="frm"><div><label>Tool, per tool change (₹)</label><input class="rt" data-k="tool" data-c="*" type="number" min="0" step="0.01" value="'+(D.tool==null?'':D.tool)+'" '+ed+'></div><div><label>Consumable, per unit (₹)</label><input class="rt" data-k="cons" data-c="*" type="number" min="0" step="0.01" value="'+(D.cons==null?'':D.cons)+'" '+ed+'></div></div></div>'
+   +tbl('tool',R.tools||[],'Tools')+tbl('cons',R.cons||[],'Consumables')
+   +(canEdit()?'<div class="row"><button class="btn" id="rsv">Save rates</button><span id="rmsg" class="mut"></span></div>':'');
+  if(!canEdit())return;
+  $('#rsv').onclick=async()=>{const rows=[...document.querySelectorAll('#rate input.rt')].map(i=>({kind:i.dataset.k,code:i.dataset.c,rate:i.value}));
+    try{await call('kmr_bud_rate_save',{p_rows:rows});$('#rmsg').textContent='Saved.'}catch(e){say(e.message)}}}
+
+(async()=>{try{await QP.init('bud','kmr_bud_context');if(!QP.ctx)return;await route()}catch(e){say(e.message)}})();
+</script><script src="/it/apps/back.js"></script><script src="/it/apps/kmr-present-link.js"></script></body></html>

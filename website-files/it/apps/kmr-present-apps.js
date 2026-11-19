@@ -447,4 +447,18 @@
     kp.push({ id: "ob", name: "Heads over budget", value: over.length, target: 0, amber: 2, dir: "low", std: S("ISO 6.1", "ISO 7.1.1"), why: "Expense heads whose month-to-date spend is above their budget." });
     return { period: "Month " + ym, kpis: kp, charts: [barOf("Direct expenses this month (rupees)", byH, "Amount", "rm")] };
   } };
+  KMRPA.bud = { name: "Budget", code: "bud", ctxFn: "kmr_bud_context", std: "bud", load: async function (call) {
+    var td = new Date(Date.now() + 19800000).toISOString().slice(0, 7), S = std;
+    var r = await call("kmr_bud_data", { p_from: td, p_to: td }), R = r.rows || [];
+    var N = { rm: "Raw material", tool: "Tooling", cons: "Consumables", man: "Manpower", pwr: "Electricity", out: "Outside processing", mnt: "Maintenance" };
+    var tb = 0, ta = 0, over = 0, nob = 0, lab = [], bv = [], av = [], ints = 0, outs = 0;
+    R.forEach(function (x) { tb += +x.budget || 0; ta += +x.actual || 0; ints += +x.intake || 0; outs += +x.outward || 0; if (x.budget > 0 && x.actual > x.budget) over++; if (!(x.budget > 0) && x.actual > 0) nob++; lab.push(N[x.head] || x.head); bv.push(Math.round(x.budget || 0)); av.push(Math.round(x.actual || 0)); });
+    var pct = tb > 0 ? +(100 * ta / tb).toFixed(1) : null;
+    var kp = [];
+    if (pct != null) kp.push({ id: "used", name: "Budget used this month %", value: pct, unit: "%", target: 100, amber: 110, dir: "low", std: S("ISO 7.1.1", "ISO 9.1.1"), why: "Actual spend of all heads against the month budget." });
+    kp.push({ id: "over", name: "Heads over budget", value: over, target: 0, amber: 2, dir: "low", std: S("ISO 6.1", "ISO 7.1.1"), why: "Heads (raw material, tooling, consumables, manpower, electricity ...) whose actual is above the budget." });
+    kp.push({ id: "nob", name: "Heads spending with no budget", value: nob, target: 0, amber: 1, dir: "low", std: S("ISO 7.1.1", "ISO 9.3.2"), why: "Heads that have actual spend but no budget set for the month." });
+    kp.push({ id: "stk", name: "Intake less outward (lakh)", value: +((ints - outs) / 1e5).toFixed(2), unit: "lakh", std: S("ISO 8.4.1", "ISO 7.1.3"), why: "What came in against what went out: a large positive figure means stock is building up." });
+    return { period: "Month " + td, kpis: kp, charts: [{ title: "Budget and actual by head (rupees)", kind: "bar", kpi: "used", labels: lab, series: [{ name: "Budget", values: bv }, { name: "Actual", values: av }] }] };
+  } };
 })();
