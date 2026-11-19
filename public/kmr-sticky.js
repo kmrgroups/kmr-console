@@ -25,8 +25,9 @@ table.kmr-stk>thead>tr:nth-child(2)>th{top:var(--kmr-h1,30px)}
     let p = t.parentElement;
     // already inside a box that scrolls up/down (own max-height): nothing more to do
     if (p && p !== document.body && /(auto|scroll)/.test(getComputedStyle(p).overflowY) && getComputedStyle(p).maxHeight !== "none") return;
-    if (p && p.children.length === 1 && p !== document.body && !p.matches("td,th,li,form,main,section,article")) { p.classList.add("kmr-stw"); return; }
-    const w = document.createElement("div"); w.className = "kmr-stw"; p.insertBefore(w, t); w.appendChild(t);
+    if (p && (p.children.length === 1 || (p.children.length === 2 && t.previousElementSibling && t.previousElementSibling.classList.contains("kmr-tt"))) && p !== document.body && !p.matches("td,th,li,form,main,section,article")) { p.classList.add("kmr-stw"); return; }
+    const bar = t.previousElementSibling && t.previousElementSibling.classList.contains("kmr-tt") ? t.previousElementSibling : null;   // the search / Excel / PDF bar travels with its table
+    const w = document.createElement("div"); w.className = "kmr-stw"; p.insertBefore(w, bar || t); if (bar) { bar.style.position = "sticky"; bar.style.left = "0"; w.appendChild(bar); } w.appendChild(t);
   }
   let q = 0;
   const run = () => { q = 0; document.querySelectorAll("table").forEach(fix); };
