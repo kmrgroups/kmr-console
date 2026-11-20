@@ -416,43 +416,51 @@
     };
   }
 
-  // ---- WhatsApp evening report (7:30 pm): switch on / off and the people who get it; add, edit, delete ----
-  async function waView(note) {
+  // ---- WhatsApp evening report (7:30 pm): switch on / off, and for every person which units and which sheets they receive (company administrators map; unit administrators switch their unit) ----
+  const WA_SHEETS = [["dispatch", "Sales value, invoices & dispatch"], ["customer", "Customer-wise schedule"], ["slug", "Forging slug stock"], ["rm", "Daily RM stock"], ["wip", "Stage-wise stock"]];
+  async function waView() {
     setView("wa");
-    const m = mainEl(), T0 = "WhatsApp evening report", S0 = "Every day at 7:30 pm this unit's sales value (plan, done, pending), today's invoices, dispatch status, customer-wise schedule, raw material / forging slug stock and stage-wise stock go on WhatsApp as pictures to the unit in-charges and the people listed here.";
+    const m = mainEl(), T0 = "WhatsApp evening report", S0 = "Every day at 7:30 pm the unit's sales value (plan, done, pending), today's invoices, dispatch status, customer-wise schedule, raw material / forging slug stock and stage-wise stock go on WhatsApp as pictures. Choose who receives which unit and which sheets.";
     m.innerHTML = adminHead(T0, S0) + `<p class="msg">Loading…</p>`; bindBack();
     const { data: g, error } = await sb.rpc("kmr_wa_get", { p_slug: SLUG });
     if (error) { m.querySelector(".msg").textContent = error.message; return; }
-    const parse = (t) => String(t || "").split(/[\n;]+/).map((x) => x.trim()).filter(Boolean).map((x) => { const i = x.indexOf(","); return { name: i < 0 ? x : x.slice(0, i).trim(), phone: i < 0 ? "" : x.slice(i + 1).trim() }; });
     const norm = (v) => { const d = String(v || "").replace(/[^0-9]/g, ""); return d.length === 10 ? "91" + d : d; };
-    let rows = parse(g.people);
+    const plants = g.plants || [], short = (c) => String(c || "").replace(/\s*\(.*\)/, "").replace("‑", "-");
+    let rows = (g.people || []).map((x) => ({ name: x.name, phone: x.phone, units: x.units || [], sheets: x.sheets || [] }));
+    const th = (t) => `<th style="text-align:left;padding:6px 8px;font-size:13px;position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line)">${t}</th>`;
     m.innerHTML = adminHead(T0, S0) + `
-      <div class="card" style="max-width:820px">
-        <label style="display:flex;gap:10px;align-items:center;margin:0 0 14px"><b>WhatsApp evening report</b>
-          <select id="waOn" style="padding:6px 10px"><option value="true" ${g.enabled ? "selected" : ""}>On</option><option value="false" ${g.enabled ? "" : "selected"}>Off</option></select></label>
-        <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Unit in-charges with a mobile number (mobile kept by KMR support) get it automatically${(g.incharges || []).length ? ": " + (g.incharges || []).map((x) => esc(x.name) + (x.phone ? " " + esc(x.phone) : " (no mobile yet)")).join(", ") : "."}</p>
-        <h3 style="margin:10px 0 6px">Other people</h3>
-        <div id="waRows"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><input id="waN" placeholder="Name" style="width:180px"><input id="waP" placeholder="Mobile (10 digits or with 91)" inputmode="tel" style="width:230px"><button class="btn ghost" id="waAdd" style="height:36px">＋ Add person</button></div>
-        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px"><button class="btn" id="waSave">Save</button><span class="msg" id="waMsg"></span></div>
-        <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Change a name or number in its row, or press Delete; then press Save. A 10-digit Indian number gets 91 added.${g.last_sent_on ? " Last sent: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + "." : ""}</p>
+      <div class="card" style="max-width:1100px">
+        <label style="display:flex;gap:10px;align-items:center;margin:0 0 6px"><b>This unit: WhatsApp evening report</b>
+          <select id="waOn" style="padding:6px 10px"><option value="true" ${(plants.find((p) => p.id === g.this) || {}).on ? "selected" : ""}>On</option><option value="false" ${(plants.find((p) => p.id === g.this) || {}).on ? "" : "selected"}>Off</option></select></label>
+        <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Unit in-charges with a mobile number get every sheet automatically${(g.incharges || []).length ? ": " + (g.incharges || []).map((x) => esc(x.name) + (x.phone ? " " + esc(x.phone) : " (no mobile yet)")).join(", ") : "."} Units on: ${plants.map((p) => esc(short(p.code)) + (p.on ? " ✔" : " —")).join(" · ")}</p>
+        <h3 style="margin:10px 0 6px">People, units and sheets</h3>
+        ${g.can_map ? "" : `<p class="msg">Only the company administrators can change this list.</p>`}
+        <div style="overflow:auto;max-height:60vh"><table style="border-collapse:collapse;width:100%"><thead><tr>${th("Name")}${th("Mobile")}${plants.map((p) => th(esc(short(p.code)))).join("")}${WA_SHEETS.map((x) => th(x[1])).join("")}${th("")}</tr></thead><tbody id="waRows"></tbody></table></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><input id="waN" placeholder="Name" style="width:180px"><input id="waP" placeholder="Mobile (10 digits or with 91)" inputmode="tel" style="width:230px"><button class="btn ghost" id="waAdd" style="height:36px">＋ Add person</button></div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px"><button class="btn" id="waSave">Save</button><span class="msg" id="waMsg"></span></div>
+        <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Tick the units each person gets (a new person starts with all units and all sheets). Leave all sheets unticked to send every sheet. Change a name or number in its row, or press Delete; then press Save. A 10-digit Indian number gets 91 added.${g.last_sent_on ? " Last sent: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + "." : ""}</p>
       </div>`;
     bindBack();
+    const dis = g.can_map ? "" : "disabled";
     const draw = () => {
-      $("#waRows").innerHTML = rows.length ? rows.map((r, i) => `<div style="display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:wrap"><input data-wn="${i}" value="${esc(r.name)}" style="width:180px" aria-label="Name"><input data-wp="${i}" value="${esc(r.phone)}" style="width:230px" inputmode="tel" aria-label="Mobile number"><button class="btn ghost" data-wd="${i}" style="height:34px">Delete</button></div>`).join("") : `<p style="color:var(--muted);margin:4px 0">No extra people yet.</p>`;
+      $("#waRows").innerHTML = rows.length ? rows.map((r, i) => `<tr style="border-bottom:1px solid var(--line)"><td style="padding:4px 6px"><input data-wn="${i}" value="${esc(r.name)}" style="width:150px" ${dis}></td><td style="padding:4px 6px"><input data-wp="${i}" value="${esc(r.phone)}" style="width:130px" inputmode="tel" ${dis}></td>${plants.map((p) => `<td style="padding:4px 8px;text-align:center"><input type="checkbox" data-wu="${i}:${p.id}" ${r.units.includes(p.id) ? "checked" : ""} ${dis}></td>`).join("")}${WA_SHEETS.map((x) => `<td style="padding:4px 8px;text-align:center"><input type="checkbox" data-ws="${i}:${x[0]}" ${r.sheets.includes(x[0]) ? "checked" : ""} ${dis}></td>`).join("")}<td style="padding:4px 6px"><button class="btn ghost" data-wd="${i}" style="height:32px" ${dis}>Delete</button></td></tr>`).join("") : `<tr><td colspan="${3 + plants.length + WA_SHEETS.length}" style="color:var(--muted);padding:8px">No people yet.</td></tr>`;
       document.querySelectorAll("[data-wn]").forEach((e) => (e.oninput = () => { rows[+e.dataset.wn].name = e.value; }));
       document.querySelectorAll("[data-wp]").forEach((e) => (e.oninput = () => { rows[+e.dataset.wp].phone = e.value; }));
+      const tog = (arr, v, on) => { const k = arr.indexOf(v); if (on && k < 0) arr.push(v); if (!on && k >= 0) arr.splice(k, 1); };
+      document.querySelectorAll("[data-wu]").forEach((e) => (e.onchange = () => { const [i, id] = e.dataset.wu.split(":"); tog(rows[+i].units, id, e.checked); }));
+      document.querySelectorAll("[data-ws]").forEach((e) => (e.onchange = () => { const [i, k] = e.dataset.ws.split(":"); tog(rows[+i].sheets, k, e.checked); }));
       document.querySelectorAll("[data-wd]").forEach((b) => (b.onclick = () => { const r = rows[+b.dataset.wd]; if (confirm("Delete " + (r.name || "this person") + "?")) { rows.splice(+b.dataset.wd, 1); draw(); } }));
     };
     draw();
-    const add = () => { const n = $("#waN").value.trim(), p = norm($("#waP").value); if (!n || p.length < 10) { const x = $("#waMsg"); x.className = "msg"; x.textContent = "Type a name and a mobile number first."; return; } rows.push({ name: n, phone: p }); $("#waN").value = ""; $("#waP").value = ""; draw(); };
+    const add = () => { const n = $("#waN").value.trim(), p = norm($("#waP").value); if (!n || p.length < 11) { const x = $("#waMsg"); x.className = "msg"; x.textContent = "Type a name and a mobile number first."; return; } rows.push({ name: n, phone: p, units: plants.map((q) => q.id), sheets: [] }); $("#waN").value = ""; $("#waP").value = ""; draw(); };
     $("#waAdd").onclick = add; $("#waP").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
+    if (!g.can_map) { $("#waAdd").disabled = true; }
     $("#waSave").onclick = async () => {
       const msg = $("#waMsg"); msg.className = "msg"; msg.textContent = "Saving…";
-      const people = rows.filter((r) => r.name || r.phone).map((r) => `${r.name}, ${norm(r.phone)}`).join("\n");
-      const r = await sb.rpc("kmr_wa_save", { p_slug: SLUG, p_enabled: $("#waOn").value === "true", p_people: people });
+      const people = g.can_map ? rows.filter((r) => r.name || r.phone).map((r) => ({ name: r.name, phone: norm(r.phone), units: r.units, sheets: r.sheets })) : null;
+      const r = await sb.rpc("kmr_wa_save", { p_slug: SLUG, p_this_on: $("#waOn").value === "true", p_people: people });
       if (r.error) { msg.textContent = r.error.message; return; }
-      rows = rows.map((x) => ({ name: x.name, phone: norm(x.phone) })); draw();
+      rows = rows.map((x) => ({ ...x, phone: norm(x.phone) })); draw();
       msg.className = "msg ok"; msg.textContent = "Saved.";
     };
   }

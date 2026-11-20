@@ -134,13 +134,13 @@ export async function renderWip(unit: string, k: WaKpis): Promise<{ family: stri
   return out;
 }
 
-/** Every picture of the evening report for one unit, in sending order. */
-export async function renderAll(unit: string, k: WaKpis): Promise<{ title: string; png: Uint8Array }[]> {
-  const out: { title: string; png: Uint8Array }[] = [{ title: "Sales value, invoices and dispatch status", png: await renderUnitReport(unit, k) }];
-  const add = (t: string, p: Uint8Array | null) => { if (p) out.push({ title: t, png: p }); };
-  add("Customer-wise schedule", await renderCustomerSchedule(unit, k));
-  add("Material for forging slug", await renderSlug(unit, k));
-  add("Daily RM stock", await renderRm(unit, k));
-  for (const w of await renderWip(unit, k)) out.push({ title: `${w.family} stage-wise stock`, png: w.png });
+/** Every picture of the evening report for one unit, in sending order. key = sheet name used when a person receives only some sheets. */
+export async function renderAll(unit: string, k: WaKpis): Promise<{ key: string; title: string; png: Uint8Array }[]> {
+  const out: { key: string; title: string; png: Uint8Array }[] = [{ key: "dispatch", title: "Sales value, invoices and dispatch status", png: await renderUnitReport(unit, k) }];
+  const add = (key: string, t: string, p: Uint8Array | null) => { if (p) out.push({ key, title: t, png: p }); };
+  add("customer", "Customer-wise schedule", await renderCustomerSchedule(unit, k));
+  add("slug", "Material for forging slug", await renderSlug(unit, k));
+  add("rm", "Daily RM stock", await renderRm(unit, k));
+  for (const w of await renderWip(unit, k)) out.push({ key: "wip", title: `${w.family} stage-wise stock`, png: w.png });
   return out;
 }
