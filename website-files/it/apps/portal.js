@@ -417,26 +417,26 @@
   }
 
   // ---- WhatsApp evening report (7:30 pm): switch on / off, and for every person which units and which sheets they receive (company administrators map; unit administrators switch their unit) ----
-  const WA_SHEETS = [["dispatch", "Sales value, invoices & dispatch"], ["customer", "Customer-wise schedule"], ["slug", "Forging slug stock"], ["rm", "Daily RM stock"], ["wip", "Stage-wise stock"]];
+  const WA_SHEETS = [["dispatch", "Dispatch", "Sales value, invoices & dispatch status"], ["customer", "Customer", "Customer-wise schedule"], ["slug", "Slug", "Forging slug stock"], ["rm", "RM", "Daily raw material stock"], ["wip", "WIP", "Stage-wise stock"]];
   async function waView() {
     setView("wa");
-    const m = mainEl(), T0 = "WhatsApp evening report", S0 = "Every day at 7:30 pm the unit's sales value (plan, done, pending), today's invoices, dispatch status, customer-wise schedule, raw material / forging slug stock and stage-wise stock go on WhatsApp as pictures. Choose who receives which unit and which sheets.";
+    const m = mainEl(), T0 = "WhatsApp evening report", S0 = "Every day at 7:30 pm the unit's sales value (plan, done, pending), today's invoices, dispatch status, customer-wise schedule, raw material / forging slug stock and stage-wise stock go on WhatsApp as clear pictures, one message per sheet. Choose who receives which unit and which sheets.";
     m.innerHTML = adminHead(T0, S0) + `<p class="msg">Loading…</p>`; bindBack();
     const { data: g, error } = await sb.rpc("kmr_wa_get", { p_slug: SLUG });
     if (error) { m.querySelector(".msg").textContent = error.message; return; }
     const norm = (v) => { const d = String(v || "").replace(/[^0-9]/g, ""); return d.length === 10 ? "91" + d : d; };
     const plants = g.plants || [], short = (c) => String(c || "").replace(/\s*\(.*\)/, "").replace("‑", "-");
     let rows = (g.people || []).map((x) => ({ name: x.name, phone: x.phone, units: x.units || [], sheets: x.sheets || [] }));
-    const th = (t) => `<th style="text-align:left;padding:6px 8px;font-size:13px;position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line)">${t}</th>`;
-    const colAll = (k) => (g.can_map ? `<div style="font-weight:400;font-size:12px;margin-top:3px"><a href="#" data-ca="${k}:1">Select all</a> · <a href="#" data-ca="${k}:0">Deselect all</a></div>` : "");
+    const th = (t, w) => `<th style="${w ? "width:" + w + ";" : ""}text-align:left;padding:6px 8px;font-size:13px;position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line)">${t}</th>`;
+    const colAll = (k) => (g.can_map ? `<div style="font-weight:400;font-size:12px;margin-top:3px"><a href="#" data-ca="${k}:1">All</a> · <a href="#" data-ca="${k}:0">None</a></div>` : "");
     m.innerHTML = adminHead(T0, S0) + `
-      <div class="card" style="max-width:1100px">
+      <div style="width:100%">
         <label style="display:flex;gap:10px;align-items:center;margin:0 0 6px"><b>This unit: WhatsApp evening report</b>
           <select id="waOn" style="padding:6px 10px"><option value="true" ${(plants.find((p) => p.id === g.this) || {}).on ? "selected" : ""}>On</option><option value="false" ${(plants.find((p) => p.id === g.this) || {}).on ? "" : "selected"}>Off</option></select></label>
         <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Unit in-charges with a mobile number get every sheet automatically${(g.incharges || []).length ? ": " + (g.incharges || []).map((x) => esc(x.name) + (x.phone ? " " + esc(x.phone) : " (no mobile yet)")).join(", ") : "."} Units on: ${plants.map((p) => esc(short(p.code)) + (p.on ? " ✔" : " —")).join(" · ")}</p>
         <h3 style="margin:10px 0 6px">People, units and sheets</h3>
         ${g.can_map ? "" : `<p class="msg">Only the company administrators can change this list.</p>`}
-        <div style="overflow:auto;max-height:60vh"><table style="border-collapse:collapse;width:100%"><thead><tr>${th("Name")}${th("Mobile")}${plants.map((p) => th(esc(short(p.code)) + colAll("u:" + p.id))).join("")}${WA_SHEETS.map((x) => th(x[1] + colAll("s:" + x[0]))).join("")}${th("")}</tr></thead><tbody id="waRows"></tbody></table></div>
+        <div><table style="border-collapse:collapse;width:100%;table-layout:fixed"><thead><tr>${th("Name", "17%")}${th("Mobile", "13%")}${plants.map((p) => th(esc(short(p.code)) + colAll("u:" + p.id))).join("")}${WA_SHEETS.map((x) => th(`<span title="${esc(x[2])}">${x[1]}</span>` + colAll("s:" + x[0]))).join("")}${th("", "78px")}</tr></thead><tbody id="waRows"></tbody></table></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><input id="waN" placeholder="Name" style="width:180px"><input id="waP" placeholder="Mobile (10 digits or with 91)" inputmode="tel" style="width:230px"><button class="btn ghost" id="waAdd" style="height:36px">＋ Add person</button></div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px"><button class="btn" id="waSave">Save</button><span class="msg" id="waMsg"></span></div>
         <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Tick the units each person gets (a new person starts with all units and all sheets). Leave all sheets unticked to send every sheet. Change a name or number in its row, or press Delete; then press Save. A 10-digit Indian number gets 91 added.${g.last_sent_on ? " Last sent: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + "." : ""}</p>
@@ -444,7 +444,7 @@
     bindBack();
     const dis = g.can_map ? "" : "disabled";
     const draw = () => {
-      $("#waRows").innerHTML = rows.length ? rows.map((r, i) => `<tr style="border-bottom:1px solid var(--line)"><td style="padding:4px 6px"><input data-wn="${i}" value="${esc(r.name)}" style="width:150px" ${dis}></td><td style="padding:4px 6px"><input data-wp="${i}" value="${esc(r.phone)}" style="width:130px" inputmode="tel" ${dis}></td>${plants.map((p) => `<td style="padding:4px 8px;text-align:center"><input type="checkbox" data-wu="${i}:${p.id}" ${r.units.includes(p.id) ? "checked" : ""} ${dis}></td>`).join("")}${WA_SHEETS.map((x) => `<td style="padding:4px 8px;text-align:center"><input type="checkbox" data-ws="${i}:${x[0]}" ${r.sheets.includes(x[0]) ? "checked" : ""} ${dis}></td>`).join("")}<td style="padding:4px 6px"><button class="btn ghost" data-wd="${i}" style="height:32px" ${dis}>Delete</button></td></tr>`).join("") : `<tr><td colspan="${3 + plants.length + WA_SHEETS.length}" style="color:var(--muted);padding:8px">No people yet.</td></tr>`;
+      $("#waRows").innerHTML = rows.length ? rows.map((r, i) => `<tr style="border-bottom:1px solid var(--line)"><td style="padding:4px 6px"><input data-wn="${i}" value="${esc(r.name)}" style="width:100%;min-width:0;box-sizing:border-box" ${dis}></td><td style="padding:4px 6px"><input data-wp="${i}" value="${esc(r.phone)}" style="width:100%;min-width:0;box-sizing:border-box" inputmode="tel" ${dis}></td>${plants.map((p) => `<td style="padding:4px 8px;text-align:center"><input type="checkbox" data-wu="${i}:${p.id}" ${r.units.includes(p.id) ? "checked" : ""} ${dis}></td>`).join("")}${WA_SHEETS.map((x) => `<td style="padding:4px 8px;text-align:center"><input type="checkbox" data-ws="${i}:${x[0]}" ${r.sheets.includes(x[0]) ? "checked" : ""} ${dis}></td>`).join("")}<td style="padding:4px 6px"><button class="btn ghost" data-wd="${i}" style="height:32px" ${dis}>Delete</button></td></tr>`).join("") : `<tr><td colspan="${3 + plants.length + WA_SHEETS.length}" style="color:var(--muted);padding:8px">No people yet.</td></tr>`;
       document.querySelectorAll("[data-wn]").forEach((e) => (e.oninput = () => { rows[+e.dataset.wn].name = e.value; }));
       document.querySelectorAll("[data-wp]").forEach((e) => (e.oninput = () => { rows[+e.dataset.wp].phone = e.value; }));
       const tog = (arr, v, on) => { const k = arr.indexOf(v); if (on && k < 0) arr.push(v); if (!on && k >= 0) arr.splice(k, 1); };
