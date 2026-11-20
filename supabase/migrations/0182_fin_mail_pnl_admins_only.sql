@@ -1,0 +1,2 @@
+-- 0182: Finance mail goes only to people who are Profit & loss admins of the plant (Rishab, Ravi, Philomena, developer admin); kmr_fin_scan ignores any other typed address.
+-- Data fix applied in the DB: the contact person of the four Esbee customers changed from Jayaram to info@kmr-groups.com, because console.grant_admins re-adds the contact person as company admin.
