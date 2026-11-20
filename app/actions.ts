@@ -475,6 +475,23 @@ export async function setPlantIncharge(_: ActionState, form: FormData): Promise<
   } catch (e) { return fail(e); }
 }
 
+/** WhatsApp evening report of one plant: on/off and the extra people (one per line: name, mobile with country code). */
+export async function saveWaSettings(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const plant = String(form.get("plant_id") ?? ""), enabled = form.get("enabled") === "on", people = String(form.get("people") ?? "").slice(0, 4000);
+    const admin = createAdminClient().schema("console");
+    const { data: pl } = await admin.from("customers").select("parent_id").eq("id", plant).maybeSingle();
+    if (!pl?.parent_id) return { error: "This is not a plant." };
+    const bad = people.split(/[\n;]+/).map((x) => x.trim()).filter(Boolean).filter((x) => x.replace(/[^0-9]/g, "").length < 10 || !x.includes(","));
+    if (bad.length) return { error: `Write each person as: name, mobile number with country code (for example Ravi, 919876543210). Check: ${bad[0]}` };
+    const { error } = await admin.from("wa_settings").upsert({ customer_id: plant, enabled, people, updated_at: new Date().toISOString() }, { onConflict: "customer_id" });
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${plant}`);
+    return { ok: enabled ? "Saved. The report goes every evening at 7:30 pm to the plant in-charge and these people." : "Saved. The WhatsApp report is off for this plant." };
+  } catch (e) { return fail(e); }
+}
+
 export async function removePlantMember(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     await assertManager();
