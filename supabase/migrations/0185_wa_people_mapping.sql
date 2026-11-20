@@ -1,0 +1,1 @@
+-- Applied directly in the database: console.wa_people (company-level list: name, mobile, units[], sheets[]), kmr_wa_get / kmr_wa_save (jsonb) and kmr_wa_scan using the mapping.
