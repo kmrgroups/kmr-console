@@ -67,7 +67,7 @@ async function mailIt(c: Scan, m: Manifest, date: string, dir: string) {
   let sent = 0;
   for (const e of to) {
     const r = await sendMail({ to: e, kind: "daily_backup", ref: `${c.slug}-${date}`, brand: c.brand ?? { name: c.name }, customerId: c.customer_id,
-      subject: `${ok ? "Daily backup completed" : "Daily backup — please check"} · ${plant} · ${date}`, heading: ok ? "Your daily data backup is complete" : "Your daily data backup needs attention",
+      subject: `${plant} — ${ok ? "Daily backup completed" : "Daily backup — please check"} · ${date}`, heading: ok ? "Your daily data backup is complete" : "Your daily data backup needs attention",
       paragraphs: [`Backup date: ${date}. All app data, settings and masters of ${plant} were saved (${total.toLocaleString("en-IN")} records in ${m.items.length} groups). Each file is a zip with one data file per table. The download links work for 7 days; older backups stay in the KMR Console.`, ...m.issues.slice(0, 5)],
       html, refNo: `KMR-BKP-${c.slug.slice(-5).toUpperCase()}-${date.replace(/-/g, "")}`, revision: "Backup report format BKP-01 · Rev 00" });
     if (r === "sent") sent++;

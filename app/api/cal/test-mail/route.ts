@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     ]);
     const r = await sendMail({
       to, kind: "calibration-due-test", ref: s.slug, brand: s.brand, customerSlug: s.slug,
-      subject: `TEST — Calibration due within ${s.days_before} days — ${n} gauge${n === 1 ? "" : "s"} · ${s.company}`,
+      subject: `${s.brand?.plant || s.company} — TEST — Calibration due within ${s.days_before} days — ${n} gauge${n === 1 ? "" : "s"}`,
       heading: "Gauges going to overdue (test)", paragraphs, rows,
       button: { label: "Open Calibration Hub", url: `${env.platformUrl}/it/calibration.html?kmr=1&co=${encodeURIComponent(s.slug)}#go=var` },
     });
