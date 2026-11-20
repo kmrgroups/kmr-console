@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, setPlantIncharge, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, loadErpMasters, checkOpsDuplicates, mergeOpsDuplicates } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, setPlantIncharge, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, saveWaSettings, loadErpMasters, checkOpsDuplicates, mergeOpsDuplicates } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -63,6 +63,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const plants = ((sibRes.data ?? []) as { id: string; name: string; plant_code: string; city: string | null; status: string }[]);
   const companySlug = isPlant ? parentRow?.slug : (c as { slug?: string }).slug;
   const plantIds = plants.map((x) => x.id);
+  const { data: waRow } = isPlant ? await supabase.from("wa_settings").select("enabled,people").eq("customer_id", id).maybeSingle() : { data: null };
   const [{ data: plantMembers }, { data: plantLic }] = plantIds.length
     ? await Promise.all([
         supabase.from("customer_members").select("customer_id,email,full_name,is_admin,roles,incharge").in("customer_id", plantIds).order("email"),
@@ -218,6 +219,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
             <input name="name" defaultValue={m.incharge_name ?? ""} placeholder="Name" aria-label="In-charge name" style={{ width: 200 }} />
             <input name="email" type="email" defaultValue={m.incharge_email ?? ""} placeholder="E-mail" aria-label="In-charge e-mail" style={{ width: 240 }} />
             <input name="phone" defaultValue={m.incharge_phone ?? ""} placeholder="Phone" aria-label="In-charge phone" style={{ width: 160 }} />
+          </ActionForm>; })()}
+      </div>}
+      {isPlant && manager && <div className="card">
+        <h2>WhatsApp evening report</h2>
+        <p className="muted" style={{ marginTop: 0 }}>Every day at 7:30 pm this plant's sales value (plan, done, pending), today's invoices and the dispatch status go on WhatsApp to the plant in-charge above and to the people listed here. Needs the WhatsApp business account to be connected.</p>
+        {(() => { const w = (waRow ?? {}) as { enabled?: boolean; people?: string };
+          return <ActionForm action={saveWaSettings} submitLabel="Save" hidden={{ plant_id: c.id }}>
+            <label className="field"><input type="checkbox" name="enabled" defaultChecked={!!w.enabled} style={{ width: "auto", marginRight: 8 }} />Send the report every evening</label>
+            <label className="field">People (one per line: name, mobile with country code)<textarea name="people" rows={5} defaultValue={w.people ?? ""} placeholder={"Hebbar, 919876543210\nRavi, 919812345678"} /></label>
           </ActionForm>; })()}
       </div>}
       {!isPlant && manager && <div className="card">

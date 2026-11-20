@@ -46,6 +46,10 @@
     {
       "path": "/it/console/api/cron/finance",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/it/console/api/cron/wa",
+      "schedule": "0 14 * * *"
     }
   ]
 }

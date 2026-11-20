@@ -1,0 +1,3 @@
+-- 0183: WhatsApp evening report. customer_members.phone; console.wa_settings (on/off + extra people per plant), console.wa_log;
+-- console.wa_kpis(cid, day) = dispatch status (Sales Flow), month sales value plan/done, today's issued invoices; public.kmr_wa_scan() (service role) = plants to send, with recipients
+-- (plant in-charge phone + member in-charges with a phone + the people list); kmr_wa_mark(). Functions as applied in the database (wa_daily_report, wa_scan_plant_incharge).
