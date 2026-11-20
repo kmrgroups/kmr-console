@@ -175,7 +175,7 @@
         ${plants.length > 1 ? `<label style="display:block;padding:6px 10px"><small style="display:block;opacity:.7;margin-bottom:3px">Plant</small><select id="plantSel" style="width:100%;padding:6px;border-radius:8px">${plants.map((x) => `<option value="${esc(x.slug)}"${x.slug === SLUG ? " selected" : ""}>${esc(x.is_main ? "Main · " + x.name : x.plant_code + " · " + x.name.split(" – ").pop())}</option>`).join("")}${plants[0].is_all ? `<option value="__all"${view === "plants" ? " selected" : ""}>★ All plants · dashboard</option>` : ""}</select></label>` : ""}
         <h4>Your apps</h4>${mine.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}${r.ok ? "" : '<span class="lock">Paused</span>'}</a>`).join("") || `<small style="padding:0 10px;opacity:.6">No apps yet</small>`}
         ${ops || isAdmin ? `<h4>Masters</h4>` : ""}${ops ? `<a href="${viewHref("ops")}" data-ops="1"><i style="background:#0EA5E9"></i>Operations Master</a>` : ""}${isAdmin ? `<a href="${viewHref("data")}" data-datam="1"><i style="background:#0EA5E9"></i>Data Master</a><a href="${viewHref("grand")}" data-grand="1"><i style="background:#B45309"></i>Grand Master</a>` : ""}
-        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("finance")}" data-admin="finance"><i style="background:#F3C55A"></i>Finance mail (top management)</a><a href="${viewHref("backup")}" data-admin="backup"><i style="background:#F3C55A"></i>Daily backup mail</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
+        ${isAdmin ? `<h4>Administration</h4><a href="${viewHref("company")}" data-admin="company"><i style="background:#F3C55A"></i>Company details &amp; logo</a><a href="${viewHref("users")}" data-admin="users"><i style="background:#F3C55A"></i>Users &amp; access</a><a href="${viewHref("digest")}" data-admin="digest"><i style="background:#F3C55A"></i>Daily management mail</a><a href="${viewHref("wa")}" data-admin="wa"><i style="background:#F3C55A"></i>WhatsApp evening report</a><a href="${viewHref("finance")}" data-admin="finance"><i style="background:#F3C55A"></i>Finance mail (top management)</a><a href="${viewHref("backup")}" data-admin="backup"><i style="background:#F3C55A"></i>Daily backup mail</a><a href="${viewHref("invoices")}" data-admin="invoices"><i style="background:#F3C55A"></i>Invoices &amp; payments</a>` : ""}
         <h4>More KMR apps</h4>${others.map((r) => `<a href="${appHref(r.product_code)}" data-open="${r.product_code}"><i style="background:${META[r.product_code]?.color || "#999"}"></i>${esc(r.product_name)}<span class="lock">Try</span></a>`).join("")}
         ${SOON.map(([k, n]) => `<button data-soon="${k}" data-name="${esc(n)}"><i style="background:#64748b"></i>${esc(n)}<span class="lock">Soon</span></button>`).join("")}
         <a href="/it/digital-records.html" id="drn" target="_blank" rel="noopener"><i style="background:#14B8A6"></i>Digital records notice</a>
@@ -201,7 +201,7 @@
       mn.querySelectorAll("[data-name]").forEach((t) => { if (t.closest(".tb")) return; t.style.display = !q || (t.dataset.name + " " + t.textContent.toLowerCase()).includes(q) ? "" : "none"; });
       mn.querySelectorAll(".grp:not(.pane)").forEach((g) => { g.style.display = [...g.querySelectorAll("[data-name]")].some((t) => t.style.display !== "none") ? "" : "none"; }); }; }
     onLink("[data-open]", (b) => open(b.dataset.open));
-    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : b.dataset.admin === "backup" ? backupView() : b.dataset.admin === "finance" ? financeView() : usersView()));
+    onLink("[data-admin]", (b) => (b.dataset.admin === "company" ? companyView() : b.dataset.admin === "invoices" ? invoicesView() : b.dataset.admin === "digest" ? digestView() : b.dataset.admin === "wa" ? waView() : b.dataset.admin === "backup" ? backupView() : b.dataset.admin === "finance" ? financeView() : usersView()));
     onLink("[data-datam]", () => dataView());
     onLink("[data-grand]", () => grandView());
     onLink("[data-ops]", () => opsView());
@@ -413,6 +413,47 @@
         msg.className = "msg ok"; msg.textContent = `Test mail sent to ${j.to}: ${j.act} area${j.act === 1 ? "" : "s"} need action, ${j.watch} to watch.`;
       } catch (x) { msg.textContent = x.message; }
       b.disabled = false;
+    };
+  }
+
+  // ---- WhatsApp evening report (7:30 pm): switch on / off and the people who get it; add, edit, delete ----
+  async function waView(note) {
+    setView("wa");
+    const m = mainEl(), T0 = "WhatsApp evening report", S0 = "Every day at 7:30 pm this unit's sales value (plan, done, pending), today's invoices, dispatch status, customer-wise schedule, raw material / forging slug stock and stage-wise stock go on WhatsApp as pictures to the unit in-charges and the people listed here.";
+    m.innerHTML = adminHead(T0, S0) + `<p class="msg">Loading…</p>`; bindBack();
+    const { data: g, error } = await sb.rpc("kmr_wa_get", { p_slug: SLUG });
+    if (error) { m.querySelector(".msg").textContent = error.message; return; }
+    const parse = (t) => String(t || "").split(/[\n;]+/).map((x) => x.trim()).filter(Boolean).map((x) => { const i = x.indexOf(","); return { name: i < 0 ? x : x.slice(0, i).trim(), phone: i < 0 ? "" : x.slice(i + 1).trim() }; });
+    const norm = (v) => { const d = String(v || "").replace(/[^0-9]/g, ""); return d.length === 10 ? "91" + d : d; };
+    let rows = parse(g.people);
+    m.innerHTML = adminHead(T0, S0) + `
+      <div class="card" style="max-width:820px">
+        <label style="display:flex;gap:10px;align-items:center;margin:0 0 14px"><b>WhatsApp evening report</b>
+          <select id="waOn" style="padding:6px 10px"><option value="true" ${g.enabled ? "selected" : ""}>On</option><option value="false" ${g.enabled ? "" : "selected"}>Off</option></select></label>
+        <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Unit in-charges with a mobile number (mobile kept by KMR support) get it automatically${(g.incharges || []).length ? ": " + (g.incharges || []).map((x) => esc(x.name) + (x.phone ? " " + esc(x.phone) : " (no mobile yet)")).join(", ") : "."}</p>
+        <h3 style="margin:10px 0 6px">Other people</h3>
+        <div id="waRows"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><input id="waN" placeholder="Name" style="width:180px"><input id="waP" placeholder="Mobile (10 digits or with 91)" inputmode="tel" style="width:230px"><button class="btn ghost" id="waAdd" style="height:36px">＋ Add person</button></div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:14px"><button class="btn" id="waSave">Save</button><span class="msg" id="waMsg"></span></div>
+        <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Change a name or number in its row, or press Delete; then press Save. A 10-digit Indian number gets 91 added.${g.last_sent_on ? " Last sent: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + "." : ""}</p>
+      </div>`;
+    bindBack();
+    const draw = () => {
+      $("#waRows").innerHTML = rows.length ? rows.map((r, i) => `<div style="display:flex;gap:8px;align-items:center;margin:5px 0;flex-wrap:wrap"><input data-wn="${i}" value="${esc(r.name)}" style="width:180px" aria-label="Name"><input data-wp="${i}" value="${esc(r.phone)}" style="width:230px" inputmode="tel" aria-label="Mobile number"><button class="btn ghost" data-wd="${i}" style="height:34px">Delete</button></div>`).join("") : `<p style="color:var(--muted);margin:4px 0">No extra people yet.</p>`;
+      document.querySelectorAll("[data-wn]").forEach((e) => (e.oninput = () => { rows[+e.dataset.wn].name = e.value; }));
+      document.querySelectorAll("[data-wp]").forEach((e) => (e.oninput = () => { rows[+e.dataset.wp].phone = e.value; }));
+      document.querySelectorAll("[data-wd]").forEach((b) => (b.onclick = () => { const r = rows[+b.dataset.wd]; if (confirm("Delete " + (r.name || "this person") + "?")) { rows.splice(+b.dataset.wd, 1); draw(); } }));
+    };
+    draw();
+    const add = () => { const n = $("#waN").value.trim(), p = norm($("#waP").value); if (!n || p.length < 10) { const x = $("#waMsg"); x.className = "msg"; x.textContent = "Type a name and a mobile number first."; return; } rows.push({ name: n, phone: p }); $("#waN").value = ""; $("#waP").value = ""; draw(); };
+    $("#waAdd").onclick = add; $("#waP").onkeydown = (e) => { if (e.key === "Enter") { e.preventDefault(); add(); } };
+    $("#waSave").onclick = async () => {
+      const msg = $("#waMsg"); msg.className = "msg"; msg.textContent = "Saving…";
+      const people = rows.filter((r) => r.name || r.phone).map((r) => `${r.name}, ${norm(r.phone)}`).join("\n");
+      const r = await sb.rpc("kmr_wa_save", { p_slug: SLUG, p_enabled: $("#waOn").value === "true", p_people: people });
+      if (r.error) { msg.textContent = r.error.message; return; }
+      rows = rows.map((x) => ({ name: x.name, phone: norm(x.phone) })); draw();
+      msg.className = "msg ok"; msg.textContent = "Saved.";
     };
   }
 
@@ -638,6 +679,7 @@
     else if (HASH === "company" && isAdmin) companyView();
     else if (HASH === "invoices" && isAdmin) invoicesView();
     else if (HASH === "digest" && isAdmin) digestView();
+    else if (HASH === "wa" && isAdmin) waView();
     else if (HASH === "backup" && isAdmin) backupView();
     else if (HASH === "finance" && isAdmin) financeView();
     else if (HASH === "plants" && plants.length > 1 && plants[0].is_all) plantsView();
