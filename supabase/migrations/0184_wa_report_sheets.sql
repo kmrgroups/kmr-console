@@ -1,0 +1,2 @@
+-- Applied directly in the database: console.wa_snap (evening RM balances, used to show "issued" next day),
+-- console.wa_kpis extended with rm / wip / part names, public.kmr_wa_scan stores the snapshot.
