@@ -13,7 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
-import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, loadErpMasters, checkOpsDuplicates, mergeOpsDuplicates } from "@/app/actions";
+import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, setPlantIncharge, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, loadErpMasters, checkOpsDuplicates, mergeOpsDuplicates } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
 import { ThemePicker } from "@/components/ThemePicker";
@@ -65,7 +65,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const plantIds = plants.map((x) => x.id);
   const [{ data: plantMembers }, { data: plantLic }] = plantIds.length
     ? await Promise.all([
-        supabase.from("customer_members").select("customer_id,email,full_name,is_admin,roles").in("customer_id", plantIds).order("email"),
+        supabase.from("customer_members").select("customer_id,email,full_name,is_admin,roles,incharge").in("customer_id", plantIds).order("email"),
         supabase.from("licences").select("customer_id,product_code").in("customer_id", plantIds).not("product_ref", "is", null),
       ])
     : [{ data: [] }, { data: [] }];
@@ -109,7 +109,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         </>}
         <div className="stack">
           {plants.map((pl) => {
-            const people = ((plantMembers ?? []) as { customer_id: string; email: string; full_name: string | null; is_admin: boolean; roles: Record<string, string> }[]).filter((m) => m.customer_id === pl.id);
+            const people = ((plantMembers ?? []) as { customer_id: string; email: string; full_name: string | null; is_admin: boolean; roles: Record<string, string>; incharge?: boolean }[]).filter((m) => m.customer_id === pl.id);
             const tools = ((plantLic ?? []) as { customer_id: string; product_code: string }[]).filter((l) => l.customer_id === pl.id).map((l) => prodName[l.product_code] ?? l.product_code);
             return (
               <details key={pl.id} className="card" style={{ margin: 0 }}>
@@ -121,8 +121,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
                 </ActionForm>}
                 {people.length > 0 && <div className="tablewrap"><table><thead><tr><th>Person</th><th>Access</th><th></th></tr></thead><tbody>
                   {people.map((m) => (<tr key={m.email}><td><b>{m.full_name || m.email}</b><br /><small className="muted">{m.email}</small></td>
-                    <td>{m.is_admin ? <span className="badge ok">admin</span> : <span className="badge info">{Object.values(m.roles ?? {})[0] ?? "viewer"}</span>}</td>
-                    <td>{manager && <ActionForm action={removePlantMember} submitLabel="Remove" variant="secondary" hidden={{ plant_id: pl.id, email: m.email }} confirm={`Remove ${m.email} from ${pl.name}?`} />}</td></tr>))}
+                    <td>{m.is_admin ? <span className="badge ok">admin</span> : <span className="badge info">{Object.values(m.roles ?? {})[0] ?? "viewer"}</span>}{m.incharge && <span className="badge warn" style={{ marginLeft: 6 }}>unit in-charge</span>}</td>
+                    <td>{manager && <ActionForm action={setPlantIncharge} submitLabel={m.incharge ? "Remove in-charge" : "Make in-charge"} variant="secondary" hidden={{ plant_id: pl.id, email: m.email, on: m.incharge ? "0" : "1" }} />}{manager && <ActionForm action={removePlantMember} submitLabel="Remove" variant="secondary" hidden={{ plant_id: pl.id, email: m.email }} confirm={`Remove ${m.email} from ${pl.name}?`} />}</td></tr>))}
                 </tbody></table></div>}
                 {manager && <ActionForm action={savePlantMember} submitLabel="Add person to this plant" variant="secondary" hidden={{ plant_id: pl.id }} className="row">
                   <input name="email" type="email" placeholder="email" required style={{ maxWidth: 220 }} />
