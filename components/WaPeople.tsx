@@ -14,14 +14,15 @@ export function WaPeople({ initial }: { initial: string }) {
       {rows.length === 0 && <p className="muted" style={{ margin: 0 }}>No extra people yet.</p>}
       {rows.map((r, i) => (
         <div key={i} className="row" style={{ alignItems: "center", gap: 8 }}>
-          <span style={{ minWidth: 160 }}>{r.name}</span><span className="mono">{norm(r.phone)}</span>
-          <button type="button" className="secondary" onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remove</button>
+          <input value={r.name} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} aria-label="Name" style={{ width: 180 }} />
+          <input value={r.phone} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, phone: e.target.value } : x)))} aria-label="Mobile number" inputMode="tel" style={{ width: 220 }} />
+          <button type="button" className="danger" onClick={() => { if (confirm(`Delete ${r.name || "this person"}?`)) setRows(rows.filter((_, j) => j !== i)); }}>Delete</button>
         </div>))}
       <div className="row" style={{ gap: 8 }}>
         <input value={n} onChange={(e) => setN(e.target.value)} placeholder="Name" aria-label="Name" style={{ width: 180 }} />
         <input value={p} onChange={(e) => setP(e.target.value)} placeholder="Mobile (10 digits or with 91)" aria-label="Mobile number" inputMode="tel" style={{ width: 220 }} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
         <button type="button" onClick={add}>Add person</button>
       </div>
-      <p className="muted" style={{ margin: 0 }}>Press Add person, then Save. A 10-digit Indian number gets 91 added.</p>
+      <p className="muted" style={{ margin: 0 }}>Change a name or number directly in its row. Add, edit or delete, then press Save. A 10-digit Indian number gets 91 added.</p>
     </div>);
 }
