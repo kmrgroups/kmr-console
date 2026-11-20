@@ -25,8 +25,8 @@ export async function GET(req: Request) {
       try {
         const k = u.kpis, pics = await renderAll(u.unit, k), day = k.day.split("-").reverse().join("-");
         const first = `Invoices today ${k.invoices.length} (${inr(k.invoices.reduce((a, i) => a + Number(i.total || 0), 0))}); month plan ${inr(k.plan_val)}, done ${inr(k.actual_val)}, pending ${inr(Math.max(0, k.plan_val - k.actual_val))}`;
-        // default: ONE message per person per unit = one PDF (a page per sheet). WA_MODE=images sends a picture per sheet instead.
-        const asPdf = (process.env.WA_MODE || "pdf") !== "images", cache = new Map<string, string[]>();
+        // default: clear pictures, one message per sheet (WhatsApp cannot put several pictures in one message). WA_MODE=pdf sends one PDF per unit instead.
+        const asPdf = process.env.WA_MODE === "pdf", cache = new Map<string, string[]>();
         const prep = async (sheets: string[] | null) => {
           const key = (sheets && sheets.length ? [...sheets].sort() : ["all"]).join(",");
           if (!cache.has(key)) {

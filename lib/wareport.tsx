@@ -17,17 +17,18 @@ const C = { head: "#1f2937", line: "#9ca3af", sched: "#fde047", bal: "#ef4444", 
 const cell = (w: number | string, bg?: string, bold = false, color = "#111827") => ({ display: "flex", justifyContent: "center", alignItems: "center", width: w, padding: "5px 4px", borderRight: `1px solid ${C.line}`, background: bg ?? "#ffffff", fontWeight: bold ? 700 : 400, color, fontSize: 18 } as const);
 
 /** One picture for one unit: sales value plan / done / pending, today's invoices and the dispatch status table (same columns as the sheet the team used to prepare by hand). */
-export async function renderUnitReport(unit: string, k: WaKpis): Promise<Uint8Array> {
-  const parts = k.parts, rows = parts.length, inv = k.invoices.slice(0, 14);
+export async function renderUnitReport(unit: string, k: WaKpis, from = 0, to = k.parts.length): Promise<Uint8Array> {
+  const parts = k.parts.slice(from, to), rows = parts.length, first = from === 0, last = to >= k.parts.length, inv = first ? k.invoices.slice(0, 14) : [];
   const pend = Math.max(0, k.plan_val - k.actual_val), pct = k.plan_val > 0 ? Math.round((100 * k.actual_val) / k.plan_val) : 0;
-  const tot = parts.reduce((a, p) => ({ d: a.d.map((x, i) => x + (p.d[i] || 0)), total: a.total + p.total, sched: a.sched + p.sched, bal: a.bal + p.bal }), { d: [0, 0, 0], total: 0, sched: 0, bal: 0 });
-  const height = 150 + 120 + (inv.length ? 40 + inv.length * 30 + 40 : 60) + 60 + (rows + 3) * 34 + 55;
+  const tot = k.parts.reduce((a, p) => ({ d: a.d.map((x, i) => x + (p.d[i] || 0)), total: a.total + p.total, sched: a.sched + p.sched, bal: a.bal + p.bal }), { d: [0, 0, 0], total: 0, sched: 0, bal: 0 });
+  const height = 20 + 70 + (first ? 120 + (inv.length ? 40 + inv.length * 30 + 40 : 60) : 0) + 60 + (rows + 3) * 34 + 55;
   const W = 1000;
   const el = (
     <div style={{ display: "flex", flexDirection: "column", width: W, height, background: "#ffffff", fontFamily: "sans-serif", padding: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0e7490", color: "#fff", padding: "12px 16px", fontSize: 26, fontWeight: 700 }}>
         <div style={{ display: "flex" }}>{unit} · Daily report</div><div style={{ display: "flex" }}>{dmy(k.day)}</div>
       </div>
+      {first ? <div style={{ display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", marginTop: 14, gap: 12 }}>
         {[["Sales value plan (month)", inr(k.plan_val), "#e0f2fe"], ["Done so far", inr(k.actual_val) + "  (" + pct + "%)", "#dcfce7"], ["Pending", inr(pend), "#fee2e2"]].map(([l, v, bg]) => (
           <div key={l} style={{ display: "flex", flexDirection: "column", flex: 1, background: bg, padding: "10px 14px", borderRadius: 8 }}>
@@ -39,7 +40,8 @@ export async function renderUnitReport(unit: string, k: WaKpis): Promise<Uint8Ar
           <div style={{ display: "flex", width: 190 }}>{i.no}</div><div style={{ display: "flex", flex: 1 }}>{(i.buyer || "").slice(0, 46)}</div><div style={{ display: "flex", width: 160, justifyContent: "flex-end" }}>{inr(Number(i.total))}</div></div>))}
         {k.invoices.length > inv.length ? <div style={{ display: "flex", fontSize: 16, padding: "4px 8px" }}>{`… and ${k.invoices.length - inv.length} more`}</div> : null}
       </div> : <div style={{ display: "flex", fontSize: 18, marginTop: 6, color: "#6b7280" }}>No invoice issued today.</div>}
-      <div style={{ display: "flex", marginTop: 18, background: "#67e8f9", padding: "8px 12px", fontSize: 22, fontWeight: 700 }}>{`Dispatch status — month of ${dmy(k.day).slice(3)}`}</div>
+      </div> : null}
+      <div style={{ display: "flex", marginTop: 18, background: "#67e8f9", padding: "8px 12px", fontSize: 22, fontWeight: 700 }}>{`Dispatch status — month of ${dmy(k.day).slice(3)}${k.parts.length > PAGE ? `  (page ${Math.floor(from / PAGE) + 1} of ${Math.ceil(k.parts.length / PAGE)})` : ""}`}</div>
       <div style={{ display: "flex", flexDirection: "column", border: `1px solid ${C.line}`, borderBottom: "none" }}>
         <div style={{ display: "flex", borderBottom: `1px solid ${C.line}` }}>
           <div style={cell(250, "#38bdf8", true)}>Part No</div>
@@ -52,20 +54,26 @@ export async function renderUnitReport(unit: string, k: WaKpis): Promise<Uint8Ar
             {p.d.map((x, i) => <div key={i} style={cell(120, undefined, x > 0)}>{q(x)}</div>)}
             <div style={cell(130, undefined, true)}>{q(p.total)}</div><div style={cell(120, "#fef9c3")}>{q(p.sched)}</div><div style={cell(130, undefined, true, p.bal < 0 ? "#b91c1c" : "#111827")}>{q(p.bal)}</div>
           </div>))}
-        <div style={{ display: "flex", background: C.ok, color: "#fff", borderBottom: `1px solid ${C.line}` }}>
+        {last ?         <div style={{ display: "flex", background: C.ok, color: "#fff", borderBottom: `1px solid ${C.line}` }}>
           <div style={cell(250, C.ok, true, "#fff")}>Total Qty</div>{tot.d.map((x, i) => <div key={i} style={cell(120, C.ok, true, "#fff")}>{q(x)}</div>)}
           <div style={cell(130, C.ok, true, "#fff")}>{q(tot.total)}</div><div style={cell(120, C.ok, true, "#fff")}>{q(tot.sched)}</div><div style={cell(130, C.ok, true, "#fff")}>{q(tot.bal)}</div>
-        </div>
+        </div> : null}
       </div>
       <div style={{ display: "flex", marginTop: 8, fontSize: 14, color: "#6b7280" }}>Auto-generated by KMR Console · Balance = schedule − total dispatch (negative = dispatched more than scheduled)</div>
     </div>);
-  const res = new ImageResponse(el, { width: W + 0, height });
-  return new Uint8Array(await res.arrayBuffer());
+  return png(el, W, height);
 }
 
 type Col = { h: string; w: number; bg?: string; color?: string };
 type Cell = { v: string; bg?: string; bold?: boolean; color?: string; left?: boolean };
 const GREY = "#d1d5db";
+const SC = 2;   // drawn at double size so the picture stays sharp after WhatsApp shrinks it
+async function png(el: React.ReactElement, W: number, H: number): Promise<Uint8Array> {
+  const big = <div style={{ display: "flex", width: W * SC, height: H * SC, background: "#ffffff" }}><div style={{ display: "flex", width: W, height: H, transform: `scale(${SC})`, transformOrigin: "left top" }}>{el}</div></div>;
+  return new Uint8Array(await new ImageResponse(big, { width: W * SC, height: H * SC }).arrayBuffer());
+}
+const PAGE = 18;   // rows per picture: a tall picture is shrunk by WhatsApp, so long tables go in several pictures
+const pages = <T,>(a: T[], n = PAGE): T[][] => { const o: T[][] = []; for (let i = 0; i < a.length; i += n) o.push(a.slice(i, i + n)); return o.length ? o : [[]]; };
 
 /** Generic sheet picture: coloured title bar, coloured column headings, rows, optional coloured total row. */
 async function sheet(title: string, sub: string, titleBg: string, cols: Col[], rows: Cell[][], total?: Cell[]): Promise<Uint8Array> {
@@ -85,7 +93,7 @@ async function sheet(title: string, sub: string, titleBg: string, cols: Col[], r
       </div>
       <div style={{ display: "flex", marginTop: 8, fontSize: 14, color: "#6b7280" }}>Auto-generated by KMR Console</div>
     </div>);
-  return new Uint8Array(await new ImageResponse(el, { width: W, height }).arrayBuffer());
+  return png(el, W, height);
 }
 
 /** Customer-wise schedule: parts grouped under each customer, same columns as the dispatch sheet. */
@@ -134,13 +142,17 @@ export async function renderWip(unit: string, k: WaKpis): Promise<{ family: stri
   return out;
 }
 
-/** Every picture of the evening report for one unit, in sending order. key = sheet name used when a person receives only some sheets. */
+/** Every picture of the evening report for one unit, in sending order. key = sheet name used when a person receives only some sheets. Long tables are split in pictures of about 18 rows so they stay readable. */
 export async function renderAll(unit: string, k: WaKpis): Promise<{ key: string; title: string; png: Uint8Array }[]> {
-  const out: { key: string; title: string; png: Uint8Array }[] = [{ key: "dispatch", title: "Sales value, invoices and dispatch status", png: await renderUnitReport(unit, k) }];
+  const out: { key: string; title: string; png: Uint8Array }[] = [];
+  const n = Math.max(1, Math.ceil(k.parts.length / PAGE));
+  for (let i = 0; i < n; i++) out.push({ key: "dispatch", title: n > 1 ? `Dispatch status ${i + 1}/${n}` : "Sales value, invoices and dispatch status", png: await renderUnitReport(unit, k, i * PAGE, (i + 1) * PAGE) });
   const add = (key: string, t: string, p: Uint8Array | null) => { if (p) out.push({ key, title: t, png: p }); };
-  add("customer", "Customer-wise schedule", await renderCustomerSchedule(unit, k));
-  add("slug", "Material for forging slug", await renderSlug(unit, k));
-  add("rm", "Daily RM stock", await renderRm(unit, k));
+  const split = async (key: string, t: string, list: WaKpis["parts"] | NonNullable<WaKpis["rm"]>, f: (sub: never) => Promise<Uint8Array | null>) => { const pg = pages(list as unknown[]); for (let i = 0; i < pg.length; i++) add(key, pg.length > 1 ? `${t} ${i + 1}/${pg.length}` : t, await f(pg[i] as never)); };
+  await split("customer", "Customer-wise schedule", k.parts, (sub) => renderCustomerSchedule(unit, { ...k, parts: sub as WaKpis["parts"] }));
+  const rm = k.rm || [];
+  await split("slug", "Material for forging slug", rm.filter((m) => m.slug), (sub) => renderSlug(unit, { ...k, rm: sub as NonNullable<WaKpis["rm"]> }));
+  await split("rm", "Daily RM stock", rm.filter((m) => !m.slug), (sub) => renderRm(unit, { ...k, rm: sub as NonNullable<WaKpis["rm"]> }));
   for (const w of await renderWip(unit, k)) out.push({ key: "wip", title: `${w.family} stage-wise stock`, png: w.png });
   return out;
 }
