@@ -428,6 +428,7 @@
     const plants = g.plants || [], short = (c) => String(c || "").replace(/\s*\(.*\)/, "").replace("‑", "-");
     let rows = (g.people || []).map((x) => ({ name: x.name, phone: x.phone, units: x.units || [], sheets: x.sheets || [] }));
     const th = (t) => `<th style="text-align:left;padding:6px 8px;font-size:13px;position:sticky;top:0;background:#fff;border-bottom:1px solid var(--line)">${t}</th>`;
+    const colAll = (k) => (g.can_map ? `<div style="font-weight:400;font-size:12px;margin-top:3px"><a href="#" data-ca="${k}:1">Select all</a> · <a href="#" data-ca="${k}:0">Deselect all</a></div>` : "");
     m.innerHTML = adminHead(T0, S0) + `
       <div class="card" style="max-width:1100px">
         <label style="display:flex;gap:10px;align-items:center;margin:0 0 6px"><b>This unit: WhatsApp evening report</b>
@@ -435,7 +436,7 @@
         <p style="margin:0 0 10px;font-size:13px;color:var(--muted)">Unit in-charges with a mobile number get every sheet automatically${(g.incharges || []).length ? ": " + (g.incharges || []).map((x) => esc(x.name) + (x.phone ? " " + esc(x.phone) : " (no mobile yet)")).join(", ") : "."} Units on: ${plants.map((p) => esc(short(p.code)) + (p.on ? " ✔" : " —")).join(" · ")}</p>
         <h3 style="margin:10px 0 6px">People, units and sheets</h3>
         ${g.can_map ? "" : `<p class="msg">Only the company administrators can change this list.</p>`}
-        <div style="overflow:auto;max-height:60vh"><table style="border-collapse:collapse;width:100%"><thead><tr>${th("Name")}${th("Mobile")}${plants.map((p) => th(esc(short(p.code)))).join("")}${WA_SHEETS.map((x) => th(x[1])).join("")}${th("")}</tr></thead><tbody id="waRows"></tbody></table></div>
+        <div style="overflow:auto;max-height:60vh"><table style="border-collapse:collapse;width:100%"><thead><tr>${th("Name")}${th("Mobile")}${plants.map((p) => th(esc(short(p.code)) + colAll("u:" + p.id))).join("")}${WA_SHEETS.map((x) => th(x[1] + colAll("s:" + x[0]))).join("")}${th("")}</tr></thead><tbody id="waRows"></tbody></table></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0"><input id="waN" placeholder="Name" style="width:180px"><input id="waP" placeholder="Mobile (10 digits or with 91)" inputmode="tel" style="width:230px"><button class="btn ghost" id="waAdd" style="height:36px">＋ Add person</button></div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px"><button class="btn" id="waSave">Save</button><span class="msg" id="waMsg"></span></div>
         <p style="font-size:13px;color:var(--muted);margin:10px 0 0">Tick the units each person gets (a new person starts with all units and all sheets). Leave all sheets unticked to send every sheet. Change a name or number in its row, or press Delete; then press Save. A 10-digit Indian number gets 91 added.${g.last_sent_on ? " Last sent: " + esc(String(g.last_sent_on).split("-").reverse().join("-")) + "." : ""}</p>
@@ -449,6 +450,7 @@
       const tog = (arr, v, on) => { const k = arr.indexOf(v); if (on && k < 0) arr.push(v); if (!on && k >= 0) arr.splice(k, 1); };
       document.querySelectorAll("[data-wu]").forEach((e) => (e.onchange = () => { const [i, id] = e.dataset.wu.split(":"); tog(rows[+i].units, id, e.checked); }));
       document.querySelectorAll("[data-ws]").forEach((e) => (e.onchange = () => { const [i, k] = e.dataset.ws.split(":"); tog(rows[+i].sheets, k, e.checked); }));
+      document.querySelectorAll("[data-ca]").forEach((a) => (a.onclick = (e) => { e.preventDefault(); const [t, id, on] = a.dataset.ca.split(":"); rows.forEach((r) => tog(t === "u" ? r.units : r.sheets, id, on === "1")); draw(); }));
       document.querySelectorAll("[data-wd]").forEach((b) => (b.onclick = () => { const r = rows[+b.dataset.wd]; if (confirm("Delete " + (r.name || "this person") + "?")) { rows.splice(+b.dataset.wd, 1); draw(); } }));
     };
     draw();
