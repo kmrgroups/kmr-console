@@ -13,6 +13,7 @@ import { p } from "@/lib/base-path";
 import { createInvoice } from "@/app/billing-actions";
 import { InvoiceProducts, type InvExtra } from "@/components/InvoiceProducts";
 import type { Feature } from "@/lib/features";
+import { WaPeople } from "@/components/WaPeople";
 import { renamePlant, movePlantData, addPlant, savePlantMember, removePlantMember, setPlantIncharge, enableTool, saveLicenceFeatures, portalLogin, repairAccess, saveCustomer, saveCustomerSlug, saveCustomerTheme, saveLicence, uploadCustomerLogo, saveMailDomain, checkMailDomain, removeMailDomain, savePlantIncharge, saveWaSettings, loadErpMasters, checkOpsDuplicates, mergeOpsDuplicates } from "@/app/actions";
 import { isTool, toolUsage } from "@/lib/provision";
 import { checkCustomerDelete } from "@/lib/customer-delete";
@@ -227,7 +228,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         {(() => { const w = (waRow ?? {}) as { enabled?: boolean; people?: string };
           return <ActionForm action={saveWaSettings} submitLabel="Save" hidden={{ plant_id: c.id }}>
             <label className="field"><input type="checkbox" name="enabled" defaultChecked={!!w.enabled} style={{ width: "auto", marginRight: 8 }} />Send the report every evening</label>
-            <label className="field">People (one per line: name, mobile with country code)<textarea name="people" rows={5} defaultValue={w.people ?? ""} placeholder={"Hebbar, 919876543210\nRavi, 919812345678"} /></label>
+            <div className="field"><div>People who also get the report</div><WaPeople initial={w.people ?? ""} /></div>
           </ActionForm>; })()}
       </div>}
       {!isPlant && manager && <div className="card">
