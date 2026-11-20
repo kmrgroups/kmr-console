@@ -375,6 +375,6 @@ export function compose(inp: ComposeIn) {
   if (inp.missing.length) h += `<div style="font-size:11px;color:#5e6778;margin:0 0 8px">Not shown (not in use, switched off or no data yet): ${inp.missing.join(", ")}.</div>`;
   h += `<div style="font-size:11px;color:#5e6778;border-top:1px solid #e6dfd1;padding-top:8px">How to read: <b style="color:${COL.act.fg}">ACTION</b> = outside target, needs someone today · <b style="color:${COL.watch.fg}">WATCH</b> = drifting, keep an eye · <b style="color:${COL.ok.fg}">ON TRACK</b> = within target. Targets and sections can be changed by your administrator (${esc(inp.settingsPath)}).</div>`;
 
-  const subject = `${inp.test ? "TEST — " : ""}${inp.title} ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""} · ${inp.unit || inp.company}`;
+  const subject = `${inp.unit || inp.company} — ${inp.test ? "TEST — " : ""}${inp.title} ${dmy(today)} — ${act ? `${act} need action` : "nothing needs action"}${watch ? `, ${watch} to watch` : ""}`;
   return { subject, html: h, refNo, revision: inp.format, counts: { act, watch, ok }, sections: S.length };
 }
