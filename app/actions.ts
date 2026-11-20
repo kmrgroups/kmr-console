@@ -460,6 +460,21 @@ export async function savePlantMember(_: ActionState, form: FormData): Promise<A
   } catch (e) { return fail(e); }
 }
 
+/** Unit in-charge: receives the Daily management mail of this plant (not the Finance mail). */
+export async function setPlantIncharge(_: ActionState, form: FormData): Promise<ActionState> {
+  try {
+    await assertManager();
+    const plant = String(form.get("plant_id") ?? ""), email = String(form.get("email") ?? "").toLowerCase(), on = String(form.get("on") ?? "") === "1";
+    const admin = createAdminClient().schema("console");
+    const { data: pl } = await admin.from("customers").select("parent_id").eq("id", plant).maybeSingle();
+    if (!pl?.parent_id) return { error: "This is not a plant." };
+    const { error } = await admin.from("customer_members").update({ incharge: on, updated_at: new Date().toISOString() }).eq("customer_id", plant).eq("email", email);
+    if (error) return { error: error.message };
+    revalidatePath(`/customers/${pl.parent_id}`);
+    return { ok: on ? `${email} is now the unit in-charge and will get the Daily management mail.` : `${email} is no longer unit in-charge.` };
+  } catch (e) { return fail(e); }
+}
+
 export async function removePlantMember(_: ActionState, form: FormData): Promise<ActionState> {
   try {
     await assertManager();
