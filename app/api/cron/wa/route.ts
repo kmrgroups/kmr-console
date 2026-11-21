@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cronDenied } from "@/lib/cronauth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { renderAll, type WaKpis } from "@/lib/wareport";
-import { waReady, waUpload, waSend, waPdf, waUploadPdf, waSendDoc } from "@/lib/whatsapp";
+import { waLoad, waReady, waUpload, waSend, waPdf, waUploadPdf, waSendDoc } from "@/lib/whatsapp";
 
 // Evening WhatsApp report (vercel.json, 19:30 India time): for every unit with the report switched on, one picture (sales value plan / done / pending, today's invoices, dispatch status)
 // goes to the unit in-charges and the extra people. Settings: customer page › plant › WhatsApp report (console.wa_settings, migration 0183).
@@ -15,6 +15,7 @@ export async function GET(req: Request) {
   if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status });
   try {
     const db = createAdminClient();
+    await waLoad(db as never);
     const { data, error } = await db.schema("public").rpc("kmr_wa_scan");
     if (error) throw new Error(error.message);
     const units = (data ?? []) as { customer_id: string; unit: string; recipients: { name: string; phone: string; sheets: string[] | null }[]; kpis: WaKpis }[];
